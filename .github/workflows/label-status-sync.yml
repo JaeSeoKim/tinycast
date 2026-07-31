@@ -20,16 +20,9 @@ jobs:
       - name: Move card Status to match the applied label
         uses: actions/github-script@v9
         # Projects v2 needs a PAT with repo + project scope — the default GITHUB_TOKEN can't see it.
-        # The fallback only keeps github-script from erroring on an empty token input; with no PAT
-        # this whole job no-ops, since board upkeep is all it does.
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            if (process.env.HAS_PROJECT_TOKEN !== "true") {
-              core.warning("PROJECT_TOKEN is not configured — skipping the board Status sync.");
-              return;
-            }
-
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const number = context.payload.issue?.number ?? context.payload.pull_request.number;
@@ -85,7 +78,6 @@ jobs:
               { project: projectId, item: item.id, field: statusFieldId, option: optionId }
             );
         env:
-          HAS_PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN != '' }}
           PROJECT_ID: ${{ vars.PROJECT_ID }}
           STATUS_FIELD_ID: ${{ vars.PROJECT_STATUS_FIELD_ID }}
           STATUS_OPTION_NEEDS_INFO: ${{ vars.PROJECT_STATUS_OPTION_NEEDS_INFO }}
