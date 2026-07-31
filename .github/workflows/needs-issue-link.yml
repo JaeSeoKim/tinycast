@@ -19,10 +19,11 @@ jobs:
     steps:
       - name: Sync labels, comment, and linked-issue Status
         uses: actions/github-script@v9
-        # Projects v2 is invisible to the default GITHUB_TOKEN — reading `closingIssuesReferences`
-        # project items and writing the Status field both need a PAT with repo + project scope.
+        # Projects v2 is invisible to the default GITHUB_TOKEN, so the board Status sync needs a PAT
+        # with repo + project scope. Falling back keeps the labels and the comment — the part that
+        # gates the merge — working when no PAT is configured; only the board sync is skipped.
         with:
-          github-token: ${{ secrets.PROJECT_TOKEN }}
+          github-token: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -34,6 +35,8 @@ jobs:
             const TYPO_LABEL = process.env.LABEL_TYPO || "typo";
             const DOCS_LABEL = process.env.LABEL_DOCS || "docs";
 
+            // Deliberately free of `projectItems`: that field 403s for the default GITHUB_TOKEN and
+            // would fail the whole query, taking the label/comment logic down with it.
             const { repository } = await github.graphql(
               `query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
@@ -43,12 +46,7 @@ jobs:
                       nodes { name }
                     }
                     closingIssuesReferences(first: 10) {
-                      nodes {
-                        number
-                        projectItems(first: 10) {
-                          nodes { id project { id } }
-                        }
-                      }
+                      nodes { number }
                     }
                   }
                 }
@@ -108,12 +106,37 @@ jobs:
 
             if (pr.isDraft) return;
 
+            // Everything below is board upkeep, not a merge gate — skip it rather than fail the
+            // check when the PAT or the project vars are missing.
+            if (process.env.HAS_PROJECT_TOKEN !== "true") {
+              core.warning("PROJECT_TOKEN is not configured — labels and comment applied, board Status sync skipped.");
+              return;
+            }
+
             const projectId = process.env.PROJECT_ID;
             const statusFieldId = process.env.STATUS_FIELD_ID;
             const needsReviewOptionId = process.env.STATUS_OPTION_NEEDS_REVIEW;
             if (!projectId || !statusFieldId || !needsReviewOptionId) return;
 
-            for (const issue of linkedIssues) {
+            // Second pass, PAT in hand: `projectItems` is only readable now.
+            const { repository: withItems } = await github.graphql(
+              `query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    closingIssuesReferences(first: 10) {
+                      nodes {
+                        projectItems(first: 10) {
+                          nodes { id project { id } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }`,
+              { owner, repo, number }
+            );
+
+            for (const issue of withItems.pullRequest.closingIssuesReferences.nodes) {
               const item = issue.projectItems.nodes.find((n) => n.project.id === projectId);
               if (!item) continue;
               await github.graphql(
@@ -126,6 +149,7 @@ jobs:
               );
             }
         env:
+          HAS_PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN != '' }}
           PROJECT_ID: ${{ vars.PROJECT_ID }}
           STATUS_FIELD_ID: ${{ vars.PROJECT_STATUS_FIELD_ID }}
           STATUS_OPTION_NEEDS_REVIEW: ${{ vars.PROJECT_STATUS_OPTION_NEEDS_REVIEW }}
