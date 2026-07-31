@@ -1,0 +1,8 @@
+included:
+  - Tinycast
+
+excluded:
+  - Tinycast/Core/Emoji/EmojiData.generated.swift
+  - Tinycast/Core/Calculator/CurrencyData.generated.swift
+
+reporter: "github-actions-logging"
