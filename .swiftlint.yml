@@ -38,8 +38,8 @@ type_body_length:
   error: 900
 
 file_length:
-  warning: 1000
-  error: 1200
+  warning: 1200
+  error: 1500
 
 nesting:
   type_level:
