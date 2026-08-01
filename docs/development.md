@@ -215,7 +215,7 @@ builds before it ships anyway, so CI keeps to the two checks that finish in abou
 that compiles nowhere still turns the PR green — **build locally before you open one** (`xcodebuild
 -project Tinycast.xcodeproj -scheme Tinycast -configuration Debug build`, or just ⌘B in Xcode).
 
-Same commands locally: the harness block from [Tests](#tests), then `swiftlint lint --strict` from
+Same commands locally: the harness block from [Tests](#tests), then `swiftlint lint` from
 [Format & lint](#format--lint).
 
 ## CI releases
