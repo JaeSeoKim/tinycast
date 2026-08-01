@@ -178,7 +178,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   role** says *what happens if you click*. None of them derives another — that separation is the
   whole point of the design, and collapsing any two of them back together is a regression.
 - **Icon.** `DialogRequest.symbol` is required and is always the subject's own glyph: a system
-  command passes its `SystemCommand.sfSymbol`, so the Restart dialog shows `arrow.clockwise` and
+  command passes its `SystemAction.sfSymbol`, so the Restart dialog shows `arrow.clockwise` and
   Empty Trash shows `trash.slash` — the same glyph as the launcher row the user just activated.
   Custom commands use `terminal`, the backup flows `square.and.arrow.up` / `.down`. Symbols render
   through `SymbolImage` (`Core/SymbolImage.swift`), never raw `Image(systemName:)`, because some
@@ -191,7 +191,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   only ever told apart by the icon's shape, which the action-derived icon now owns.
   `MessageHUDController.show(message:tone:)` (the pill; see below) takes the same `DialogTone` for its
   status dot, so the pill and the dialogs speak one tint vocabulary even though they render it
-  differently. `AppCore` derives a system command's tone from `SystemCommandFeedback.isNoOp`, so
+  differently. `AppCore` derives a system action's tone from `SystemActionFeedback.isNoOp`, so
   "Trash Emptied" reads `.success` and "Trash Is Already Empty" reads `.neutral`, rather than every
   pill defaulting to the same green dot regardless of whether anything happened.
 - **Button role.** `DialogAction.Role` colors the label: `.standard` `Color.primary`, `.destructive`
@@ -261,7 +261,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   `HUDPresenter.extend()`, so the bar slides to its new value in place instead of replaying the
   entrance.
 - **`MessageHUDController`'s pill** is every *other* transient
-  confirmation: Custom Commands and Snippets confirming a run, and every system command whose effect
+  confirmation: Custom Commands and Snippets confirming a run, and every system action whose effect
   is invisible (`Trash Emptied`, `Hidden Files Shown`, `Bluetooth Off`). One capsule shape, sized to
   its message (`hudMaxWidth 420` ceiling), clipped to a `Capsule()`, with the message first and a
   filled glyph trailing it: `checkmark.circle.fill` green for `.success`, `exclamationmark.circle.fill`

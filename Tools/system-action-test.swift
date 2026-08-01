@@ -2,7 +2,7 @@ import Foundation
 
 @main
 @MainActor
-struct SystemCommandTests {
+struct SystemActionTests {
     static var failures = 0
     static var passes = 0
 
@@ -16,47 +16,47 @@ struct SystemCommandTests {
     }
 
     static func main() {
-        let commands = SystemCommandCatalog.all
-        expect(commands.count == 31, "catalog contains all 31 agreed commands")
-        expect(commands.map(\.id) == SystemCommand.ID.allCases, "catalog covers every ID once")
-        expect(Set(commands.map(\.id)).count == commands.count, "IDs are unique")
-        expect(Set(commands.map(\.entryID)).count == commands.count, "entry IDs are unique")
-        expect(Set(commands.map { $0.name.lowercased() }).count == commands.count, "names are unique")
-        expect(commands.allSatisfy { !$0.name.isEmpty }, "names are non-empty")
-        expect(commands.allSatisfy { !$0.sfSymbol.isEmpty }, "symbols are non-empty")
+        let actions = SystemActionCatalog.all
+        expect(actions.count == 31, "catalog contains all 31 agreed actions")
+        expect(actions.map(\.id) == SystemAction.ID.allCases, "catalog covers every ID once")
+        expect(Set(actions.map(\.id)).count == actions.count, "IDs are unique")
+        expect(Set(actions.map(\.entryID)).count == actions.count, "entry IDs are unique")
+        expect(Set(actions.map { $0.name.lowercased() }).count == actions.count, "names are unique")
+        expect(actions.allSatisfy { !$0.name.isEmpty }, "names are non-empty")
+        expect(actions.allSatisfy { !$0.sfSymbol.isEmpty }, "symbols are non-empty")
 
-        for command in commands {
+        for action in actions {
             expect(
-                SystemCommandCatalog.command(forEntryID: command.entryID) == command,
-                "\(command.id.rawValue) round-trips through its entry ID")
-            if command.id == .quitAllApps {
-                expect(command.entryID == "command:quit-all-apps", "Quit All preserves its old key")
-            } else {
-                expect(command.entryID.hasPrefix("system-command:"), "\(command.id.rawValue) is namespaced")
-            }
+                SystemActionCatalog.action(forEntryID: action.entryID) == action,
+                "\(action.id.rawValue) round-trips through its entry ID")
+            expect(
+                action.entryID == "system-action:" + action.id.rawValue,
+                "\(action.id.rawValue) is namespaced")
         }
 
-        let confirmed: Set<SystemCommand.ID> = [.restart, .shutDown, .logOut, .emptyTrash, .quitAllApps]
+        let confirmed: Set<SystemAction.ID> = [
+            .restart, .shutDown, .logOut, .emptyTrash, .quitAllApps
+        ]
         expect(
-            Set(commands.filter { $0.confirmation != .none }.map(\.id)) == confirmed,
-            "only the agreed disruptive commands require confirmation")
-        for command in commands {
-            guard case .required(let title, let message) = command.confirmation else { continue }
+            Set(actions.filter { $0.confirmation != .none }.map(\.id)) == confirmed,
+            "only the agreed disruptive actions require confirmation")
+        for action in actions {
+            guard case .required(let title, let message) = action.confirmation else { continue }
             expect(
                 !title.isEmpty && !message.isEmpty,
-                "\(command.id.rawValue) carries confirmation copy")
+                "\(action.id.rawValue) carries confirmation copy")
         }
         expect(
-            SystemCommandCatalog.command(id: .quitAllApps).confirmation == .computed,
+            SystemActionCatalog.action(id: .quitAllApps).confirmation == .computed,
             "Quit All builds its own copy from the target count")
         expect(
-            SystemCommandCatalog.all.allSatisfy { SystemCommandCatalog.command(id: $0.id) == $0 },
-            "every command round-trips through its ID")
+            SystemActionCatalog.all.allSatisfy { SystemActionCatalog.action(id: $0.id) == $0 },
+            "every action round-trips through its ID")
         expect(
-            SystemCommandCatalog.command(forEntryID: "system-command:unknown") == nil,
+            SystemActionCatalog.action(forEntryID: "system-action:unknown") == nil,
             "unknown entry IDs are rejected")
         expect(
-            !commands.contains { $0.id.rawValue == "quit-all-apps-except-frontmost" },
+            !actions.contains { $0.id.rawValue == "quit-all-apps-except-frontmost" },
             "Quit All Except Frontmost remains out of scope")
 
         print("\(passes) passed, \(failures) failed")

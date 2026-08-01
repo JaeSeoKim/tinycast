@@ -160,6 +160,7 @@ final class AppCore: ObservableObject {
         hotKeys.onToggleClipboard = { [weak self] in self?.toggleClipboard() }
         hotKeys.onToggleEmoji = { [weak self] in self?.toggleEmoji() }
         hotKeys.onRunCustomCommand = { [weak self] id in self?.runCustomCommand(id: id) }
+        hotKeys.onRunSystemAction = { [weak self] id in self?.runSystemAction(id: id) }
         hotKeys.onRunWindowCommand = { [weak self] id in self?.runWindowCommand(id: id) }
         hotKeys.start(customCommandIDs: Set(customCommands.commands.map(\.id)))
         // Deliberately keeps running while `hotKeys.recordingAction` pauses Carbon: the recorder relies on the tap's rewritten flags to capture Hyper shortcuts.
@@ -378,15 +379,17 @@ final class AppCore: ObservableObject {
         }
         // Commands dispatch before the palette hides: mode-switching commands keep it open.
         if app.kind == .command {
-            if let id = CustomCommand.id(fromEntryID: app.id) {
-                runCustomCommand(id: id)
-            } else {
-                runCommand(app)
-            }
+            runCommand(app)
             return
         }
-        if app.kind == .systemCommand {
-            runSystemCommand(app)
+        if app.kind == .customCommand {
+            guard let id = CustomCommand.id(fromEntryID: app.id) else { return }
+            runCustomCommand(id: id)
+            return
+        }
+        if app.kind == .systemAction {
+            guard let action = SystemActionCatalog.action(forEntryID: app.id) else { return }
+            runSystemAction(id: action.id)
             return
         }
         if app.kind == .windowCommand {
@@ -405,7 +408,7 @@ final class AppCore: ObservableObject {
         case .snippet:
             let snippetID = String(app.id.dropFirst("snippet:".count))
             expandSnippet(id: snippetID, targetApp: previous)
-        case .command, .systemCommand, .windowCommand:
+        case .command, .customCommand, .systemAction, .windowCommand:
             break  // handled above
         }
     }
@@ -434,56 +437,61 @@ final class AppCore: ObservableObject {
             cycleOnRepeat: settings.windowCycleOnRepeat)
     }
 
-    // MARK: - System commands
+    // MARK: - System actions
 
-    private func runSystemCommand(_ entry: AppEntry) {
-        guard let command = SystemCommandCatalog.command(forEntryID: entry.id) else { return }
-        let previousApp = windowController.previousApp
+    /// The one funnel for both palette activation and an action's global hotkey, so the confirmation
+    /// gate can't be bypassed by either — nor by a favorite slot or the compact bar.
+    ///
+    /// Some actions target the app the user was in (Hide Others, Quit All), so the palette hands back the
+    /// app it displaced; a hotkey pressed with the palette closed targets whatever is frontmost.
+    func runSystemAction(id: SystemAction.ID) {
+        let target =
+            windowController.isVisible
+            ? windowController.previousApp : NSWorkspace.shared.frontmostApplication
         if windowController.isVisible { hidePalette(restoreFocus: false) }
-        Task { await perform(command, previousApp: previousApp) }
+        Task { await perform(SystemActionCatalog.action(id: id), previousApp: target) }
     }
 
-    /// The one place a system command runs, so the confirmation gate can't be bypassed by the palette, a favorite slot, or the compact bar.
-    private func perform(_ command: SystemCommand, previousApp: NSRunningApplication?) async {
-        switch command.confirmation {
+    private func perform(_ action: SystemAction, previousApp: NSRunningApplication?) async {
+        switch action.confirmation {
         case .computed:
             await quitAllApps()
             return
         case .required(let title, let message):
             guard
                 await confirm(
-                    title: title, message: message, symbol: command.sfSymbol,
-                    confirmTitle: command.name)
+                    title: title, message: message, symbol: action.sfSymbol,
+                    confirmTitle: action.name)
             else { return }
         case .none:
             break
         }
         do {
-            var feedback: SystemCommandFeedback?
-            if command.id == .setVolume {
-                let current = try SystemCommandRunner.currentVolume()
+            var feedback: SystemActionFeedback?
+            if action.id == .setVolume {
+                let current = try SystemActionRunner.currentVolume()
                 guard let selected = await dialogs.pickVolume(current: current) else { return }
-                try SystemCommandRunner.setVolume(selected)
+                try SystemActionRunner.setVolume(selected)
             } else {
-                feedback = try await SystemCommandRunner.run(command.id, previousApp: previousApp)
+                feedback = try await SystemActionRunner.run(action.id, previousApp: previousApp)
             }
-            if Self.showsVolumeFeedback.contains(command.id) {
-                let state = try SystemCommandRunner.outputState()
+            if Self.showsVolumeFeedback.contains(action.id) {
+                let state = try SystemActionRunner.outputState()
                 volumeHUD.show(level: state.level, muted: state.muted)
             } else if let feedback {
                 messageHUD.show(
                     message: feedback.title, tone: feedback.isNoOp ? .neutral : .success)
             }
-        } catch let failure as SystemCommandFailure {
-            await presentFailure(command: command, failure: failure)
+        } catch let failure as SystemActionFailure {
+            await presentFailure(action: action, failure: failure)
         } catch {
             await presentFailure(
-                command: command, failure: SystemCommandFailure(error.localizedDescription))
+                action: action, failure: SystemActionFailure(error.localizedDescription))
         }
     }
 
-    /// Commands that change the output level or mute state; macOS only draws its own HUD for real media keys, so these get Tinycast's.
-    private static let showsVolumeFeedback: Set<SystemCommand.ID> = [
+    /// Actions that change the output level or mute state; macOS only draws its own HUD for real media keys, so these get Tinycast's.
+    private static let showsVolumeFeedback: Set<SystemAction.ID> = [
         .setVolume, .volumeUp, .volumeDown, .toggleMute,
         .volume0, .volume25, .volume50, .volume75, .volume100
     ]
@@ -509,15 +517,15 @@ final class AppCore: ObservableObject {
     }
 
     /// Sync entry point for the runner's own async completion handlers, which can't await.
-    func presentSystemCommandFailure(id: SystemCommand.ID, failure: SystemCommandFailure) {
-        Task { await presentFailure(command: SystemCommandCatalog.command(id: id), failure: failure) }
+    func presentSystemActionFailure(id: SystemAction.ID, failure: SystemActionFailure) {
+        Task { await presentFailure(action: SystemActionCatalog.action(id: id), failure: failure) }
     }
 
-    private func presentFailure(command: SystemCommand, failure: SystemCommandFailure) async {
+    private func presentFailure(action: SystemAction, failure: SystemActionFailure) async {
         guard
             await dialogs.reportFailure(
-                title: "“\(command.name)” Failed", message: failure.message,
-                symbol: command.sfSymbol,
+                title: "“\(action.name)” Failed", message: failure.message,
+                symbol: action.sfSymbol,
                 recovery: failure.settings == nil ? nil : "Open System Settings…"),
             let settings = failure.settings
         else { return }
@@ -574,7 +582,7 @@ final class AppCore: ObservableObject {
                     await confirm(
                         title: command.name,
                         message: "Are you sure you want to run this command?\n\n\(command.command)",
-                        symbol: Self.customCommandSymbol, confirmTitle: "Run",
+                        symbol: CustomCommand.sfSymbol, confirmTitle: "Run",
                         tone: .neutral, confirmRole: .standard)
                 else { return }
             }
@@ -627,14 +635,11 @@ final class AppCore: ObservableObject {
         guard
             await dialogs.reportFailure(
                 title: "“\(command.name)” Failed", message: message,
-                symbol: Self.customCommandSymbol,
+                symbol: CustomCommand.sfSymbol,
                 recovery: suggestsShellEnvironment ? "Open Settings…" : nil)
         else { return }
-        showSettings(tab: .customCommands)
+        showSettings(tab: .commands)
     }
-
-    /// The same glyph a custom command draws on its launcher row, so its dialogs are recognizably its own.
-    private static let customCommandSymbol = "terminal"
 
     /// Quits the app behind an entry; a no-op (palette stays put) when it isn't running.
     func quit(_ app: AppEntry) {
@@ -653,7 +658,7 @@ final class AppCore: ObservableObject {
                 title: targets.count == 1
                     ? "Quit 1 application?" : "Quit \(targets.count) applications?",
                 message: "Applications with unsaved changes will ask you to save.",
-                symbol: SystemCommandCatalog.command(id: .quitAllApps).sfSymbol,
+                symbol: SystemActionCatalog.action(id: .quitAllApps).sfSymbol,
                 confirmTitle: "Quit All")
         else { return }
         for app in targets { app.terminate() }

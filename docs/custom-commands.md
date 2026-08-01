@@ -86,7 +86,7 @@ and the presenter itself refuses a second dialog while one is up, so a held shor
 Tinycast dismisses an open palette before starting a custom command. A zero exit status is silent; a
 launch failure or non-zero status opens a Tinycast dialog with the bounded error detail. When the
 status is 127 and **Load shell environment** is off, the dialog adds a one-line hint and an **Open
-Settings…** button that lands on the Custom Commands pane — the hint is gated on the status alone, not
+Settings…** button that lands on the Commands pane — the hint is gated on the status alone, not
 on grepping stderr, since 127 is equally a plain typo. The command string itself is never logged.
 
 ### Manual checks

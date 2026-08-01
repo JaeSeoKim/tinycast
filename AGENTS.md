@@ -58,6 +58,10 @@ Never break these without an explicit task to do so.
 - **The flat `selection` index must match the visible row order exactly**, including the inline
   calculator card at index 0 when present. Selection is the single source of truth for highlight /
   activation.
+- **`AppEntry.Kind` is the only thing that says what an entry is.** One case per launcher section, per
+  `VisibilityStore` category and per Settings pane — never re-derive a category by sniffing an entry ID
+  (that's what `isCustomCommand` used to do). A new category means a new case, a slice in
+  `AppIndex.publishEntries()`, and the matching filter in `LauncherList.rows`, in that same order.
 - **While a footer menu is open the palette search field never resigns first responder** — input is
   frozen instead (resigning shifts the text a point or two). See [palette.md](docs/palette.md).
 - **Focus restoration is load-bearing.** Paste targets the recorded `previousApp` and requires the
@@ -77,11 +81,11 @@ Never break these without an explicit task to do so.
   confirmation gate lives in `AppCore` and not in the runner. All of `Core/Snippets/` compiles into
   `Tools/snippets-test.swift` (the harness globs the directory), so the model, Markdown serializer,
   template engine, repository and keyword policies stay Foundation-only, and the AppKit files there
-  keep their dependencies to what the harness can stub. `Core/SystemCommand.swift` is also
-  Foundation-only for `Tools/system-command-test.swift`; platform effects belong in
-  `SystemCommandRunner`, while confirmation and failure UI remain in `AppCore`.
+  keep their dependencies to what the harness can stub. `Core/SystemAction.swift` is also
+  Foundation-only for `Tools/system-action-test.swift`; platform effects belong in
+  `SystemActionRunner`, while confirmation and failure UI remain in `AppCore`.
   `Core/VolumeLevel.swift` is the same split for `Tools/volume-test.swift` — the 5% step grid and the
-  percentage string are pure Foundation, CoreAudio lives in `SystemCommandRunner` and observation in
+  percentage string are pure Foundation, CoreAudio lives in `SystemActionRunner` and observation in
   `VolumeState`, so both the HUD and the Set Volume slider walk one tested grid. `Core/WindowManagement/`
   splits the same way for `Tools/window-command-test.swift`: `WindowCommand.swift`, `WindowLayout.swift`
   and `WindowActionMemory.swift` stay Foundation + CoreGraphics and pure (no AX, no `NSScreen`, no
@@ -136,7 +140,7 @@ Never break these without an explicit task to do so.
   Escape cancels, and Cancel always renders leading** (the left button), matching macOS convention.
 - **A dialog has three independent axes; never let one infer another.** The **icon**
   (`DialogRequest.symbol`, required) is always the *subject's* own glyph — the command being
-  confirmed uses its `SystemCommand.sfSymbol`, so the Restart dialog shows the same icon as the
+  confirmed uses its `SystemAction.sfSymbol`, so the Restart dialog shows the same icon as the
   Restart row. Tone never picks an icon. The **tone** (`DialogTone`: `.neutral` / `.success` /
   `.danger`) tints only that glyph. The **button** takes its color from `DialogAction.Role`
   (`.standard` white / `.destructive` red / `.cancel` secondary), so a red-glyph security warning can
@@ -172,7 +176,10 @@ Never break these without an explicit task to do so.
   standalone-harness input in full; `Core/WindowManagement/` is a pure geometry layer plus its one AX
   file; `Core/Theme.swift` is the design-token source; `Core/HotKey/` is the in-house hotkey stack.
 - `Tinycast/Features/` — SwiftUI views: `RootPaletteView`, `Launcher/`, `Clipboard/`, `Calculator/`,
-  `Emoji/`, `Settings/`, `About/`, `Onboarding/`, plus shared `PopoverMenu`.
+  `Emoji/`, `Settings/`, `About/`, `Onboarding/`, plus shared `PopoverMenu`. Each `SettingsTab` maps to
+  one `…SettingsView` built on the `SettingsPane` / `SettingsCard` scaffold in `SettingsComponents.swift`;
+  the four launcher-category panes (Applications, System Settings, System Actions, Commands) are thin
+  wrappers over the shared `LauncherItemsCard`.
 - `Tinycast/App/` — `@main` app + delegate.
 - `Tools/` — standalone test harnesses and the emoji generator.
 - `.github/workflows/release.yml` — the entire release pipeline (see `docs/development.md`).

@@ -93,8 +93,8 @@ swiftc -swift-version 6 Tinycast/Core/CustomCommand.swift \
 swiftc -swift-version 6 Tinycast/Core/NotificationToken.swift \
     Tinycast/Core/Snippets/*.swift \
     Tools/snippets-test.swift -o /tmp/snippets-test && /tmp/snippets-test  # snippets
-swiftc -swift-version 6 Tinycast/Core/SystemCommand.swift Tools/system-command-test.swift \
-    -o /tmp/system-command-test && /tmp/system-command-test        # system command metadata + safety
+swiftc -swift-version 6 Tinycast/Core/SystemAction.swift Tools/system-action-test.swift \
+    -o /tmp/system-action-test && /tmp/system-action-test        # system action metadata + safety
 swiftc -swift-version 6 Tinycast/Core/VolumeLevel.swift Tools/volume-test.swift \
     -o /tmp/volume-test && /tmp/volume-test                        # volume step grid + percentage
 swiftc -swift-version 6 Tinycast/Core/WindowManagement/WindowCommand.swift \
@@ -105,8 +105,8 @@ swiftc -swift-version 6 Tinycast/Core/WindowManagement/WindowCommand.swift \
 
 `Tools/fuzz-test.swift` holds a **copy** of `FuzzyMatch` from `Tinycast/Core/AppIndex.swift` —
 change the scoring in one and mirror it in the other. The calc harness compiles the real engine
-sources, which is why `Tinycast/Core/Calculator/` must stay Foundation-only. The system-command harness
-similarly keeps `SystemCommand.swift` independent from AppKit and all command side effects.
+sources, which is why `Tinycast/Core/Calculator/` must stay Foundation-only. The system-action harness
+similarly keeps `SystemAction.swift` independent from AppKit and all command side effects.
 
 The clipboard harness likewise compiles the real `ClipboardStore.swift`, so that file must keep to
 Foundation + SQLite3 and depend on no other app source. Each case drives a store rooted in a

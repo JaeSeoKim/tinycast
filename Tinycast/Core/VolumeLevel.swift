@@ -1,7 +1,7 @@
 import Foundation
 
 /// The grid the volume commands move on, and how a level reads. Pure and Foundation-only so
-/// `Tools/volume-test.swift` compiles it standalone; CoreAudio lives in `SystemCommandRunner`.
+/// `Tools/volume-test.swift` compiles it standalone; CoreAudio lives in `SystemActionRunner`.
 enum VolumeLevel {
     /// 20 steps of 5%, which keeps every level round and puts the 0/25/50/75/100 presets on the grid.
     static let steps = 20
