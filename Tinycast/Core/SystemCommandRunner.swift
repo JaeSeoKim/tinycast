@@ -40,8 +40,6 @@ enum SystemCommandRunner {
         let stderr: String
     }
 
-    private static let volumeStep: Float32 = 1 / 16
-
     /// What a command reports back once it succeeded. Only commands whose effect is otherwise invisible
     /// return one, since Show Desktop or Hide Others are their own confirmation.
     static func run(_ id: SystemCommand.ID, previousApp: NSRunningApplication?) async throws
@@ -82,9 +80,9 @@ enum SystemCommandRunner {
         case .toggleMute:
             try toggleMute()
         case .volumeUp:
-            try changeVolume(by: volumeStep)
+            try stepVolume(up: true)
         case .volumeDown:
-            try changeVolume(by: -volumeStep)
+            try stepVolume(up: false)
         case .setVolume:
             break  // AppCore owns the value-picking dialog and calls setVolume directly.
         case .volume0:
@@ -277,8 +275,8 @@ enum SystemCommandRunner {
         return device
     }
 
-    private static func changeVolume(by delta: Float32) throws {
-        try setVolume(try currentVolume() + delta)
+    private static func stepVolume(up: Bool) throws {
+        try setVolume(Float32(VolumeLevel.stepped(Double(try currentVolume()), up: up)))
     }
 
     private static func toggleMute() throws {

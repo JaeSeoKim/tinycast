@@ -71,19 +71,21 @@ the action, Escape cancels. Every dialog is Tinycast's own: confirmations, failu
 Volume slider all render through `DialogController` rather than an `NSAlert`
 (see [ui.md](ui.md#dialogs--hud)). Each confirmation carries the command's own icon — Restart shows
 `arrow.clockwise`, Empty Trash `trash.slash` — so the dialog is recognizably about the row that
-opened it. Volume and mute commands also show Tinycast's transient volume HUD,
-since macOS only draws its own for real media keys.
+opened it. Volume and mute commands also show Tinycast's transient volume HUD, since macOS only draws
+its own for real media keys. Volume Up/Down walk a 5% grid (`VolumeLevel.stepped`, covered by
+`Tools/volume-test.swift`): an off-grid level snaps to the next line rather than past it, so from 37%
+up lands on 40% and down on 35%, and repeated presses stay on round numbers.
 
-A command whose effect is invisible reports back through a pill (`HUDWindowController`, the same one
+A command whose effect is invisible reports back through a pill (`MessageHUDController`, the same one
 Custom Commands and Snippets confirm through) rather than finishing silently:
 `SystemCommandRunner.run` returns a `SystemCommandFeedback` naming the state it landed in
 (`Trash Emptied`, `Hidden Files Shown`, `Dark Appearance`, `Bluetooth Off`, `3 Disks Ejected`), and
 `AppCore` shows it with a `DialogTone` derived from the feedback's `isNoOp` flag: `.success` when
-something actually changed, `.neutral` when there was nothing to do, shown as the pill's leading status
-dot rather than a per-command icon, since the message already names the state. Commands that are
+something actually changed, `.neutral` when there was nothing to do, shown as the glyph trailing the
+message rather than a per-command icon, since the message already names the state. Commands that are
 their own confirmation, such as Show Desktop, Hide Others,
 Quit All and the power actions, return nothing. Volume and mute are the one case that stays on the
-palette's own square HUD, since that one has an actual level to show, not just a message.
+palette's own box HUD, since that one has an actual level and number to show, not just a message.
 
 **Nothing-to-do is an outcome, not a failure.** Empty Trash asks Finder for `count items of trash`
 first and reports `Trash Is Already Empty`, because Finder raises an error when told to empty an empty

@@ -1,36 +1,55 @@
 import SwiftUI
 
-/// The transient volume readout shown after a volume or mute command, since macOS only draws its own HUD for real media keys. A success/info confirmation for every other command is `HUDWindowController`'s pill instead, not this box, because that one has an actual level to show. Glass, because it is a floating control rather than a surface with content.
+/// The volume box: speaker glyph, level bar, level as a number. It takes the palette's surface
+/// recipe rather than glass — unlike the message pill it is a surface with content to read, not a
+/// floating control — so it reads as a sibling of the dialogs it appears alongside.
 struct VolumeHUDView: View {
     @ObservedObject var state: VolumeState
 
     var body: some View {
         VStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: symbol)
-                .font(.system(size: Theme.Size.dialogIcon, weight: .regular))
-                .symbolRenderingMode(.hierarchical)
+            SymbolImage(name: symbol, size: Theme.Size.dialogIcon)
                 .foregroundStyle(Color.primary)
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Theme.Colors.controlSurface)
-                Capsule()
-                    .fill(Color.white.opacity(state.muted ? 0.35 : 0.85))
-                    .frame(width: fill(level: state.muted ? 0 : state.level))
+            HStack(spacing: Theme.Spacing.md) {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Theme.Colors.controlSurface)
+                        Capsule()
+                            .fill(Color.white.opacity(state.muted ? 0.35 : 0.85))
+                            .frame(width: geometry.size.width * fill)
+                    }
+                }
+                .frame(height: Theme.Size.volumeTrackHeight)
+                // Muted prints the word rather than 0%: the bar is already empty, so a number would
+                // either contradict it or hide the level the user comes back to.
+                Text(state.muted ? "Muted" : VolumeLevel.percentage(state.level))
+                    .font(Theme.Typography.rowTrailing)
+                    .foregroundStyle(Theme.Colors.textSecondary)
+                    .monospacedDigit()
+                    .frame(width: Theme.Size.volumeReadout, alignment: .trailing)
             }
-            .frame(height: Theme.Size.volumeTrackHeight)
         }
-        .padding(Theme.Spacing.xxl)
+        // Asymmetric on purpose: 20pt of side padding costs a fifth of a 200pt box, where the same
+        // token on a 420pt dialog costs a twentieth. The bar is the content here, so it gets the room.
+        .padding(.vertical, Theme.Spacing.xxl)
+        .padding(.horizontal, Theme.Spacing.xl)
         .frame(width: Theme.Size.hudWidth, height: Theme.Size.hudHeight)
-        .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
+        .background(Color.black.opacity(Theme.Colors.panelDimming))
+        .background(VisualEffectView())
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
+        .panelEntrance()
+        // A repeat command slides the bar to its new value instead of cutting to it.
+        .animation(.easeOut(duration: Theme.Duration.exit), value: state.level)
+        .animation(.easeOut(duration: Theme.Duration.exit), value: state.muted)
+    }
+
+    private var fill: CGFloat {
+        state.muted ? 0 : VolumeLevel.clamped(state.level)
     }
 
     private var symbol: String {
         if state.muted || state.level == 0 { return "speaker.slash.fill" }
         return state.level < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill"
-    }
-
-    private func fill(level: Double) -> CGFloat {
-        let track = Theme.Size.hudWidth - Theme.Spacing.xxl * 2
-        return track * min(max(level, 0), 1)
     }
 }

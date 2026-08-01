@@ -16,7 +16,6 @@ extension DialogTone {
 struct DialogView: View {
     let request: DialogRequest
     let onChoose: (Int) -> Void
-    @State private var appeared = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xxl) {
@@ -57,14 +56,8 @@ struct DialogView: View {
         .background(Color.black.opacity(Theme.Colors.panelDimming))
         .background(VisualEffectView())
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
-        // Scales up inside the measured frame, so `fittingSize` is unaffected and nothing clips; the panel fades its window alpha over the same beat.
-        .scaleEffect(appeared ? 1 : Self.entryScale)
-        .onAppear {
-            withAnimation(.easeOut(duration: Theme.Duration.dialogOpen)) { appeared = true }
-        }
+        .panelEntrance()
     }
-
-    private static let entryScale: CGFloat = 0.94
 
     /// Cancel renders leading, matching macOS convention and the panel's Escape/Return keys, while `onChoose(index)` still dispatches against `request.actions`' original order so callers never have to think about display position.
     private var visualOrder: [Int] {

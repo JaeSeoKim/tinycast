@@ -95,6 +95,8 @@ swiftc -swift-version 6 Tinycast/Core/NotificationToken.swift \
     Tools/snippets-test.swift -o /tmp/snippets-test && /tmp/snippets-test  # snippets
 swiftc -swift-version 6 Tinycast/Core/SystemCommand.swift Tools/system-command-test.swift \
     -o /tmp/system-command-test && /tmp/system-command-test        # system command metadata + safety
+swiftc -swift-version 6 Tinycast/Core/VolumeLevel.swift Tools/volume-test.swift \
+    -o /tmp/volume-test && /tmp/volume-test                        # volume step grid + percentage
 swiftc -swift-version 6 Tinycast/Core/WindowManagement/WindowCommand.swift \
     Tinycast/Core/WindowManagement/WindowLayout.swift \
     Tinycast/Core/WindowManagement/WindowActionMemory.swift Tools/window-command-test.swift \

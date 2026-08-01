@@ -79,7 +79,10 @@ Never break these without an explicit task to do so.
   template engine, repository and keyword policies stay Foundation-only, and the AppKit files there
   keep their dependencies to what the harness can stub. `Core/SystemCommand.swift` is also
   Foundation-only for `Tools/system-command-test.swift`; platform effects belong in
-  `SystemCommandRunner`, while confirmation and failure UI remain in `AppCore`. `Core/WindowManagement/`
+  `SystemCommandRunner`, while confirmation and failure UI remain in `AppCore`.
+  `Core/VolumeLevel.swift` is the same split for `Tools/volume-test.swift` — the 5% step grid and the
+  percentage string are pure Foundation, CoreAudio lives in `SystemCommandRunner` and observation in
+  `VolumeState`, so both the HUD and the Set Volume slider walk one tested grid. `Core/WindowManagement/`
   splits the same way for `Tools/window-command-test.swift`: `WindowCommand.swift`, `WindowLayout.swift`
   and `WindowActionMemory.swift` stay Foundation + CoreGraphics and pure (no AX, no `NSScreen`, no
   clock — `WindowActionMemory` takes `now` as a parameter), while every `AXUIElement` call and the
@@ -141,10 +144,19 @@ Never break these without an explicit task to do so.
   through `SymbolImage`, not `Image(systemName:)`: some catalog symbols are bundled assets
   (`toggleBluetooth`). A button never prints its key cap; hovering it shows a `Tooltip`
   (`Core/Tooltip.swift`) instead, styled like the palette's own keycap chips.
-- **A transient readout is a HUD, not a dialog.** `DialogController`'s square box is volume/mute
-  only, since that one needs an actual level; every other success/info confirmation (system commands,
-  Custom Commands, Snippets) goes through `HUDWindowController`'s pill, a leading `statusDot` tinted
-  by the same `DialogTone` standing in for an icon. See [ui.md](docs/ui.md#dialogs--hud).
+- **A transient readout is a HUD, not a dialog.** `VolumeHUDController`'s box is volume/mute only,
+  since that one needs an actual level and number; every other success/info confirmation (system
+  commands, Custom Commands, Snippets) goes through `MessageHUDController`'s pill, whose trailing
+  glyph *is* its `DialogTone` — a pill has no subject to name, so the dialogs' icon rule doesn't
+  apply, and the mapping stays file-scoped so nothing can reach for it when building a
+  `DialogRequest`. Both are driven by `HUDPresenter`, which owns the one-at-a-time / auto-dismiss /
+  fade policy; a new HUD means a new presenter, not a second shape bolted onto an existing
+  controller. See [ui.md](docs/ui.md#dialogs--hud).
+- **Glass is for controls; content takes the panel recipe.** `glassEffect` needs a backdrop to lens,
+  so it only works *inside* a window that already has a `VisualEffectView` — the action capsule, the
+  menu circle, `PopoverMenu`, a dialog's buttons. On a bare borderless panel it falls back to an
+  opaque backing and shows as a dark edge. Both HUDs therefore use `black panelDimming` →
+  `VisualEffectView()` → `clipShape`, exactly like a dialog.
 - **Read [`docs/ui.md`](docs/ui.md) before any restyle or new view.** `Core/Theme.swift` is the single
   design-token source.
 - **`Core/EdgeDissolve.swift` and `Core/ThinScrollbar.swift` are off-limits.** Both are tuned by eye

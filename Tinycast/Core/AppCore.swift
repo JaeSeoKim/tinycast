@@ -113,7 +113,8 @@ final class AppCore: ObservableObject {
     let palette = PaletteViewModel()
 
     private lazy var windowController = PaletteWindowController(core: self)
-    private lazy var hud = HUDWindowController(settings: settings)
+    private lazy var messageHUD = MessageHUDController(settings: settings)
+    private let volumeHUD = VolumeHUDController()
     private let auxWindows = AuxWindowController()
     /// Every confirmation, failure report and value prompt in the app; it also guards against a held hotkey stacking dialogs.
     private let dialogs = DialogController()
@@ -468,9 +469,10 @@ final class AppCore: ObservableObject {
             }
             if Self.showsVolumeFeedback.contains(command.id) {
                 let state = try SystemCommandRunner.outputState()
-                dialogs.showVolumeHUD(level: state.level, muted: state.muted)
+                volumeHUD.show(level: state.level, muted: state.muted)
             } else if let feedback {
-                hud.show(message: feedback.title, tone: feedback.isNoOp ? .neutral : .success)
+                messageHUD.show(
+                    message: feedback.title, tone: feedback.isNoOp ? .neutral : .success)
             }
         } catch let failure as SystemCommandFailure {
             await presentFailure(command: command, failure: failure)
@@ -580,7 +582,9 @@ final class AppCore: ObservableObject {
                 command.command, loadingShellEnvironment: command.loadsShellEnvironment)
             guard outcome != .success else {
                 // Fires when the command finishes, not when it starts, so a slow one confirms late rather than lying early.
-                if command.showsConfirmation { self.hud.show(message: "Ran \(command.name)") }
+                if command.showsConfirmation {
+                    self.messageHUD.show(message: "Ran \(command.name)")
+                }
                 return
             }
             await presentCustomCommandFailure(command: command, outcome: outcome)
@@ -929,7 +933,7 @@ final class AppCore: ObservableObject {
             automaticGeneration: automaticGeneration,
             onDelivered: { [weak self] in
                 guard let self, let confirmation else { return }
-                self.hud.show(message: confirmation)
+                self.messageHUD.show(message: confirmation)
             })
     }
 }

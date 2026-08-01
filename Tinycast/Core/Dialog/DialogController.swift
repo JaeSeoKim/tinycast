@@ -7,10 +7,6 @@ import SwiftUI
 final class DialogController: NSObject, NSWindowDelegate {
     private var panel: DialogPanel?
     private var continuation: CheckedContinuation<Int, Never>?
-    private var hud: DialogPanel?
-    /// A snapshot for the HUD's read-only bar, distinct from the live `VolumeState` the Set Volume slider binds to.
-    private let hudVolume = VolumeState(level: 0)
-    private var hudDismissal: Task<Void, Never>?
 
     func confirm(
         title: String, message: String?, symbol: String, tone: DialogTone, confirmTitle: String,
@@ -61,33 +57,6 @@ final class DialogController: NSObject, NSWindowDelegate {
         return Float32(volume.level)
     }
 
-    /// Feedback for the volume and mute commands, which otherwise change the output with nothing on screen, since macOS only draws its own HUD for real media keys. Success/info toasts for other commands go through `HUDWindowController`'s pill instead, since this box's whole point is showing the level.
-    func showVolumeHUD(level: Float32, muted: Bool) {
-        hudVolume.level = Double(level)
-        hudVolume.muted = muted
-        if hud == nil {
-            let view = hostingView(
-                VolumeHUDView(state: hudVolume), width: Theme.Size.hudWidth,
-                minHeight: Theme.Size.hudHeight)
-            let panel = DialogPanel(content: view, acceptsKey: false)
-            place(panel, anchor: .hud)
-            panel.orderFrontRegardless()
-            hud = panel
-        }
-        hudDismissal?.cancel()
-        hudDismissal = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(Theme.Duration.hud))
-            guard !Task.isCancelled else { return }
-            self?.dismissHUD()
-        }
-    }
-
-    private func dismissHUD() {
-        hud?.orderOut(nil)
-        hud = nil
-        hudDismissal = nil
-    }
-
     private func present(_ request: DialogRequest) async -> Int {
         // Carbon hotkeys keep firing while a dialog is up; a held shortcut must not stack a second one, so the extra request resolves as a dismissal. Keyed on the continuation rather than the panel so a dialog still fading out doesn't swallow the next one.
         guard continuation == nil else { return request.cancelIndex }
@@ -96,7 +65,7 @@ final class DialogController: NSObject, NSWindowDelegate {
             let content = hostingView(
                 DialogView(request: request, onChoose: { [weak self] index in self?.finish(index) }),
                 width: Theme.Size.dialogWidth, minHeight: 0)
-            let panel = DialogPanel(content: content, acceptsKey: true)
+            let panel = DialogPanel(content: content)
             panel.delegate = self
             panel.onKey = { [weak self] key in
                 guard let self else { return }
@@ -105,15 +74,20 @@ final class DialogController: NSObject, NSWindowDelegate {
                     finish(request.cancelIndex)
                 case .confirm:
                     finish(request.defaultIndex)
-                case .adjust(let delta):
+                case .increment, .decrement:
+                    // The arrows walk the same grid the volume commands do, so keying the slider and
+                    // pressing Volume Up land on the same values.
                     guard let volume = request.volume else { return }
-                    volume.level = min(max(volume.level + delta, 0), 1)
+                    volume.level = VolumeLevel.stepped(volume.level, up: key == .increment)
                 }
             }
             self.panel = panel
-            place(panel, anchor: .center)
+            place(panel)
             // Non-activating like the palette: the dialog takes key focus for its own keys without pulling app focus away from whatever the user was in.
-            panel.fadeIn()
+            panel.fadeIn(duration: Theme.Duration.enter) {
+                panel.makeKeyAndOrderFront(nil)
+                panel.orderFrontRegardless()
+            }
         }
     }
 
@@ -126,7 +100,7 @@ final class DialogController: NSObject, NSWindowDelegate {
         closing?.delegate = nil
         closing?.onKey = nil
         continuation.resume(returning: index)
-        closing?.fadeOut()
+        closing?.fadeOut(duration: Theme.Duration.exit)
     }
 
     private func hostingView(_ view: some View, width: CGFloat, minHeight: CGFloat) -> NSView {
@@ -138,39 +112,17 @@ final class DialogController: NSObject, NSWindowDelegate {
         return hosting
     }
 
-    private enum Anchor {
-        case center
-        case hud
-    }
-
-    private func place(_ panel: NSPanel, anchor: Anchor) {
-        guard let screen = cursorScreen() else { return }
-        let visible = screen.visibleFrame
+    private func place(_ panel: NSPanel) {
+        guard let visible = NSScreen.underCursor?.visibleFrame else { return }
         let size = panel.frame.size
-        let origin: NSPoint
-        switch anchor {
-        case .center:
-            origin = NSPoint(
+        panel.setFrameOrigin(
+            NSPoint(
                 x: visible.midX - size.width / 2,
-                y: visible.midY - size.height / 2 + visible.height * Self.centerLift)
-        case .hud:
-            origin = NSPoint(
-                x: visible.midX - size.width / 2,
-                y: visible.minY + visible.height * Self.hudBottomFraction)
-        }
-        panel.setFrameOrigin(origin)
+                y: visible.midY - size.height / 2 + visible.height * Self.centerLift))
     }
 
     /// Optical centering: a dialog placed on the exact vertical middle reads low, the same reason the palette sits above center.
     private static let centerLift: CGFloat = 0.08
-    private static let hudBottomFraction: CGFloat = 0.12
-
-    /// The display the user is working on. `NSScreen.main` is the key window's screen, which an accessory app driving non-activating panels never reliably has.
-    private func cursorScreen() -> NSScreen? {
-        let mouse = NSEvent.mouseLocation
-        // NSMouseInRect, not `contains`: a pointer on a display's topmost row otherwise resolves to the display stacked above it.
-        return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
-    }
 
     // MARK: - NSWindowDelegate
 

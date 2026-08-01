@@ -14,7 +14,7 @@ struct VolumeSlider: View {
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let travel = max(width - Theme.Size.volumeKnob, 1)
-                let clamped = min(max(state.level, 0), 1)
+                let clamped = VolumeLevel.clamped(state.level)
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(Theme.Colors.controlSurface)
@@ -35,21 +35,16 @@ struct VolumeSlider: View {
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             let position = (value.location.x - Theme.Size.volumeKnob / 2) / travel
-                            state.level = min(max(position, 0), 1)
+                            state.level = VolumeLevel.clamped(position)
                         }
                 )
             }
             .frame(height: Theme.Size.volumeKnob)
-            Text(Self.percentage(state.level))
+            Text(VolumeLevel.percentage(state.level))
                 .font(Theme.Typography.rowTrailing)
                 .foregroundStyle(Theme.Colors.textSecondary)
                 .monospacedDigit()
-                // A fixed slot keeps the track from resizing as the number grows from 0% to 100%.
-                .frame(width: Theme.Size.rowIcon * 2, alignment: .trailing)
+                .frame(width: Theme.Size.volumeReadout, alignment: .trailing)
         }
-    }
-
-    static func percentage(_ level: Double) -> String {
-        "\(Int((min(max(level, 0), 1) * 100).rounded()))%"
     }
 }
