@@ -19,12 +19,22 @@ enum VolumeLevel {
         let exact = clamped(level) * Double(steps)
         // The nudge absorbs binary error — 0.4 * 20 is 8.000000000000002, which would otherwise
         // round up to 9 and leave a downward step standing still.
-        let line = up ? (exact + tolerance).rounded(.down) + 1 : (exact - tolerance).rounded(.up) - 1
+        let line =
+            up ? (exact + tolerance).rounded(.down) + 1 : (exact - tolerance).rounded(.up) - 1
         return clamped(line / Double(steps))
     }
 
     static func percentage(_ level: Double) -> String {
         "\(Int((clamped(level) * 100).rounded()))%"
+    }
+
+    /// The speaker glyph for a level. Shared by the HUD and the Set Volume slider so one level never
+    /// draws two different icons. It stops at two waves: three reads as a different, louder state
+    /// than the half-full bar beside it.
+    static func symbol(level: Double, muted: Bool = false) -> String {
+        let level = clamped(level)
+        if muted || level == 0 { return "speaker.slash.fill" }
+        return level < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"
     }
 
     private static let tolerance = 1e-6

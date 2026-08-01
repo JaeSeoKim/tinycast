@@ -71,8 +71,28 @@ struct VolumeLevelTests {
         // The preset commands sit on the grid, so a step after one of them is still round.
         for preset in [0, 0.25, 0.5, 0.75, 1.0] {
             let line = preset * Double(VolumeLevel.steps)
-            expect(line == line.rounded(), "the \(VolumeLevel.percentage(preset)) preset is on the grid")
+            expect(
+                line == line.rounded(),
+                "the \(VolumeLevel.percentage(preset)) preset is on the grid")
         }
+
+        // Speaker glyph: muted and silent both read as slashed, whatever the underlying level.
+        expect(
+            VolumeLevel.symbol(level: 0.8, muted: true) == "speaker.slash.fill", "muted is slashed")
+        expect(VolumeLevel.symbol(level: 0) == "speaker.slash.fill", "silent is slashed")
+        expect(VolumeLevel.symbol(level: 0.05) == "speaker.wave.1.fill", "a low level is one wave")
+        expect(VolumeLevel.symbol(level: 0.5) == "speaker.wave.2.fill", "half is two waves")
+        expect(VolumeLevel.symbol(level: 1) == "speaker.wave.2.fill", "full stops at two waves")
+        expect(
+            VolumeLevel.symbol(level: 2) == VolumeLevel.symbol(level: 1),
+            "an out-of-range level clamps first")
+        // The bands only ever climb, so a rising level can never draw a quieter glyph.
+        let bands = stride(from: 0.0, through: 1.0, by: VolumeLevel.step)
+            .map { VolumeLevel.symbol(level: $0) }
+        expect(
+            zip(bands, bands.dropFirst()).allSatisfy { $0 <= $1 },
+            "the glyph never steps backwards as the level rises")
+        expect(Set(bands).count == 3, "every band is reachable on the step grid")
 
         // Readout.
         expect(VolumeLevel.percentage(0) == "0%", "zero reads 0%")

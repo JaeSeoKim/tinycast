@@ -6,7 +6,7 @@ struct VolumeSlider: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: state.level == 0 ? "speaker.slash.fill" : "speaker.fill")
+            Image(systemName: VolumeLevel.symbol(level: state.level))
                 .font(Theme.Typography.menuIcon)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(Theme.Colors.textSecondary)

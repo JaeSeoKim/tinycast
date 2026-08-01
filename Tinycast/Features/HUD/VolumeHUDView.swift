@@ -8,8 +8,11 @@ struct VolumeHUDView: View {
 
     var body: some View {
         VStack(spacing: Theme.Spacing.lg) {
-            SymbolImage(name: symbol, size: Theme.Size.dialogIcon)
-                .foregroundStyle(Color.primary)
+            SymbolImage(
+                name: VolumeLevel.symbol(level: state.level, muted: state.muted),
+                size: Theme.Size.dialogIcon
+            )
+            .foregroundStyle(Color.primary)
             HStack(spacing: Theme.Spacing.md) {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
@@ -46,10 +49,5 @@ struct VolumeHUDView: View {
 
     private var fill: CGFloat {
         state.muted ? 0 : VolumeLevel.clamped(state.level)
-    }
-
-    private var symbol: String {
-        if state.muted || state.level == 0 { return "speaker.slash.fill" }
-        return state.level < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.3.fill"
     }
 }
