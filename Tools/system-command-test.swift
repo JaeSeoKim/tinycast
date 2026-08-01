@@ -38,8 +38,20 @@ struct SystemCommandTests {
 
         let confirmed: Set<SystemCommand.ID> = [.restart, .shutDown, .logOut, .emptyTrash, .quitAllApps]
         expect(
-            Set(commands.filter { $0.confirmation == .required }.map(\.id)) == confirmed,
+            Set(commands.filter { $0.confirmation != .none }.map(\.id)) == confirmed,
             "only the agreed disruptive commands require confirmation")
+        for command in commands {
+            guard case .required(let title, let message) = command.confirmation else { continue }
+            expect(
+                !title.isEmpty && !message.isEmpty,
+                "\(command.id.rawValue) carries confirmation copy")
+        }
+        expect(
+            SystemCommandCatalog.command(id: .quitAllApps).confirmation == .computed,
+            "Quit All builds its own copy from the target count")
+        expect(
+            SystemCommandCatalog.all.allSatisfy { SystemCommandCatalog.command(id: $0.id) == $0 },
+            "every command round-trips through its ID")
         expect(
             SystemCommandCatalog.command(forEntryID: "system-command:unknown") == nil,
             "unknown entry IDs are rejected")

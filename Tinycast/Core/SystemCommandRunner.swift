@@ -69,7 +69,7 @@ enum SystemCommandRunner {
                     guard let error else { return }
                     Task { @MainActor in
                         AppCore.shared.presentSystemCommandFailure(
-                            name: "Show Screen Saver",
+                            id: .showScreenSaver,
                             failure: SystemCommandFailure(error.localizedDescription))
                     }
                 }

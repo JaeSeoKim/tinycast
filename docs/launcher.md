@@ -68,16 +68,18 @@ Tinycast remains locked to dark appearance even when Toggle System Appearance ch
 
 Restart, Shut Down, Log Out, Empty Trash and Quit All Applications confirm before execution: ↵ runs
 the action, Escape cancels. Every dialog is Tinycast's own: confirmations, failure reports and the Set
-Volume slider all render through `ModalWindowController` rather than an `NSAlert`
-(see [ui.md](ui.md#modals--hud)). Volume and mute commands also show Tinycast's transient volume HUD,
+Volume slider all render through `DialogController` rather than an `NSAlert`
+(see [ui.md](ui.md#dialogs--hud)). Each confirmation carries the command's own icon — Restart shows
+`arrow.clockwise`, Empty Trash `trash.slash` — so the dialog is recognizably about the row that
+opened it. Volume and mute commands also show Tinycast's transient volume HUD,
 since macOS only draws its own for real media keys.
 
 A command whose effect is invisible reports back through a pill (`HUDWindowController`, the same one
 Custom Commands and Snippets confirm through) rather than finishing silently:
 `SystemCommandRunner.run` returns a `SystemCommandFeedback` naming the state it landed in
 (`Trash Emptied`, `Hidden Files Shown`, `Dark Appearance`, `Bluetooth Off`, `3 Disks Ejected`), and
-`AppCore` shows it with a `ModalKind` derived from the feedback's `isNoOp` flag: `.success` when
-something actually changed, `.info` when there was nothing to do, shown as the pill's leading status
+`AppCore` shows it with a `DialogTone` derived from the feedback's `isNoOp` flag: `.success` when
+something actually changed, `.neutral` when there was nothing to do, shown as the pill's leading status
 dot rather than a per-command icon, since the message already names the state. Commands that are
 their own confirmation, such as Show Desktop, Hide Others,
 Quit All and the power actions, return nothing. Volume and mute are the one case that stays on the

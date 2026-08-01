@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Transient, non-interactive confirmation flashed at the bottom of the active screen after something succeeds. Any feature can use it — snippets confirm an insertion, custom commands confirm a run. A leading status dot, not an icon, carries the `ModalKind` tint: lighter weight for a glance-and-forget surface than the dialogs' full symbol.
+/// Transient, non-interactive confirmation flashed at the bottom of the active screen after something succeeds. Any feature can use it — snippets confirm an insertion, custom commands confirm a run. A leading status dot, not an icon, carries the `DialogTone` tint: lighter weight for a glance-and-forget surface than the dialogs' full symbol.
 @MainActor
 final class HUDWindowController {
     private let settings: AppSettings
@@ -12,10 +12,10 @@ final class HUDWindowController {
         self.settings = settings
     }
 
-    func show(message: String, kind: ModalKind = .success) {
+    func show(message: String, tone: DialogTone = .success) {
         dismissalTask?.cancel()
         let panel = panel ?? makePanel()
-        let host = NSHostingView(rootView: HUDView(message: message, tint: kind.tint))
+        let host = NSHostingView(rootView: HUDView(message: message, tint: tone.tint))
         // The capsule is only as wide as its message, so the panel takes its size from SwiftUI rather than a fixed frame.
         panel.contentView = host
         panel.setContentSize(host.fittingSize)

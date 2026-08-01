@@ -35,9 +35,14 @@ struct SystemCommand: Identifiable, Hashable, Sendable {
         case toggleBluetooth = "toggle-bluetooth"
     }
 
-    enum Confirmation: String, Sendable {
+    /// Whether running the command needs a confirmation first, and the copy for it. Every command
+    /// that needs one is destructive, so `AppCore` renders them all the same way and the catalog
+    /// only has to supply the words.
+    enum Confirmation: Hashable, Sendable {
         case none
-        case required
+        case required(title: String, message: String)
+        /// Quit All alone counts its targets before asking, so its copy is built at call time.
+        case computed
     }
 
     let id: ID
@@ -59,9 +64,15 @@ enum SystemCommandCatalog {
     }
 
     private static let byEntryID = Dictionary(uniqueKeysWithValues: all.map { ($0.entryID, $0) })
+    private static let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
 
     static func command(forEntryID entryID: String) -> SystemCommand? {
         byEntryID[entryID]
+    }
+
+    static func command(id: SystemCommand.ID) -> SystemCommand {
+        // Every ID is in `all` by construction, so a miss is a programmer error rather than a runtime case.
+        byID[id]!
     }
 
     private static func name(for id: SystemCommand.ID) -> String {
@@ -133,10 +144,23 @@ enum SystemCommandCatalog {
         }
     }
 
+    private static let sessionEndingMessage =
+        "Applications with unsaved changes may ask you to save."
+
     private static func confirmation(for id: SystemCommand.ID) -> SystemCommand.Confirmation {
         switch id {
-        case .restart, .shutDown, .logOut, .emptyTrash, .quitAllApps:
-            return .required
+        case .restart:
+            return .required(title: "Restart your Mac?", message: sessionEndingMessage)
+        case .shutDown:
+            return .required(title: "Shut down your Mac?", message: sessionEndingMessage)
+        case .logOut:
+            return .required(title: "Log out now?", message: sessionEndingMessage)
+        case .emptyTrash:
+            return .required(
+                title: "Empty Trash?",
+                message: "The items in the Trash will be permanently deleted.")
+        case .quitAllApps:
+            return .computed
         default:
             return .none
         }
