@@ -1,8 +1,7 @@
 import AppKit
 import SwiftUI
 
-// How every borderless surface in the app arrives and leaves: the window fades, its content scales.
-// Both halves share one duration pair so a dialog and a HUD read as the same gesture.
+// How every borderless surface arrives and leaves: the window fades, its content scales, both on one duration pair so a dialog and a HUD read as the same gesture.
 
 extension NSWindow {
     /// Fades the whole window — shadow included, which a content-only fade would leave snapping in
@@ -23,8 +22,7 @@ extension NSWindow {
         }
     }
 
-    /// Fades out and orders out. Safe to interrupt: `cancelFade` reinstates full opacity, and the
-    /// in-flight handler checks that before hiding, so a re-shown window is never pulled out from under itself.
+    /// Safe to interrupt: the handler checks opacity before hiding, so `cancelFade` can rescue a re-shown window.
     func fadeOut(duration: TimeInterval) {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
@@ -48,9 +46,8 @@ extension NSWindow {
 }
 
 extension View {
-    /// Scales up as the window fades in, so a surface arrives rather than appearing. Scaling *up*
-    /// inside the measured frame leaves `fittingSize` untouched and clips nothing, which is why this
-    /// is a `scaleEffect` rather than a `CALayer` transform fighting `NSHostingView` over `anchorPoint`.
+    /// Scales up as the window fades in. `scaleEffect` rather than a `CALayer` transform because scaling
+    /// *up* inside the measured frame leaves `fittingSize` untouched and clips nothing.
     func panelEntrance() -> some View {
         modifier(PanelEntrance())
     }

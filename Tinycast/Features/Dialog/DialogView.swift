@@ -1,8 +1,7 @@
 import SwiftUI
 
 extension DialogTone {
-    /// Tints the leading glyph. Deliberately not the buttons — those take their color from
-    /// `DialogAction.Role`, so a neutral prompt can still carry a destructive button.
+    /// Tints the leading glyph only; buttons take their color from `DialogAction.Role`.
     var tint: Color {
         switch self {
         case .neutral: return .secondary
@@ -59,7 +58,7 @@ struct DialogView: View {
         .panelEntrance()
     }
 
-    /// Cancel renders leading, matching macOS convention and the panel's Escape/Return keys, while `onChoose(index)` still dispatches against `request.actions`' original order so callers never have to think about display position.
+    /// Cancel renders leading per macOS convention; `onChoose(index)` still dispatches against the original order, so callers ignore display position.
     private var visualOrder: [Int] {
         request.actions.indices.sorted { rank(of: $0) < rank(of: $1) }
     }

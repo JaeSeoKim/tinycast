@@ -1,8 +1,7 @@
 import AppKit
 
-/// The volume readout, shown after a volume or mute command since macOS only draws its own HUD for
-/// real media keys and a CoreAudio change would otherwise be silent. It is a box rather than the
-/// message pill because a level needs an actual bar and number, not a one-line sentence.
+/// The volume readout, since macOS only draws its own HUD for real media keys and a CoreAudio change
+/// would otherwise be silent. A box, not the pill, because a level needs a bar and a number.
 @MainActor
 final class VolumeHUDController {
     private let presenter = HUDPresenter(
@@ -11,8 +10,7 @@ final class VolumeHUDController {
     private let state = VolumeState(level: 0)
 
     func show(level: Float32, muted: Bool) {
-        // The view observes `state`, so a repeat command animates the bar to its new value in place
-        // rather than rebuilding the panel and replaying the entrance.
+        // The view observes `state`, so a repeat animates the bar in place instead of replaying the entrance.
         let showing = presenter.isShowing
         state.level = VolumeLevel.clamped(Double(level))
         state.muted = muted
@@ -25,7 +23,6 @@ final class VolumeHUDController {
         }
     }
 
-    /// Sits a little higher than the message pill: the box is taller, and this keeps their optical
-    /// distance from the screen edge the same.
+    /// Higher than the pill, since the box is taller — this keeps their optical edge distance equal.
     private static let bottomFraction: CGFloat = 0.12
 }

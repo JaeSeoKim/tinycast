@@ -1,7 +1,6 @@
 import Foundation
 
-/// One button on a dialog. The role decides the label's color and nothing else; a dialog's severity
-/// lives in `DialogTone`, so a neutral dialog can still carry a destructive button and vice versa.
+/// One button. Role decides the label's color; severity lives in `DialogTone`, so a neutral dialog can still carry a destructive button.
 struct DialogAction {
     enum Role {
         case standard
@@ -24,8 +23,7 @@ enum DialogTone: Sendable {
 struct DialogRequest {
     let title: String
     var message: String?
-    /// The subject's own glyph: the command being confirmed, the thing that failed. Resolved through
-    /// `SymbolImage`, so a bundled asset name works as well as an SF Symbol.
+    /// The subject's own glyph, resolved through `SymbolImage` so a bundled asset name works too.
     let symbol: String
     var tone: DialogTone = .neutral
     var actions: [DialogAction]

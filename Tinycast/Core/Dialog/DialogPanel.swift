@@ -4,8 +4,7 @@ import Carbon.HIToolbox
 /// Borderless panel hosting one Tinycast dialog. Keys are intercepted in `sendEvent` rather than
 /// SwiftUI's `onKeyPress` so Esc/↵ work without depending on anything inside the dialog holding focus.
 final class DialogPanel: NSPanel {
-    /// What the panel saw, not what it means — a dialog with no accessory ignores the arrows, and
-    /// how far one step moves is the caller's business, not the panel's.
+    /// What the panel saw, not what it means: how far a step moves is the caller's business.
     enum Key {
         case cancel
         case confirm

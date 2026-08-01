@@ -1,11 +1,9 @@
 import Foundation
 
-/// The output level as a number: the grid the volume commands move on, and how a level reads.
-/// Pure and Foundation-only so `Tools/volume-test.swift` can compile it standalone — every CoreAudio
-/// call lives in `SystemCommandRunner`, every observation in `VolumeState`.
+/// The grid the volume commands move on, and how a level reads. Pure and Foundation-only so
+/// `Tools/volume-test.swift` compiles it standalone; CoreAudio lives in `SystemCommandRunner`.
 enum VolumeLevel {
-    /// 20 steps of 5%, so every level lands on a round number and the preset commands
-    /// (0/25/50/75/100) sit on the grid rather than between two of its lines.
+    /// 20 steps of 5%, which keeps every level round and puts the 0/25/50/75/100 presets on the grid.
     static let steps = 20
     static let step = 1 / Double(steps)
 
@@ -17,8 +15,7 @@ enum VolumeLevel {
     /// down on 35%. A level already on the grid moves a full step.
     static func stepped(_ level: Double, up: Bool) -> Double {
         let exact = clamped(level) * Double(steps)
-        // The nudge absorbs binary error — 0.4 * 20 is 8.000000000000002, which would otherwise
-        // round up to 9 and leave a downward step standing still.
+        // The nudge absorbs binary error: 0.4 * 20 is 8.000000000000002, which would round up to 9 and leave a downward step standing still.
         let line =
             up ? (exact + tolerance).rounded(.down) + 1 : (exact - tolerance).rounded(.up) - 1
         return clamped(line / Double(steps))
@@ -28,9 +25,7 @@ enum VolumeLevel {
         "\(Int((clamped(level) * 100).rounded()))%"
     }
 
-    /// The speaker glyph for a level. Shared by the HUD and the Set Volume slider so one level never
-    /// draws two different icons. It stops at two waves: three reads as a different, louder state
-    /// than the half-full bar beside it.
+    /// Shared by the HUD and the slider so one level never draws two different icons. Stops at two waves.
     static func symbol(level: Double, muted: Bool = false) -> String {
         let level = clamped(level)
         if muted || level == 0 { return "speaker.slash.fill" }

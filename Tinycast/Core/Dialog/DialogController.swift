@@ -1,8 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Tinycast's own dialogs. The app deliberately never shows an `NSAlert`: confirmations, failures and
-/// the volume control all render in the palette's design system.
+/// Tinycast's own dialogs. `NSAlert` is never used: its nested run loop lets Carbon hotkeys stack dialogs.
 @MainActor
 final class DialogController: NSObject, NSWindowDelegate {
     private var panel: DialogPanel?
@@ -29,8 +28,7 @@ final class DialogController: NSObject, NSWindowDelegate {
         _ = await present(request)
     }
 
-    /// A failure report: something already went wrong, as opposed to `confirm`'s "about to happen".
-    /// Returns true when the user chose the recovery action rather than dismissing.
+    /// Something already went wrong, as opposed to `confirm`'s "about to happen". True if the user took the recovery action.
     func reportFailure(title: String, message: String, symbol: String, recovery: String?) async
         -> Bool {
         var actions = [DialogAction(title: "OK", role: .cancel)]
@@ -58,7 +56,7 @@ final class DialogController: NSObject, NSWindowDelegate {
     }
 
     private func present(_ request: DialogRequest) async -> Int {
-        // Carbon hotkeys keep firing while a dialog is up; a held shortcut must not stack a second one, so the extra request resolves as a dismissal. Keyed on the continuation rather than the panel so a dialog still fading out doesn't swallow the next one.
+        // A held hotkey must not stack dialogs, so the extra request resolves as a dismissal. Keyed on the continuation, not the panel, so one still fading out doesn't swallow the next.
         guard continuation == nil else { return request.cancelIndex }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
@@ -75,15 +73,14 @@ final class DialogController: NSObject, NSWindowDelegate {
                 case .confirm:
                     finish(request.defaultIndex)
                 case .increment, .decrement:
-                    // The arrows walk the same grid the volume commands do, so keying the slider and
-                    // pressing Volume Up land on the same values.
+                    // Keying the slider lands on the same values Volume Up/Down produce.
                     guard let volume = request.volume else { return }
                     volume.level = VolumeLevel.stepped(volume.level, up: key == .increment)
                 }
             }
             self.panel = panel
             place(panel)
-            // Non-activating like the palette: the dialog takes key focus for its own keys without pulling app focus away from whatever the user was in.
+            // Non-activating like the palette: takes key focus without pulling the user out of whatever they were in.
             panel.fadeIn(duration: Theme.Duration.enter) {
                 panel.makeKeyAndOrderFront(nil)
                 panel.orderFrontRegardless()

@@ -1,10 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Everything the two HUDs agree on: one panel at a time, replace rather than stack, fade in, sit
-/// out its welcome, fade away. They differ only in what goes inside, where it sits, and how long it
-/// dwells — so those are the initializer's arguments and nothing else is duplicated between
-/// `MessageHUDController` and `VolumeHUDController`.
+/// Everything the two HUDs agree on: one panel at a time, replace rather than stack, fade in, dwell,
+/// fade away. What they don't share — content, anchor, dwell — is what the initializer takes.
 @MainActor
 final class HUDPresenter {
     /// Where the panel sits above the bottom of the visible frame.
@@ -25,14 +23,11 @@ final class HUDPresenter {
         self.screen = screen
     }
 
-    /// Shows `view`, replacing whatever is up. Pass `size` for a fixed-size readout; leave it nil to
-    /// let SwiftUI measure, which is how the pill tracks the width of its message.
+    /// Replaces whatever is up. `size` nil lets SwiftUI measure, which is how the pill tracks its message.
     func show(_ view: some View, size: CGSize? = nil) {
         let panel = panel ?? make()
         let host = NSHostingView(rootView: view)
-        // Size the window from this local, never from `host.frame` afterwards: attaching a content
-        // view resizes it to the window's current content rect, which is zero on a fresh panel — and
-        // a zero-width window then "centers" with its leading edge on the screen's midline.
+        // Never size from `host.frame` after attaching: AppKit resets it to the window's content rect, zero on a fresh panel, and a zero-width window "centers" with its leading edge on the midline.
         let content = size ?? host.fittingSize
         host.setFrameSize(content)
         panel.setContentSize(content)
@@ -47,8 +42,7 @@ final class HUDPresenter {
         scheduleDismissal()
     }
 
-    /// Re-arms the dismissal for a panel whose content updates itself through an observable, so a
-    /// repeated command extends the HUD instead of rebuilding — and re-running its entrance animation.
+    /// Re-arms the dismissal for content that updates through an observable, so a repeat extends rather than replays.
     func extend() {
         guard let panel, panel.isVisible else { return }
         panel.cancelFade()

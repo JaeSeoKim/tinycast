@@ -21,8 +21,7 @@ struct MessageHUDView: View {
         .padding(.vertical, Theme.Spacing.lg)
         .frame(maxWidth: Theme.Size.hudMaxWidth, alignment: .leading)
         .fixedSize()
-        // The palette's surface recipe, not glass: Liquid Glass has nothing to lens on a panel of its
-        // own and falls back to an opaque backing, which shows as a dark edge outside the capsule.
+        // Not glass: with nothing to lens on a panel of its own it falls back to an opaque backing, showing as a dark edge outside the capsule.
         .background(Color.black.opacity(Theme.Colors.panelDimming))
         .background(VisualEffectView())
         .clipShape(Capsule())
