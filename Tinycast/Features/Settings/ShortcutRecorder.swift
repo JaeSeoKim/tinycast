@@ -163,7 +163,8 @@ private final class CaptureSession: ObservableObject {
             handler: { [weak self, weak hotKeys] event in
                 let all = event.modifierFlags
                 let flags = all.intersection([.command, .option, .control, .shift])
-                let hasOthers = !all.isDisjoint(with: [.function, .capsLock])
+                // `.function` only: `.capsLock` is the latch state, and testing it would make a recorder refuse every double-tap while Caps Lock is on.
+                let hasOthers = all.contains(.function)
                 let timestamp = event.timestamp
                 MainActor.assumeIsolated {
                     guard let self else { return }

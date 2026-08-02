@@ -19,11 +19,13 @@ final class HotKeyManager: ObservableObject {
         }
     }
 
-    /// Read-only to callers, who observe `needsAccessibility` to surface the grant a double-tap binding requires.
     let doubleTapMonitor = DoubleTapMonitor()
 
     private let center = HotKeyCenter()
     private var doubleTaps: [DoubleTapModifier: HotKeyAction] = [:]
+    // Reused: `conflictOwner` and `syncDoubleTaps` each decode once per candidate action, so a per-call coder would allocate dozens of times per edit.
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
     private let boundKey = "boundAppBundleIDs"
     private let boundPaneKey = "boundPaneBundleIDs"
     private let boundCustomCommandKey = "boundCustomCommandIDs"
@@ -68,14 +70,15 @@ final class HotKeyManager: ObservableObject {
             let json = UserDefaults.standard.string(forKey: action.defaultsKey),
             let data = json.data(using: .utf8)
         else { return nil }
-        return try? JSONDecoder().decode(HotKeyBinding.self, from: data)
+        return try? decoder.decode(HotKeyBinding.self, from: data)
     }
 
     /// Persists (or clears, when `nil`) the binding, swaps the live registration, and publishes so the launcher and recorders re-render.
     func setBinding(_ binding: HotKeyBinding?, for action: HotKeyAction) {
         objectWillChange.send()
+        let previous = self.binding(for: action)
         if let binding,
-            let data = try? JSONEncoder().encode(binding),
+            let data = try? encoder.encode(binding),
             let json = String(data: data, encoding: .utf8) {
             UserDefaults.standard.set(json, forKey: action.defaultsKey)
         } else {
@@ -101,7 +104,10 @@ final class HotKeyManager: ObservableObject {
         case .togglePalette, .toggleClipboard, .toggleEmoji, .systemAction, .windowCommand:
             break
         }
-        syncDoubleTaps()
+        // Rebuilding the map re-decodes every candidate action, so skip it unless a double-tap is actually entering or leaving — the common combo edit changes nothing in it.
+        if previous?.doubleTapModifier != nil || binding?.doubleTapModifier != nil {
+            syncDoubleTaps()
+        }
     }
 
     /// The display name of whatever else `binding` is bound to (or `nil` if free), driving the recorder's "Used by …" message. Comparing whole bindings means double-taps get conflict detection on the same terms as combos — two actions can never claim the same modifier.

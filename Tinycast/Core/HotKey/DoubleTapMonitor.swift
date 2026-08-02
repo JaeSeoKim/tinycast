@@ -28,7 +28,7 @@ final class DoubleTapMonitor: ObservableObject {
     /// True only while something is bound and the tap can't be created; the recorder surfaces it next to the binding.
     @Published private(set) var needsAccessibility = false
 
-    /// Fired on the second release of a bound modifier; the owner turns it into an action.
+    /// Fired on the second *release* of a bound modifier, so it is already up by the time the action runs.
     var onDoubleTap: ((DoubleTapModifier) -> Void)?
 
     /// Set while a recorder is capturing, so editing a binding can't trigger it (mirrors `HotKeyCenter.isPaused`).
@@ -47,6 +47,12 @@ final class DoubleTapMonitor: ObservableObject {
     private var sessionTokens: [NotificationToken] = []
     private var sessionActive = true
     private var loggedTapFailure = false
+
+    // Isolated so teardown runs on main; the tap holds an unretained pointer to `self`, so it must not outlive it. This is an AppCore-owned singleton today, so it only matters if one is ever recreated.
+    isolated deinit {
+        tearDownTap()
+        stopHealthTimer()
+    }
 
     func start() {
         installObserversIfNeeded()
@@ -89,8 +95,9 @@ final class DoubleTapMonitor: ObservableObject {
         return held
     }
 
+    // Only `fn`, never `maskAlphaShift`: that bit tracks the Caps Lock *latch*, not a press, so testing it would disqualify every tap for as long as Caps Lock happens to be on.
     private static func hasOtherModifiers(in flags: CGEventFlags) -> Bool {
-        flags.contains(.maskSecondaryFn) || flags.contains(.maskAlphaShift)
+        flags.contains(.maskSecondaryFn)
     }
 
     // MARK: - Tap lifecycle

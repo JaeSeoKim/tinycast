@@ -1,7 +1,6 @@
 import Foundation
 
-/// Drives `DoubleTapDetector` on a virtual clock. `tap` is the whole vocabulary: a press at `at`,
-/// a release `hold` later, both as lone-modifier snapshots.
+/// Drives `DoubleTapDetector` on a virtual clock, so every window boundary is exact rather than timed.
 @MainActor
 private struct Keyboard {
     var detector = DoubleTapDetector()
@@ -24,7 +23,6 @@ private struct Keyboard {
         if let modifier = detector.handle(.otherInput, at: time) { fired.append(modifier) }
     }
 
-    /// A clean press-and-release of one modifier.
     mutating func tap(
         _ modifier: DoubleTapModifier, at time: TimeInterval, hold: TimeInterval = 0.05
     ) {
@@ -167,7 +165,8 @@ struct DoubleTapDetectorTests {
         withFn.release(other: true, at: 0.05)
         withFn.press([.command], other: true, at: 0.10)
         withFn.release(other: true, at: 0.15)
-        expect(withFn.fired, [], "fn or Caps Lock alongside disqualifies the press")
+        // Only momentary keys may map to `hasOtherModifiers`: a latched bit (Caps Lock's `maskAlphaShift`) would disqualify every press for as long as it stays set, exactly as fn does here.
+        expect(withFn.fired, [], "fn held alongside disqualifies the press")
 
         // The poison clears once the extra modifier is gone.
         var recovered = Keyboard()

@@ -43,10 +43,15 @@ at `HotKeyBinding`.
 
 `DoubleTapDetector` is the recognizer: Foundation-only, pure, and clock-injected (`now` is a caller-
 supplied monotonic timestamp), so `Tools/hotkey-test.swift` drives it without an event tap. A **tap**
-is a press that starts from no modifiers held, keeps exactly one of the four held with no `fn` or
-Caps Lock alongside, sees no key press or mouse click, and is released within `maxHold` (250 ms — the
-same window `HyperKeyTap` calls a quick press). A **double-tap** is a second tap of the same modifier
+is a press that starts from no modifiers held, keeps exactly one of the four held with no `fn`
+alongside, sees no key press or mouse click, and is released within `maxHold` (250 ms — the same
+window `HyperKeyTap` calls a quick press). A **double-tap** is a second tap of the same modifier
 starting within `maxGap` (300 ms) of the first one's release.
+
+Only *momentary* keys may feed `hasOtherModifiers`. Caps Lock must not: `maskAlphaShift` tracks the
+**latch**, not a press, so testing it would disqualify every tap for as long as Caps Lock is on and
+silently kill the feature. Caps Lock is still ineligible as a *binding* — that is what the Hyper Key
+is for.
 
 It **fires on the second release, not the second press**. The modifier is then already up when the
 action runs, so the palette never opens with a phantom ⌘ held and focus restoration isn't polluted —

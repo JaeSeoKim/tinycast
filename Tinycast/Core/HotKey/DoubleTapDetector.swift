@@ -8,7 +8,7 @@ struct DoubleTapDetector {
     static let maxGap: TimeInterval = 0.30
 
     enum Input: Sendable {
-        /// A modifier transition: which of the four eligible modifiers are now held, and whether anything else (fn, Caps Lock) is down alongside.
+        /// A modifier transition: which of the four eligible modifiers are now held, and whether `fn` is down alongside.
         case modifiers(Set<DoubleTapModifier>, hasOtherModifiers: Bool)
         /// A key press or mouse click, which turns the press in flight into a chord.
         case otherInput
