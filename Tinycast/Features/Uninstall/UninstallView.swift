@@ -88,11 +88,14 @@ private struct UninstallRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
+            // The glyph is smaller than an app icon but sits in the same `rowIcon` slot every other
+            // list uses, so titles line up at one x across the palette and switching modes doesn't
+            // jog the column. The slot is also the hit target, which is why it takes the tap.
             SymbolImage(name: glyph, size: Theme.Size.checkbox)
-                .frame(width: Theme.Size.checkbox, height: Theme.Size.checkbox)
                 .foregroundStyle(candidate.isLocked ? Theme.Colors.textTertiary : .primary)
+                .frame(width: Theme.Size.rowIcon, height: Theme.Size.rowIcon)
                 .contentShape(Rectangle())
-                // Only the glyph toggles on a single click; the rest of the row selects.
+                // Only the checkbox toggles on a single click; the rest of the row selects.
                 .onTapGesture(perform: onToggle)
                 .tooltip(candidate.lockReason)
             Text(candidate.name)
