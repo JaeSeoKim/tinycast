@@ -1,6 +1,6 @@
 import Foundation
 
-/// Owns all global shortcut bindings: persistence, Carbon registration (via `HotKeyCenter`), conflict lookup, and dispatch.
+/// Owns all global shortcut bindings: persistence, registration with the two engines (`HotKeyCenter` for combos, `DoubleTapMonitor` for double-tapped modifiers), conflict lookup, and dispatch.
 @MainActor
 final class HotKeyManager: ObservableObject {
     var onTogglePalette: (() -> Void)?
@@ -10,32 +10,40 @@ final class HotKeyManager: ObservableObject {
     var onRunSystemAction: ((SystemAction.ID) -> Void)?
     var onRunWindowCommand: ((WindowCommand.ID) -> Void)?
 
-    /// The recorder currently capturing keystrokes, or `nil`; keeping this as plain app state makes recorders glitch-free, and any active recorder pauses Carbon so the typed combo can't fire a hotkey.
+    /// The recorder currently capturing keystrokes, or `nil`; keeping this as plain app state makes recorders glitch-free, and any active recorder pauses both engines so the shortcut being typed can't fire the binding it's replacing.
     @Published var recordingAction: HotKeyAction? {
-        didSet { center.isPaused = recordingAction != nil }
+        didSet {
+            let recording = recordingAction != nil
+            center.isPaused = recording
+            doubleTapMonitor.isPaused = recording
+        }
     }
 
+    /// Read-only to callers, who observe its `status` to surface the Accessibility grant a double-tap binding needs.
+    let doubleTapMonitor = DoubleTapMonitor()
+
     private let center = HotKeyCenter()
+    private var doubleTaps: [DoubleTapModifier: HotKeyAction] = [:]
     private let boundKey = "boundAppBundleIDs"
     private let boundPaneKey = "boundPaneBundleIDs"
     private let boundCustomCommandKey = "boundCustomCommandIDs"
 
     func start(customCommandIDs: Set<UUID>) {
-        register(.togglePalette)
-        register(.toggleClipboard)
-        register(.toggleEmoji)
-        for bundleID in boundBundleIDs { register(.app(bundleID: bundleID)) }
-        for bundleID in boundPaneBundleIDs { register(.settingsPane(bundleID: bundleID)) }
         let stale = Set(boundCustomCommandIDs).subtracting(customCommandIDs)
         for id in stale {
             UserDefaults.standard.removeObject(forKey: HotKeyAction.customCommand(id: id).defaultsKey)
         }
-        let live = Set(boundCustomCommandIDs).intersection(customCommandIDs)
-        persistBoundCustomCommandIDs(live)
-        for id in live { register(.customCommand(id: id)) }
-        // Fixed catalogs, so there's no index to maintain — `register` no-ops on an unbound item.
-        for id in SystemAction.ID.allCases { register(.systemAction(id: id)) }
-        for id in WindowCommand.ID.allCases { register(.windowCommand(id: id)) }
+        persistBoundCustomCommandIDs(Set(boundCustomCommandIDs).intersection(customCommandIDs))
+
+        // `register` no-ops on an unbound item, so the fixed catalogs need no index of their own.
+        for action in candidateActions { register(action) }
+
+        doubleTapMonitor.onDoubleTap = { [weak self] modifier in
+            guard let self, let action = doubleTaps[modifier] else { return }
+            perform(action)
+        }
+        doubleTapMonitor.start()
+        syncDoubleTaps()
     }
 
     /// Bundle IDs that currently have a per-app hotkey — lets `start()` know which records to load and lets launcher rows show keycaps.
@@ -48,64 +56,72 @@ final class HotKeyManager: ObservableObject {
         UserDefaults.standard.stringArray(forKey: boundPaneKey) ?? []
     }
 
-    /// Custom-command UUIDs with a Carbon binding, indexed separately so startup can re-register them.
+    /// Custom-command UUIDs with a binding, indexed separately so startup can re-register them.
     var boundCustomCommandIDs: [UUID] {
         (UserDefaults.standard.stringArray(forKey: boundCustomCommandKey) ?? [])
             .compactMap(UUID.init(uuidString:))
     }
 
-    func shortcut(for action: HotKeyAction) -> KeyShortcut? {
+    func binding(for action: HotKeyAction) -> HotKeyBinding? {
         // The stored value is a JSON *string* (a legacy package format); anything else reads as unbound.
         guard
             let json = UserDefaults.standard.string(forKey: action.defaultsKey),
             let data = json.data(using: .utf8)
         else { return nil }
-        return try? JSONDecoder().decode(KeyShortcut.self, from: data)
+        return try? JSONDecoder().decode(HotKeyBinding.self, from: data)
     }
 
-    /// Persists (or clears, when `nil`) the binding, swaps the live Carbon registration, and publishes so the launcher and recorders re-render.
-    func setShortcut(_ shortcut: KeyShortcut?, for action: HotKeyAction) {
+    /// Persists (or clears, when `nil`) the binding, swaps the live registration, and publishes so the launcher and recorders re-render.
+    func setBinding(_ binding: HotKeyBinding?, for action: HotKeyAction) {
         objectWillChange.send()
-        if let shortcut,
-            let data = try? JSONEncoder().encode(shortcut),
+        if let binding,
+            let data = try? JSONEncoder().encode(binding),
             let json = String(data: data, encoding: .utf8) {
             UserDefaults.standard.set(json, forKey: action.defaultsKey)
-            register(action)
         } else {
             UserDefaults.standard.removeObject(forKey: action.defaultsKey)
-            center.unregister(id: action.defaultsKey)
         }
+        // Unregister unconditionally: the previous binding may have been a combo even when the new one isn't.
+        center.unregister(id: action.defaultsKey)
+        register(action)
+
         switch action {
         case .app(let bundleID):
             var set = Set(boundBundleIDs)
-            if shortcut == nil { set.remove(bundleID) } else { set.insert(bundleID) }
+            if binding == nil { set.remove(bundleID) } else { set.insert(bundleID) }
             UserDefaults.standard.set(Array(set), forKey: boundKey)
         case .settingsPane(let bundleID):
             var set = Set(boundPaneBundleIDs)
-            if shortcut == nil { set.remove(bundleID) } else { set.insert(bundleID) }
+            if binding == nil { set.remove(bundleID) } else { set.insert(bundleID) }
             UserDefaults.standard.set(Array(set), forKey: boundPaneKey)
         case .customCommand(let id):
             var set = Set(boundCustomCommandIDs)
-            if shortcut == nil { set.remove(id) } else { set.insert(id) }
+            if binding == nil { set.remove(id) } else { set.insert(id) }
             persistBoundCustomCommandIDs(set)
         case .togglePalette, .toggleClipboard, .toggleEmoji, .systemAction, .windowCommand:
             break
         }
+        syncDoubleTaps()
     }
 
-    /// The display name of whatever else `shortcut` is bound to (or `nil` if free), driving the recorder's "Used by …" message.
-    func conflictOwner(of shortcut: KeyShortcut, excluding action: HotKeyAction) -> String? {
-        var candidates: [HotKeyAction] = [.togglePalette, .toggleClipboard, .toggleEmoji]
-        candidates += boundBundleIDs.map { .app(bundleID: $0) }
-        candidates += boundPaneBundleIDs.map { .settingsPane(bundleID: $0) }
-        candidates += boundCustomCommandIDs.map { .customCommand(id: $0) }
-        candidates += SystemAction.ID.allCases.map { .systemAction(id: $0) }
-        candidates += WindowCommand.ID.allCases.map { .windowCommand(id: $0) }
-        for candidate in candidates
-        where candidate != action && self.shortcut(for: candidate) == shortcut {
+    /// The display name of whatever else `binding` is bound to (or `nil` if free), driving the recorder's "Used by …" message. Comparing whole bindings means double-taps get conflict detection on the same terms as combos — two actions can never claim the same modifier.
+    func conflictOwner(of binding: HotKeyBinding, excluding action: HotKeyAction) -> String? {
+        for candidate in candidateActions
+        where candidate != action && self.binding(for: candidate) == binding {
             return displayName(of: candidate)
         }
         return nil
+    }
+
+    /// Every action that could currently hold a binding: the three toggles, whatever the bound-ID indices name, and the two fixed catalogs.
+    private var candidateActions: [HotKeyAction] {
+        var actions: [HotKeyAction] = [.togglePalette, .toggleClipboard, .toggleEmoji]
+        actions += boundBundleIDs.map { .app(bundleID: $0) }
+        actions += boundPaneBundleIDs.map { .settingsPane(bundleID: $0) }
+        actions += boundCustomCommandIDs.map { .customCommand(id: $0) }
+        actions += SystemAction.ID.allCases.map { .systemAction(id: $0) }
+        actions += WindowCommand.ID.allCases.map { .windowCommand(id: $0) }
+        return actions
     }
 
     private func displayName(of action: HotKeyAction) -> String {
@@ -133,11 +149,22 @@ final class HotKeyManager: ObservableObject {
         }
     }
 
+    /// Hands a combo to Carbon; a double-tap needs no per-action registration — `syncDoubleTaps` rebuilds the whole modifier map instead.
     private func register(_ action: HotKeyAction) {
-        guard let shortcut = shortcut(for: action) else { return }
+        guard let shortcut = binding(for: action)?.shortcut else { return }
         center.register(id: action.defaultsKey, shortcut: shortcut) { [weak self] in
             self?.perform(action)
         }
+    }
+
+    /// Rebuilt wholesale rather than patched, so the map can't drift from what's on disk. Conflict detection keeps it one action per modifier.
+    private func syncDoubleTaps() {
+        doubleTaps = [:]
+        for action in candidateActions {
+            guard let modifier = binding(for: action)?.doubleTapModifier else { continue }
+            doubleTaps[modifier] = action
+        }
+        doubleTapMonitor.update(bound: Set(doubleTaps.keys))
     }
 
     private func perform(_ action: HotKeyAction) {

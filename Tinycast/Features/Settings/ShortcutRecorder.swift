@@ -2,13 +2,15 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-/// Shortcut recorder that's deliberately *not* a focusable control: the active recorder is just `HotKeyManager.recordingAction`, so clicking one is a plain state flip with no first-responder handoff, and `CaptureSession` captures keystrokes via a local monitor while it's active.
+/// Shortcut recorder that's deliberately *not* a focusable control: the active recorder is just `HotKeyManager.recordingAction`, so clicking one is a plain state flip with no first-responder handoff, and `CaptureSession` captures keystrokes via a local monitor while it's active. It records both binding kinds — type a combo, or double-tap ⌘ / ⌃ / ⌥ / ⇧.
 struct ShortcutRecorder: View {
     let action: HotKeyAction
 
     @ObservedObject private var hotKeys: HotKeyManager = AppCore.shared.hotKeys
     /// Observed so bound chips re-render when the Hyper Key display settings (✦ collapse, Include Shift) change how `keycaps` renders.
     @ObservedObject private var settings = AppCore.shared.settings
+    /// Observed so a bound double-tap surfaces its Accessibility warning the moment the grant changes.
+    @ObservedObject private var doubleTapMonitor = AppCore.shared.hotKeys.doubleTapMonitor
     @StateObject private var session = CaptureSession()
     @State private var hovered = false
 
@@ -50,8 +52,8 @@ struct ShortcutRecorder: View {
     private var content: some View {
         if isRecording {
             recordingLabel
-        } else if let shortcut = hotKeys.shortcut(for: action) {
-            boundLabel(shortcut)
+        } else if let binding = hotKeys.binding(for: action) {
+            boundLabel(binding)
         } else {
             Text("Record Shortcut")
                 .font(Theme.Typography.keyCap)
@@ -76,9 +78,22 @@ struct ShortcutRecorder: View {
         .font(Theme.Typography.keyCap)
     }
 
-    private func boundLabel(_ shortcut: KeyShortcut) -> some View {
+    /// A double-tap binding is dead without the Accessibility grant (the tap can't be created), so say so where the binding is.
+    private func needsAccessibility(_ binding: HotKeyBinding) -> Bool {
+        binding.doubleTapModifier != nil && doubleTapMonitor.status == .needsAccessibility
+    }
+
+    private func boundLabel(_ binding: HotKeyBinding) -> some View {
         HStack(spacing: Theme.Spacing.xs) {
-            ForEach(Array(shortcut.keycaps.enumerated()), id: \.offset) { _, cap in
+            if needsAccessibility(binding) {
+                Button { Permissions.openAccessibilitySettings() } label: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+                .help("Double-tap shortcuts need Accessibility access. Click to grant it.")
+            }
+            ForEach(Array(binding.keycaps.enumerated()), id: \.offset) { _, cap in
                 Text(cap)
                     .font(Theme.Typography.keyCap)
                     .foregroundStyle(.secondary)
@@ -95,7 +110,7 @@ struct ShortcutRecorder: View {
             }
             // Constant-width slot so the clear button doesn't shift the caps on hover.
             Button {
-                hotKeys.setShortcut(nil, for: action)
+                hotKeys.setBinding(nil, for: action)
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 11))
@@ -119,21 +134,25 @@ private final class CaptureSession: ObservableObject {
     private var monitors: [Any] = []
     private var resignObserver: NSObjectProtocol?
     private var conflictReset: Task<Void, Never>?
+    /// The same recognizer the global monitor uses, driven here by local monitors — recording a double-tap therefore needs no event tap and no permission.
+    private var detector = DoubleTapDetector()
 
     func start(action: HotKeyAction, hotKeys: HotKeyManager) {
         stop()
         heldModifiers = NSEvent.modifierFlags.intersection([.command, .option, .control, .shift])
 
-        // The handlers run on the main thread but AppKit predates actor annotations, hence assumeIsolated; only Sendable event pieces (key code, flags) cross in.
+        // The handlers run on the main thread but AppKit predates actor annotations, hence assumeIsolated; only Sendable event pieces (key code, flags, timestamp) cross in.
         if let monitor = NSEvent.addLocalMonitorForEvents(
             matching: .keyDown,
             handler: { [weak self, weak hotKeys] event in
                 let keyCode = Int(event.keyCode)
                 let flags = event.modifierFlags
+                let timestamp = event.timestamp
                 MainActor.assumeIsolated {
                     guard let self, let hotKeys else { return }
                     self.handleKeyDown(
-                        keyCode: keyCode, flags: flags, action: action, hotKeys: hotKeys)
+                        keyCode: keyCode, flags: flags, at: timestamp, action: action,
+                        hotKeys: hotKeys)
                 }
                 return nil  // always consume: no beeps, no leaking keys to the window
             }) {
@@ -142,9 +161,19 @@ private final class CaptureSession: ObservableObject {
 
         if let monitor = NSEvent.addLocalMonitorForEvents(
             matching: .flagsChanged,
-            handler: { [weak self] event in
-                let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-                MainActor.assumeIsolated { self?.heldModifiers = flags }
+            handler: { [weak self, weak hotKeys] event in
+                let all = event.modifierFlags
+                let flags = all.intersection([.command, .option, .control, .shift])
+                let hasOthers = !all.isDisjoint(with: [.function, .capsLock])
+                let timestamp = event.timestamp
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.heldModifiers = flags
+                    guard let hotKeys else { return }
+                    self.handleModifiers(
+                        flags, hasOtherModifiers: hasOthers, at: timestamp, action: action,
+                        hotKeys: hotKeys)
+                }
                 return event
             }) {
             monitors.append(monitor)
@@ -179,11 +208,16 @@ private final class CaptureSession: ObservableObject {
         conflictReset = nil
         conflictOwner = nil
         heldModifiers = []
+        detector.reset()
     }
 
     private func handleKeyDown(
-        keyCode: Int, flags: NSEvent.ModifierFlags, action: HotKeyAction, hotKeys: HotKeyManager
+        keyCode: Int, flags: NSEvent.ModifierFlags, at timestamp: TimeInterval,
+        action: HotKeyAction, hotKeys: HotKeyManager
     ) {
+        // A key press makes any modifier held at the moment part of a combo, not a tap.
+        _ = detector.handle(.otherInput, at: timestamp)
+
         let bareKey = flags.isDisjoint(with: [.command, .option, .control, .shift])
 
         if bareKey, keyCode == kVK_Escape {
@@ -192,18 +226,44 @@ private final class CaptureSession: ObservableObject {
         }
         // Plain Delete clears the existing binding.
         if bareKey, keyCode == kVK_Delete || keyCode == kVK_ForwardDelete {
-            hotKeys.setShortcut(nil, for: action)
+            hotKeys.setBinding(nil, for: action)
             hotKeys.recordingAction = nil
             return
         }
         // Not a bindable combo (e.g. a bare letter): swallow it and keep recording.
         guard let shortcut = KeyShortcut(keyCode: keyCode, modifierFlags: flags) else { return }
+        commit(.combo(shortcut), action: action, hotKeys: hotKeys)
+    }
 
-        if let owner = hotKeys.conflictOwner(of: shortcut, excluding: action) {
+    private func handleModifiers(
+        _ flags: NSEvent.ModifierFlags, hasOtherModifiers: Bool, at timestamp: TimeInterval,
+        action: HotKeyAction, hotKeys: HotKeyManager
+    ) {
+        // `NSEvent.timestamp` is seconds since boot — the same monotonic basis `DoubleTapMonitor` feeds the detector.
+        guard
+            let modifier = detector.handle(
+                .modifiers(Self.doubleTapModifiers(in: flags), hasOtherModifiers: hasOtherModifiers),
+                at: timestamp)
+        else { return }
+        commit(.doubleTap(modifier), action: action, hotKeys: hotKeys)
+    }
+
+    private static func doubleTapModifiers(in flags: NSEvent.ModifierFlags)
+        -> Set<DoubleTapModifier> {
+        var held: Set<DoubleTapModifier> = []
+        if flags.contains(.control) { held.insert(.control) }
+        if flags.contains(.option) { held.insert(.option) }
+        if flags.contains(.shift) { held.insert(.shift) }
+        if flags.contains(.command) { held.insert(.command) }
+        return held
+    }
+
+    private func commit(_ binding: HotKeyBinding, action: HotKeyAction, hotKeys: HotKeyManager) {
+        if let owner = hotKeys.conflictOwner(of: binding, excluding: action) {
             flashConflict(owner)
             return
         }
-        hotKeys.setShortcut(shortcut, for: action)
+        hotKeys.setBinding(binding, for: action)
         hotKeys.recordingAction = nil
     }
 

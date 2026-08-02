@@ -44,6 +44,7 @@
 		4F740AF85545CF4133C89B82 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4802942FF89B327A76432A9B /* AboutView.swift */; };
 		5568D02AE095293A15A7F30D /* RightClick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E9ACD504E016DFF6FE6C1B /* RightClick.swift */; };
 		57AE40420A6A5349AD092878 /* ShortcutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596ADD747B4546B1E3340094 /* ShortcutRecorder.swift */; };
+		5B0EFBA180AAFFBC08CC395A /* HotKeyBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB5C3FDF5037F730E23E53D /* HotKeyBinding.swift */; };
 		5DD58D999A421873EF3F2204 /* MessageHUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE6E09755C1AF3AFBA6107E /* MessageHUDController.swift */; };
 		5E49E070BDBB91A2829F5321 /* SnippetTextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309908BAB8C19B67F4608DA9 /* SnippetTextInjector.swift */; };
 		5F107A05A7EB05204465E89D /* VolumeHUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6256CC7C3F15BA05A216E820 /* VolumeHUDController.swift */; };
@@ -93,6 +94,7 @@
 		B20599ED24698C1E1F82AA10 /* ScrollIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CFD97FB49778B4358FA5189 /* ScrollIntent.swift */; };
 		B3A213551CD73CC364476E9F /* VolumeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFAB36FFE7E7108FB50E9134 /* VolumeSlider.swift */; };
 		B545BD845189EE893D8D8DE7 /* RaycastV1Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B33C0EA6D52B365B82752D /* RaycastV1Decoder.swift */; };
+		B7274961ABF4E8F82B2D3BB7 /* DoubleTapMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A75F40AED77119558D5FB4E4 /* DoubleTapMonitor.swift */; };
 		B810158281A87CBA2AB694D0 /* EmojiData.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79DB24EE452A7CA120B56FA6 /* EmojiData.generated.swift */; };
 		B9CED4B06F36998A67097FC5 /* SnippetMarkdownSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE084FDBE22B01204E7BEDA /* SnippetMarkdownSerializer.swift */; };
 		BA76E53A12248B3A9C42B4F9 /* Bundle+AppName.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FA43AD7C6FB00F555C52C2 /* Bundle+AppName.swift */; };
@@ -113,12 +115,14 @@
 		D322804853973E1C19F2A408 /* AppIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7CE23482F7DF563A268806 /* AppIndex.swift */; };
 		D3CA50C1CFABC31E6BC7B73C /* CalcPercent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A65B4EC5AE7E22594BFC5E /* CalcPercent.swift */; };
 		D3D2ACD2D94588786C2185AE /* CalcCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299122624B5E1BA2C5400478 /* CalcCurrency.swift */; };
+		D8704A9F0BC1A55B7BE4D717 /* DoubleTapModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A4B045F847659544FA182D4 /* DoubleTapModifier.swift */; };
 		DA2EBB18F026BD055E0270CD /* AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2EF9C70F8BC9571089D5EB /* AppLauncher.swift */; };
 		DA5BCA13045FF91B3FC8EB35 /* OnboardingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A9B4E6E477C30372C85F86 /* OnboardingState.swift */; };
 		DB04CC2AFEDD69D0676CA1D1 /* CalculatorCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C64C87569634E26E1BE99A91 /* CalculatorCardView.swift */; };
 		DCC36924E538C11136CEC060 /* LauncherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB7C545EFD9589A77AD7BE2 /* LauncherView.swift */; };
 		DEC660F280699E43AA028E8A /* HotKeyCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB0D6E17E2B2D6F2CB47E0D /* HotKeyCenter.swift */; };
 		E5072CA7D34BA877D97DF392 /* ImageThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99945F0952ADADBBEB9B8388 /* ImageThumbnail.swift */; };
+		E5CA6385C7A7EE754A506815 /* DoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E24E9328F01F2EE12120C38 /* DoubleTapDetector.swift */; };
 		E768AC4C8A6D6A1BA6218279 /* HUDPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D4192BC6F5A78012027488 /* HUDPresenter.swift */; };
 		E952B659AEB905A3B233F78B /* EmojiGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB94F0767AE0A5855FB22BF6 /* EmojiGridView.swift */; };
 		EDCEE2DDCF97C354AAC72BF2 /* RaycastImportV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6999B617ECF28C9021027B9 /* RaycastImportV2.swift */; };
@@ -144,6 +148,7 @@
 		0D045D032498C2294A99890E /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		0D16E927986D415F5386CDCF /* SystemAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAction.swift; sourceTree = "<group>"; };
 		0F50886DC766B9923C3875A5 /* RootPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootPaletteView.swift; sourceTree = "<group>"; };
+		1A4B045F847659544FA182D4 /* DoubleTapModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubleTapModifier.swift; sourceTree = "<group>"; };
 		1BCCED95A78DC5BED117E960 /* RaycastImportSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastImportSelection.swift; sourceTree = "<group>"; };
 		1DB0D6E17E2B2D6F2CB47E0D /* HotKeyCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyCenter.swift; sourceTree = "<group>"; };
 		23591B301A183579098AA019 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -200,6 +205,7 @@
 		74F450E10D107C1E30EA2BC6 /* EmojiIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiIndex.swift; sourceTree = "<group>"; };
 		79DB24EE452A7CA120B56FA6 /* EmojiData.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiData.generated.swift; sourceTree = "<group>"; };
 		7BC2DEA0A052116A92F9A539 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		7E24E9328F01F2EE12120C38 /* DoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubleTapDetector.swift; sourceTree = "<group>"; };
 		7FC5F0D4ECE8F3888DEB7642 /* NotificationToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationToken.swift; sourceTree = "<group>"; };
 		8214A6789CF8E3B5E16BB4C2 /* CursorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorScreen.swift; sourceTree = "<group>"; };
 		825AC18CE5DAFBEDA0CF3209 /* VisibilityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisibilityStore.swift; sourceTree = "<group>"; };
@@ -225,6 +231,7 @@
 		9FB750D045194AE34D39D792 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
 		A31288EC60144BD31C495FE2 /* ThinScrollbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinScrollbar.swift; sourceTree = "<group>"; };
 		A5447AEAD87BFE0E2D979B39 /* PaletteWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteWindowController.swift; sourceTree = "<group>"; };
+		A75F40AED77119558D5FB4E4 /* DoubleTapMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubleTapMonitor.swift; sourceTree = "<group>"; };
 		A76E4099082D59FA686C3485 /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardManager.swift; sourceTree = "<group>"; };
 		A8859C0E99A2125D85B1233C /* WindowMover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMover.swift; sourceTree = "<group>"; };
 		AD0A151A3B8AC682395E621D /* DialogController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogController.swift; sourceTree = "<group>"; };
@@ -236,6 +243,7 @@
 		B8A9B4E6E477C30372C85F86 /* OnboardingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingState.swift; sourceTree = "<group>"; };
 		BA7CE23482F7DF563A268806 /* AppIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIndex.swift; sourceTree = "<group>"; };
 		BB94F0767AE0A5855FB22BF6 /* EmojiGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiGridView.swift; sourceTree = "<group>"; };
+		BBB5C3FDF5037F730E23E53D /* HotKeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyBinding.swift; sourceTree = "<group>"; };
 		BDC43CFF6777C11BB880F398 /* ClipboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardStore.swift; sourceTree = "<group>"; };
 		C01FB6EBC716BBFD38471D95 /* PanelTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelTransition.swift; sourceTree = "<group>"; };
 		C1DE4D8B82F1D4AFB025FB24 /* SystemSettingsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsSettingsView.swift; sourceTree = "<group>"; };
@@ -517,6 +525,10 @@
 		CB742F7643800C43475DE213 /* HotKey */ = {
 			isa = PBXGroup;
 			children = (
+				7E24E9328F01F2EE12120C38 /* DoubleTapDetector.swift */,
+				1A4B045F847659544FA182D4 /* DoubleTapModifier.swift */,
+				A75F40AED77119558D5FB4E4 /* DoubleTapMonitor.swift */,
+				BBB5C3FDF5037F730E23E53D /* HotKeyBinding.swift */,
 				1DB0D6E17E2B2D6F2CB47E0D /* HotKeyCenter.swift */,
 				C6DC5A4706854493D23FD18A /* HyperKey.swift */,
 				919AC64DE9C9DC3A973A0B4E /* HyperKeyTap.swift */,
@@ -695,6 +707,9 @@
 				41164F539DD16E9FFEF44F8E /* DialogPanel.swift in Sources */,
 				7A2C6032E0DE0346DD10A747 /* DialogRequest.swift in Sources */,
 				CC911DB8A6FB9EDA3BBA1AAC /* DialogView.swift in Sources */,
+				E5CA6385C7A7EE754A506815 /* DoubleTapDetector.swift in Sources */,
+				D8704A9F0BC1A55B7BE4D717 /* DoubleTapModifier.swift in Sources */,
+				B7274961ABF4E8F82B2D3BB7 /* DoubleTapMonitor.swift in Sources */,
 				715F8A70F7A533D2EEEF6135 /* EdgeDissolve.swift in Sources */,
 				344D89B83B57C1DD1E7C0BFC /* EmojiCatalog.swift in Sources */,
 				B810158281A87CBA2AB694D0 /* EmojiData.generated.swift in Sources */,
@@ -708,6 +723,7 @@
 				AD2141EBF98A246BDA3BAB8E /* Gunzip.swift in Sources */,
 				CC97C121823B1DC61886BAFC /* HUDPanel.swift in Sources */,
 				E768AC4C8A6D6A1BA6218279 /* HUDPresenter.swift in Sources */,
+				5B0EFBA180AAFFBC08CC395A /* HotKeyBinding.swift in Sources */,
 				DEC660F280699E43AA028E8A /* HotKeyCenter.swift in Sources */,
 				903E82F78D3FCEF3A1AF3752 /* HotKeyManager.swift in Sources */,
 				14712478C37E6E8760CA47EC /* HyperKey.swift in Sources */,
