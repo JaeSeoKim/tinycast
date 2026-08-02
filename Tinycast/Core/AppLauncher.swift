@@ -12,6 +12,23 @@ enum AppLauncher {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
+    /// Finder's Get Info window. Unlike reveal there's no AppKit route, so this drives Finder over
+    /// Apple events — which means the first use raises the system Automation prompt. False lets the
+    /// caller say so; `-1743` is the user declining that prompt.
+    @MainActor
+    static func showInfoInFinder(_ url: URL) -> Bool {
+        let source = """
+            tell application "Finder"
+                activate
+                open information window of (POSIX file "\(url.path)" as alias)
+            end tell
+            """
+        guard let script = NSAppleScript(source: source) else { return false }
+        var errorInfo: NSDictionary?
+        script.executeAndReturnError(&errorInfo)
+        return errorInfo == nil
+    }
+
     /// Opens System Settings at the pane backed by the given extension bundle ID.
     @MainActor
     static func openSettingsPane(bundleID: String) {

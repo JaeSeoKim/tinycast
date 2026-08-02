@@ -1,0 +1,94 @@
+import Foundation
+
+/// Bytes plus whether the size walk hit its budget, so a huge tree can honestly read "at least".
+struct MeasuredSize: Hashable, Sendable {
+    var bytes: Int64 = 0
+    var isLowerBound = false
+
+    static let zero = MeasuredSize()
+
+    var formatted: String {
+        // `spellsOutZero` off: the default renders an empty folder as "Zero kB", which reads as a bug.
+        let size = bytes.formatted(.byteCount(style: .file, spellsOutZero: false))
+        return isLowerBound ? "≥ " + size : size
+    }
+}
+
+/// One item an uninstall would move to the Trash: the app bundle itself, or a leftover attributed to it.
+struct UninstallCandidate: Identifiable, Hashable, Sendable {
+    /// The standardized path, which is also what `UninstallSelection` stores.
+    let path: String
+    /// Row title: the file name, with `.app` stripped from the bundle.
+    let name: String
+    /// Row subtitle: the enclosing directory, tilde-abbreviated.
+    let locationLabel: String
+    let evidence: UninstallEvidence
+    let isDirectory: Bool
+    let size: MeasuredSize
+    let protection: UninstallProtection
+
+    var id: String { path }
+    var url: URL { URL(fileURLWithPath: path) }
+    var isLocked: Bool { !protection.isRemovable }
+    var lockReason: String? { protection.lockReason }
+}
+
+/// The result of a scan: everything attributable to one app, with the bundle pinned first.
+struct UninstallPlan: Equatable, Sendable {
+    let target: UninstallTarget
+    let candidates: [UninstallCandidate]
+    let isTargetRunning: Bool
+
+    var removableIDs: Set<UninstallCandidate.ID> {
+        Set(candidates.lazy.filter { !$0.isLocked }.map(\.id))
+    }
+
+    var lockedCount: Int { candidates.count { $0.isLocked } }
+
+    var totalBytes: Int64 { candidates.reduce(0) { $0 + $1.size.bytes } }
+
+    /// Everything removable except name matches — evidence that weak is the user's call to make.
+    var defaultSelection: UninstallSelection {
+        UninstallSelection(
+            plan: self,
+            checked: Set(
+                candidates.lazy.filter { !$0.isLocked && $0.evidence.isAutoChecked }.map(\.id)))
+    }
+}
+
+/// The only thing that can hold a checked set, and it can only ever hold removable ids.
+///
+/// Every mutation funnels through the same intersection with `plan.removableIDs`, so the invariant
+/// "a locked candidate is never checked" is one line to review rather than a rule spread across the
+/// view and the session.
+struct UninstallSelection: Equatable, Sendable {
+    private(set) var checked: Set<UninstallCandidate.ID>
+
+    init(plan: UninstallPlan, checked: Set<UninstallCandidate.ID> = []) {
+        self.checked = checked.intersection(plan.removableIDs)
+    }
+
+    mutating func toggle(_ id: UninstallCandidate.ID, in plan: UninstallPlan) {
+        if checked.contains(id) {
+            checked.remove(id)
+        } else if plan.removableIDs.contains(id) {
+            checked.insert(id)
+        }
+    }
+
+    mutating func setAll(_ on: Bool, in plan: UninstallPlan) {
+        checked = on ? plan.removableIDs : []
+    }
+
+    func isChecked(_ id: UninstallCandidate.ID) -> Bool { checked.contains(id) }
+
+    var count: Int { checked.count }
+
+    func bytes(in plan: UninstallPlan) -> Int64 {
+        plan.candidates.reduce(0) { $0 + (checked.contains($1.id) ? $1.size.bytes : 0) }
+    }
+
+    func candidates(in plan: UninstallPlan) -> [UninstallCandidate] {
+        plan.candidates.filter { checked.contains($0.id) }
+    }
+}
