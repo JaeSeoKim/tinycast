@@ -19,7 +19,7 @@ final class HotKeyManager: ObservableObject {
         }
     }
 
-    /// Read-only to callers, who observe its `status` to surface the Accessibility grant a double-tap binding needs.
+    /// Read-only to callers, who observe `needsAccessibility` to surface the grant a double-tap binding requires.
     let doubleTapMonitor = DoubleTapMonitor()
 
     private let center = HotKeyCenter()
@@ -113,7 +113,7 @@ final class HotKeyManager: ObservableObject {
         return nil
     }
 
-    /// Every action that could currently hold a binding: the three toggles, whatever the bound-ID indices name, and the two fixed catalogs.
+    /// Every action that could currently hold a binding — the search space for conflicts and for rebuilding the double-tap map.
     private var candidateActions: [HotKeyAction] {
         var actions: [HotKeyAction] = [.togglePalette, .toggleClipboard, .toggleEmoji]
         actions += boundBundleIDs.map { .app(bundleID: $0) }

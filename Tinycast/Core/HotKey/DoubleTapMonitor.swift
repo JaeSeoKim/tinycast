@@ -25,13 +25,8 @@ private func doubleTapEventTapCallback(
 /// Watches for a double-tapped lone modifier system-wide and reports the matching action. A third tap is unavoidable: Carbon can't register a modifier-only shortcut, `HyperKeyTap` only exists while a Hyper Key is configured, and the snippet listener must stay compilable by its own harness. This one is listen-only and installs *only* while something is bound to a double-tap.
 @MainActor
 final class DoubleTapMonitor: ObservableObject {
-    enum Status: Equatable {
-        case off
-        case active
-        case needsAccessibility
-    }
-
-    @Published private(set) var status: Status = .off
+    /// True only while something is bound and the tap can't be created; the recorder surfaces it next to the binding.
+    @Published private(set) var needsAccessibility = false
 
     /// Fired on the second release of a bound modifier; the owner turns it into an action.
     var onDoubleTap: ((DoubleTapModifier) -> Void)?
@@ -102,7 +97,7 @@ final class DoubleTapMonitor: ObservableObject {
 
     private func installObserversIfNeeded() {
         guard sessionTokens.isEmpty else { return }
-        // Fast user switching: another session owns the keyboard, so drop half-held state until this one is back.
+        // Fast user switching: another session owns the keyboard, so stop watching until this one is back.
         let center = NSWorkspace.shared.notificationCenter
         sessionTokens = [
             NotificationToken(
@@ -132,7 +127,7 @@ final class DoubleTapMonitor: ObservableObject {
         guard !bound.isEmpty, sessionActive else {
             tearDownTap()
             stopHealthTimer()
-            status = .off
+            needsAccessibility = false
             return
         }
         startHealthTimer()
@@ -162,7 +157,7 @@ final class DoubleTapMonitor: ObservableObject {
                 NSLog("Tinycast: Failed to create double-tap event tap")
                 loggedTapFailure = true
             }
-            status = .needsAccessibility
+            needsAccessibility = true
             return
         }
         loggedTapFailure = false
@@ -171,7 +166,7 @@ final class DoubleTapMonitor: ObservableObject {
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: port, enable: true)
-        status = .active
+        needsAccessibility = false
     }
 
     private func tearDownTap() {
@@ -212,7 +207,7 @@ final class DoubleTapMonitor: ObservableObject {
             installTapIfNeeded()
         } else if !Permissions.isAccessibilityTrusted() {
             tearDownTap()
-            status = .needsAccessibility
+            needsAccessibility = true
         } else if let tapPort, !CGEvent.tapIsEnabled(tap: tapPort) {
             CGEvent.tapEnable(tap: tapPort, enable: true)
         }

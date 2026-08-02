@@ -19,7 +19,7 @@ struct ShortcutRecorder: View {
     var body: some View {
         content
             .padding(.horizontal, Theme.Spacing.lg)
-            .frame(height: 24)
+            .frame(width: Theme.Size.shortcutRecorder, height: 24)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Radius.menu, style: .continuous)
                     .fill(Theme.Colors.cardFill)
@@ -64,7 +64,10 @@ struct ShortcutRecorder: View {
     private var recordingLabel: some View {
         Group {
             if let owner = session.conflictOwner {
+                // A third-party app name can outrun the fixed width; truncating beats resizing the box.
                 Text("Used by \(owner)")
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .foregroundStyle(.orange)
             } else if !session.heldModifiers.isEmpty {
                 // Collapsed so holding the Hyper key previews as "✦" while recording.
@@ -78,14 +81,10 @@ struct ShortcutRecorder: View {
         .font(Theme.Typography.keyCap)
     }
 
-    /// A double-tap binding is dead without the Accessibility grant (the tap can't be created), so say so where the binding is.
-    private func needsAccessibility(_ binding: HotKeyBinding) -> Bool {
-        binding.doubleTapModifier != nil && doubleTapMonitor.status == .needsAccessibility
-    }
-
     private func boundLabel(_ binding: HotKeyBinding) -> some View {
         HStack(spacing: Theme.Spacing.xs) {
-            if needsAccessibility(binding) {
+            // A double-tap binding is dead without the grant, so say so where the binding is.
+            if binding.doubleTapModifier != nil, doubleTapMonitor.needsAccessibility {
                 Button { Permissions.openAccessibilitySettings() } label: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)

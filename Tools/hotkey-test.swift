@@ -87,9 +87,9 @@ struct DoubleTapDetectorTests {
         for modifier in DoubleTapModifier.allCases {
             var keyboard = Keyboard()
             keyboard.tap(modifier, at: 0)
-            expect(keyboard.fired, [], "\(modifier.title): one tap alone doesn't fire")
+            expect(keyboard.fired, [], "\(modifier.rawValue): one tap alone doesn't fire")
             keyboard.tap(modifier, at: 0.15)
-            expect(keyboard.fired, [modifier], "\(modifier.title): a clean double-tap fires")
+            expect(keyboard.fired, [modifier], "\(modifier.rawValue): a clean double-tap fires")
         }
 
         // Firing is on the second release, not the second press.

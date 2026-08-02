@@ -51,6 +51,11 @@ enum Theme {
         static let keyCap: CGFloat = 18
         /// Settings shortcut-recorder keycap — smaller than the palette's `keyCap` chip.
         static let recorderKeyCap: CGFloat = 16
+        /// Fixed width for the settings shortcut recorder, so its box can't resize as it moves through
+        /// "Record Shortcut" → held modifiers → keycaps → "Used by …". Sized to the two widest states,
+        /// which land within a point of each other: a full ⌃⌥⇧⌘+Space chip row, and the longest
+        /// built-in conflict message ("Used by Clipboard History").
+        static let shortcutRecorder: CGFloat = 160
         static let menuButton: CGFloat = 36
         static let clipboardListWidth: CGFloat = 290
         static let emojiCell: CGFloat = 56

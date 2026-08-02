@@ -16,15 +16,5 @@ enum DoubleTapModifier: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    var title: String {
-        switch self {
-        case .control: "Control"
-        case .option: "Option"
-        case .shift: "Shift"
-        case .command: "Command"
-        }
-    }
-
-    /// The bound shortcut rendered as keycaps — the same glyph twice, which is what a double-tap reads as everywhere it's shown.
     var keycaps: [String] { [glyph, glyph] }
 }
