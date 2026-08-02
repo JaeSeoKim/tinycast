@@ -280,6 +280,30 @@ struct UninstallTests {
             "every bin directory is absolute or home-relative")
     }
 
+    /// The home directory holds the user's own work, so nothing there is ever a candidate. Asserting
+    /// the absence keeps a future root addition from quietly reopening it.
+    static func testHomeIsOutOfScope() {
+        expect(
+            !UninstallSearchRoot.all.contains { $0.path(home: home) == home },
+            "the home directory itself is never a search root")
+        expect(
+            UninstallSearchRoot.all.allSatisfy {
+                let path = $0.path(home: home)
+                return path.hasPrefix(home + "/Library/") || path.hasPrefix("/Library/")
+            },
+            "every root lives under a Library directory — never ~/Documents, ~/Dev or ~/Code")
+        // VS Code's CFBundleName is literally "Code", so it *would* match `~/Code` on name alone —
+        // the root table is the only thing standing between that and the user's source tree.
+        let code = identity(
+            bundleID: "com.microsoft.VSCode", name: "Visual Studio Code", bundleName: "Code")
+        expect(
+            UninstallRules.matchesDisplayName("Code", identity: code),
+            "the name rule alone would claim a folder called Code")
+        expect(
+            !UninstallSearchRoot.all.contains { $0.path(home: home) + "/Code" == home + "/Code" },
+            "so it matters that no root ever puts ~/Code in reach")
+    }
+
     // MARK: - Identity refusal
 
     static func testIdentityRefusal() {
@@ -393,10 +417,24 @@ struct UninstallTests {
                 == .userLocked,
             "Finder's Locked flag is its own case, because the user can clear it")
         expect(
+            classify(PathFacts(path: "/Library/Caches/com.foo.Bar", isOwnedByCurrentUser: false))
+                == .removable,
+            "ownership alone never locks a row — POSIX unlink is governed by the parent directory")
+        expect(
             classify(
-                PathFacts(path: "/Library/PrivilegedHelperTools/com.foo.Bar", isOwnedByCurrentUser: false))
+                PathFacts(
+                    path: "/tmp/com.foo.Bar", isOwnedByCurrentUser: false, parentIsSticky: true))
                 == .notOwned,
-            "a root-owned file is locked rather than attempted")
+            "except under a sticky parent, where only an owner may unlink")
+        expect(
+            classify(PathFacts(path: "/tmp/com.foo.Bar", parentIsSticky: true)) == .removable,
+            "a sticky parent is fine for something you do own")
+        expect(
+            classify(
+                PathFacts(
+                    path: "/usr/local/bin/code", isOwnedByCurrentUser: false,
+                    parentIsWritable: false)) == .parentNotWritable,
+            "a root-owned CLI link in a root-owned bin directory reports the parent, not the owner")
         expect(
             classify(PathFacts(path: "/Library/Caches/com.foo.Bar", parentIsWritable: false))
                 == .parentNotWritable,
@@ -413,7 +451,7 @@ struct UninstallTests {
         let everything = PathFacts(
             path: home + "/Library/Containers/com.foo.Bar", volumeIsReadOnly: true,
             isSystemRestricted: true, isUserImmutable: true, isOwnedByCurrentUser: false,
-            parentIsWritable: false)
+            parentIsWritable: false, parentIsSticky: true)
         expect(
             classify(everything) == .systemProtected,
             "precedence: a SIP path reports as system-protected, the most useful of its reasons")
@@ -559,6 +597,9 @@ struct UninstallTests {
             Set(roots.map { "\($0.base)/\($0.relativePath)" }).count == roots.count,
             "no root is listed twice")
         expect(roots.allSatisfy { !$0.relativePath.isEmpty }, "no root has an empty relative path")
+        expect(
+            !roots.contains { $0.relativePath == "." || $0.relativePath.hasPrefix("..") },
+            "no root escapes its base")
         expect(roots.allSatisfy { !$0.styles.isEmpty }, "every root enables at least one match style")
         expect(
             roots.allSatisfy { !$0.relativePath.hasPrefix("/") && !$0.relativePath.hasSuffix("/") },
@@ -597,6 +638,7 @@ struct UninstallTests {
         testGroupContainers()
         testDisplayNames()
         testPlugInsAndSymlinks()
+        testHomeIsOutOfScope()
         testIdentityRefusal()
         testPathSafety()
         testProtection()

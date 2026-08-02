@@ -51,8 +51,8 @@ enum UninstallScanner {
             try Task.checkCancellation()
             let rootPath = root.path(home: home)
             guard let names = childNames(of: rootPath) else { continue }
-            // The parent's writability is one property of the root, not of each match.
-            let parentIsWritable = FileManager.default.isWritableFile(atPath: rootPath)
+            // Permissions belong to the root, not to each match — one stat per root, not per row.
+            let parent = parentFacts(of: rootPath)
             for match in UninstallRules.matches(childNames: names, in: root, identity: identity) {
                 let path = (rootPath + "/" + match.name as NSString).standardizingPath
                 guard
@@ -61,7 +61,7 @@ enum UninstallScanner {
                     seen.insert(path).inserted,
                     let candidate = candidate(
                         path: path, evidence: match.evidence, environment: environment,
-                        budget: budget, parentIsWritable: parentIsWritable)
+                        budget: budget, parent: parent)
                 else { continue }
                 candidates.append(candidate)
             }
@@ -71,7 +71,7 @@ enum UninstallScanner {
             try Task.checkCancellation()
             let rootPath = (directory as NSString).expandingTildeInPath
             guard let names = childNames(of: rootPath) else { continue }
-            let parentIsWritable = FileManager.default.isWritableFile(atPath: rootPath)
+            let parent = parentFacts(of: rootPath)
             for name in names {
                 let path = (rootPath + "/" + name as NSString).standardizingPath
                 guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: path)
@@ -84,7 +84,7 @@ enum UninstallScanner {
                     seen.insert(path).inserted,
                     let candidate = candidate(
                         path: path, evidence: .binSymlink, environment: environment, budget: budget,
-                        parentIsWritable: parentIsWritable)
+                        parent: parent)
                 else { continue }
                 candidates.append(candidate)
             }
@@ -106,18 +106,18 @@ enum UninstallScanner {
 
     private static func candidate(
         path: String, evidence: UninstallEvidence, environment: UninstallEnvironment,
-        budget: SizeBudget, displayName: String? = nil, parentIsWritable: Bool? = nil
+        budget: SizeBudget, displayName: String? = nil, parent: ParentFacts? = nil
     ) -> UninstallCandidate? {
-        guard let scanned = inspect(path, parentIsWritable: parentIsWritable) else { return nil }
+        guard let scanned = inspect(path, parent: parent) else { return nil }
         let protection = UninstallProtectionRules.classify(scanned.facts, environment: environment)
         guard protection != .missing else { return nil }
-        let parent = (path as NSString).deletingLastPathComponent
         // A symlink is trashed as the link itself, so it never costs more than its own bytes.
         let walkable = scanned.isDirectory && !scanned.facts.isSymbolicLink
         return UninstallCandidate(
             path: path,
             name: displayName ?? (path as NSString).lastPathComponent,
-            locationLabel: UninstallRules.abbreviate(parent, home: environment.home),
+            locationLabel: UninstallRules.abbreviate(
+                (path as NSString).deletingLastPathComponent, home: environment.home),
             evidence: evidence,
             isDirectory: scanned.isDirectory,
             size: walkable
@@ -127,12 +127,12 @@ enum UninstallScanner {
 
     /// `lstat`, never `stat`: a symlinked candidate must be judged as the link, not as whatever it
     /// points at, which could sit outside every root.
-    private static func inspect(_ path: String, parentIsWritable: Bool?)
+    private static func inspect(_ path: String, parent: ParentFacts?)
         -> (facts: PathFacts, isDirectory: Bool, byteSize: Int64)?
     {
         var info = stat()
         guard lstat(path, &info) == 0 else { return nil }
-        let parent = (path as NSString).deletingLastPathComponent
+        let parent = parent ?? parentFacts(of: (path as NSString).deletingLastPathComponent)
         let volumeIsReadOnly =
             (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.volumeIsReadOnlyKey]))?
             .volumeIsReadOnly ?? false
@@ -143,9 +143,23 @@ enum UninstallScanner {
             isSystemRestricted: info.st_flags & UInt32(SF_RESTRICTED | SF_IMMUTABLE) != 0,
             isUserImmutable: info.st_flags & UInt32(UF_IMMUTABLE) != 0,
             isOwnedByCurrentUser: info.st_uid == geteuid(),
-            parentIsWritable: parentIsWritable
-                ?? FileManager.default.isWritableFile(atPath: parent))
+            parentIsWritable: parent.isWritable,
+            parentIsSticky: parent.isSticky)
         return (facts, (info.st_mode & S_IFMT) == S_IFDIR, Int64(info.st_blocks) * 512)
+    }
+
+    /// What the enclosing directory says about removing things from it — the permission that actually
+    /// governs a trash, resolved once per root rather than once per candidate.
+    private static func parentFacts(of directory: String) -> ParentFacts {
+        var info = stat()
+        let sticky = stat(directory, &info) == 0 && (info.st_mode & S_ISVTX) != 0
+        return ParentFacts(
+            isWritable: FileManager.default.isWritableFile(atPath: directory), isSticky: sticky)
+    }
+
+    private struct ParentFacts {
+        let isWritable: Bool
+        let isSticky: Bool
     }
 
     /// On-disk bytes, matching Finder. The enumerator's error handler keeps counting past an

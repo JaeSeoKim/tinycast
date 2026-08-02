@@ -33,6 +33,14 @@ struct UninstallSearchRoot: Hashable, Sendable {
     /// Containers, Group Containers, Saved Application State and the launch directories a child is a
     /// bundle ID by construction, so a name match there would be a false positive by definition.
     ///
+    /// The home directory itself is **not** a root, deliberately. Claiming `~/<name>` needs a name
+    /// match, and that is the one place a wrong match costs the user their own work rather than an
+    /// app's cache — VS Code's `CFBundleName` is literally "Code", and `~/Code` is a source tree on
+    /// a great many machines. Restricting it to dot-folders only moves the problem: an app named
+    /// "Local" would claim `~/.local`, and screening that needs a hand-kept blocklist with no source
+    /// of truth, which rots. Measured against 62 installed apps the whole root was worth one 115 kB
+    /// folder, so it buys almost nothing and carries the only catastrophic failure mode.
+    ///
     /// Deliberately absent: `/private/var/db/receipts` (root-owned, and deleting a receipt corrupts
     /// the installer's view of the system), `~/Library/Keychains` (credentials in shared files),
     /// `/Library/Extensions` and `/usr/local` (shared between products), and every user-document

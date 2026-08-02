@@ -13,8 +13,11 @@ struct PathFacts: Hashable, Sendable {
     var isSystemRestricted = false
     /// `UF_IMMUTABLE` — Finder's "Locked" checkbox, which the user can clear themselves.
     var isUserImmutable = false
+    /// Only decides anything under a sticky parent — see `classify`.
     var isOwnedByCurrentUser = true
     var parentIsWritable = true
+    /// `S_ISVTX` on the enclosing directory: the `/tmp` rule, where only an item's owner may unlink it.
+    var parentIsSticky = false
 }
 
 /// Process-wide facts, probed once per scan rather than once per candidate.
@@ -49,12 +52,13 @@ enum UninstallProtection: String, Hashable, Sendable, CaseIterable {
         case .userLocked:
             return "Locked in Finder. Unlock it in Get Info, then try again."
         case .notOwned:
-            return "Owned by another user. Tinycast never asks for an administrator password."
+            return "Owned by another user, in a folder that only lets owners remove things."
         case .needsFullDiskAccess:
             return "Needs Full Disk Access, which Tinycast doesn’t request. "
                 + "Grant it in System Settings › Privacy & Security to include this item."
         case .parentNotWritable:
-            return "Its enclosing folder isn’t writable by you."
+            return "Its enclosing folder isn’t writable by you, and Tinycast never asks for an "
+                + "administrator password."
         case .missing:
             return "No longer on disk."
         }
@@ -71,14 +75,17 @@ enum UninstallProtectionRules {
         guard facts.exists else { return .missing }
         if facts.isSystemRestricted || facts.volumeIsReadOnly { return .systemProtected }
         if facts.isUserImmutable { return .userLocked }
-        if !facts.isOwnedByCurrentUser { return .notOwned }
         if !environment.hasFullDiskAccess,
             isTCCProtected(path: facts.path, home: environment.home)
         {
             return .needsFullDiskAccess
         }
-        // Trashing is a rename out of the enclosing directory, so that is the permission that decides it.
+        // Trashing is a rename out of the enclosing directory, so the parent's write permission is
+        // what decides it — *not* who owns the item. A root-owned file inside a folder you can write
+        // is yours to remove, and locking on ownership alone grays out rows that trash perfectly well.
         if !facts.parentIsWritable { return .parentNotWritable }
+        // The one case where ownership does decide: a sticky parent lets only an owner unlink.
+        if facts.parentIsSticky, !facts.isOwnedByCurrentUser { return .notOwned }
         return .removable
     }
 

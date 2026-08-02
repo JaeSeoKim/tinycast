@@ -86,6 +86,17 @@ refuses itself too.
 
 ### Roots
 
+The **home directory itself is not a root**, and that is a decision rather than an oversight. Every
+root lives under `~/Library` or `/Library`; nothing directly in `~` is ever a candidate. Claiming
+`~/<name>` would rest on a name match, and `~` is the one place where a wrong match costs the user
+their own work instead of an app's cache — VS Code's `CFBundleName` is literally `Code`, and `~/Code`
+is a source tree on a great many machines. Narrowing it to dot-folders only moves the problem: an app
+named "Local" would then claim `~/.local`, and screening for that needs a hand-kept blocklist with no
+source of truth — the same reasoning that keeps slang out of `CalcCurrency.contested`. Measured
+against 62 installed apps the entire root was worth one 115 kB folder, so it bought almost nothing
+and carried the only catastrophic failure mode in the design. Raycast does list `~/OrbStack`; we
+deliberately don't.
+
 Immediate children only, everywhere. `Preferences/ByHost` is its own root rather than raising
 `Preferences` to depth 2, which would descend into every unrelated app's subfolder. Beyond the
 `~/Library` and `/Library` staples the table covers the plug-in wells — `QuickLook`, `Services`,
@@ -115,10 +126,22 @@ Precedence, asserted by the harness:
    `/System/Applications/Books.app`, and it falls out of the facts rather than a hardcoded `/System`
    prefix
 3. `UF_IMMUTABLE` → `.userLocked` (its own case: the user can clear it in Get Info)
-4. not owned by the current user → `.notOwned`
-5. a TCC-gated path without Full Disk Access → `.needsFullDiskAccess`
-6. parent not writable → `.parentNotWritable` (trashing is a rename out of the parent)
+4. a TCC-gated path without Full Disk Access → `.needsFullDiskAccess`
+5. parent not writable → `.parentNotWritable`
+6. sticky parent *and* not owned by the current user → `.notOwned`
 7. → `.removable`
+
+Steps 5 and 6 are the whole ownership story, and the order is deliberate. Removing a directory entry
+is governed by write permission on the **enclosing directory**, not by who owns the item: a root-owned
+file inside a folder you can write is yours to remove. Checking ownership first — as an earlier
+revision did — grayed out rows that trash perfectly well. Ownership decides exactly one case, a
+sticky parent (`S_ISVTX`, the `/tmp` rule), where only an owner may unlink.
+
+This is also why `/usr/local/bin/code` stays locked while `/opt/homebrew/bin/orb` does not:
+`/usr/local/bin` is `drwxr-xr-x root:wheel`, so the trash is refused outright (measured, not
+inferred), whereas Homebrew leaves `/opt/homebrew/bin` group-writable. Raycast offers the
+`/usr/local/bin` row as checked; that removal cannot succeed without an administrator password, which
+this feature never asks for.
 
 A locked candidate can never enter the checked set. That invariant lives in `UninstallSelection`,
 whose every mutation funnels through one intersection with `plan.removableIDs`, so re-scanning drops
