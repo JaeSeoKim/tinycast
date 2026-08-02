@@ -52,14 +52,16 @@ struct ShortcutRecorder: View {
         HStack(spacing: Theme.Spacing.xs) {
             // A double-tap binding is dead without the grant, so say so where the binding is.
             if binding.doubleTapModifier != nil, doubleTapMonitor.needsAccessibility {
-                Button { Permissions.openAccessibilitySettings() } label: {
+                Button {
+                    Permissions.openAccessibilitySettings()
+                } label: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
                 .buttonStyle(.plain)
                 .help("Double-tap shortcuts need Accessibility access. Click to grant it.")
             }
-            ForEach(Array(binding.compactKeycaps.enumerated()), id: \.offset) { _, cap in
+            ForEach(Array(binding.keycaps.enumerated()), id: \.offset) { _, cap in
                 Text(cap)
                     .font(Theme.Typography.keyCap)
                     .foregroundStyle(.secondary)
