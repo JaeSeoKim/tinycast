@@ -51,16 +51,16 @@ enum Theme {
         static let keyCap: CGFloat = 18
         /// Settings shortcut-recorder keycap — smaller than the palette's `keyCap` chip.
         static let recorderKeyCap: CGFloat = 16
-        /// Fixed so the recorder can't resize; half its old width now the callout narrates recording.
-        static let shortcutRecorder: CGFloat = 80
+        /// Fixed so the recorder can't resize as its binding changes.
+        static let shortcutRecorder: CGFloat = 120
         /// One text line in the recorder callout.
-        static let shortcutPopoverLine: CGFloat = 16
-        /// The callout's footprint, summed from the bands its body lays out so placement needs no measuring.
-        /// 132 is load-bearing: a recorder sits 72pt in from the pane edge (`xxl` + `xl` + half the field),
-        /// so anything under ~136 centres on it instead of clamping and skewing the caret.
+        static let shortcutPopoverLine: CGFloat = 14
+        /// Summed from the bands the body lays out, so placement needs no measuring. The width is
+        /// load-bearing: it must stay under twice a recorder's inset from the pane edge, or the
+        /// callout clamps and the caret stops being centred. `Tools/callout-test.swift` pins that.
         static let shortcutPopover = CGSize(
             width: 132,
-            height: Spacing.lg * 2 + heroKeyCap + Spacing.sm + shortcutPopoverLine + Spacing.sm
+            height: Spacing.sm * 2 + heroKeyCap + Spacing.sm + shortcutPopoverLine + Spacing.sm
                 + compactKeyCap + calloutCaretHeight)
         /// The callout's pointer: a triangle with a rounded tip.
         static let calloutCaretWidth: CGFloat = 15
@@ -68,7 +68,7 @@ enum Theme {
         static let calloutCaretTip: CGFloat = 2.5
         /// Keycaps: `compact` for a hint, `keyCap` as standard, `hero` where the cap is the content.
         static let compactKeyCap: CGFloat = 15
-        static let heroKeyCap: CGFloat = 26
+        static let heroKeyCap: CGFloat = 22
         static let menuButton: CGFloat = 36
         static let clipboardListWidth: CGFloat = 290
         static let emojiCell: CGFloat = 56
@@ -129,7 +129,7 @@ enum Theme {
         static let keyCap = Font.caption
         /// Pair with the matching `Size` for `KeyCapChip.Scale`.
         static let compactKeyCap = Font.caption2
-        static let heroKeyCap = Font.title3
+        static let heroKeyCap = Font.body
         static let bar = Font.callout.weight(.medium)
         static let menuRow = Font.body
         static let menuShortcut = Font.callout

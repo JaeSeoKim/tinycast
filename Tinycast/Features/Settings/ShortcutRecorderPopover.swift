@@ -42,9 +42,10 @@ struct ShortcutRecorderPopover: View {
 
             KeyCapChip(text: "esc", scale: .compact)
                 .opacity(0.7)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.lg)
+        .padding(.vertical, Theme.Spacing.sm)
         .padding(placement.caretEdge == .top ? .top : .bottom, Theme.Size.calloutCaretHeight)
         .frame(
             width: Theme.Size.shortcutPopover.width, height: Theme.Size.shortcutPopover.height)
@@ -59,8 +60,8 @@ struct ShortcutRecorderPopover: View {
         }
         let held = KeyShortcut.collapsedModifierSymbols(from: capture.heldModifiers)
         guard held.isEmpty else { return State(caps: held, label: "Add a key") }
-        let glyph = DoubleTapModifier.option.glyph
-        return State(caps: [glyph, glyph], label: "Double Tap", isExample: true)
+        return State(
+            caps: [DoubleTapModifier.option.glyph, "A"], label: "Type a shortcut", isExample: true)
     }
 }
 

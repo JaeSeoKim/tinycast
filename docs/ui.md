@@ -307,17 +307,17 @@ shares the palette's `Theme` vocabulary. It reads as macOS System Settings, not 
 
 ### The shortcut recorder callout
 
-`ShortcutRecorder` is an **80pt** field showing only the binding — a combo's modifiers collapse into
+`ShortcutRecorder` is a **120pt** field showing only the binding — a combo's modifiers collapse into
 one cap (`HotKeyBinding.compactKeycaps`), so any shortcut fits in two chips. Recording is narrated by
-`ShortcutRecorderPopover`, a small callout above it: caps, one label line, an `esc` cap. Three states
-in one fixed frame — prompt (`⌥ ⌥` at half opacity, "Double Tap"), live held modifiers, and conflict
-(rejected caps + owner, orange).
+`ShortcutRecorderPopover`, a small **132 × 82** callout above it: caps, one label line, an `esc` cap in
+the bottom-right corner. Three states in one fixed frame — prompt (`⌥ A` at half opacity, "Type a
+shortcut"), live held modifiers, and conflict (rejected caps + owner, orange).
 
 - **An ancestor draws it.** The open recorder publishes its bounds via `ShortcutRecorderAnchorKey`;
   `.shortcutRecorderPopoverHost()` sits on `SettingsPane` **outside** its `ScrollView` (and on
   `OnboardingView`) and positions it. An overlay on the row would be clipped by the scroll view.
-- **`shortcutPopover.width` is load-bearing at 132.** A recorder's centre is 72pt in from the pane edge
-  (`xxl` + `xl` + half the field), so a callout under ~136 centres on it and the caret stays dead
+- **`shortcutPopover.width` is load-bearing.** A recorder's centre is `xxl + xl + half the field` in
+  from the pane edge, so the callout must stay under twice that to centre on it with the caret dead
   centre. Widen it and the clamp kicks in and skews the caret. `Tools/callout-test.swift` pins this.
 - **One glass shape.** `CalloutShape` (`Core/`) draws body and caret as a single path so `glassEffect`
   lenses them together. The caret is two straight edges meeting at an arc — a rounded-tip triangle,
