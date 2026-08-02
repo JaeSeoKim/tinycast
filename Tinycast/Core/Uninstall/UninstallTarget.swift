@@ -16,11 +16,16 @@ enum UninstallEvidence: String, Hashable, Sendable, CaseIterable {
     case bundleID
     case groupContainer
     case displayName
+    case binSymlink
 
-    /// A name match is a guess where the other two are proof, so it lands unchecked and the user opts in.
-    var isAutoChecked: Bool { self != .displayName }
-
-    var label: String? { self == .displayName ? "matched by name" : nil }
+    /// Shown on the row so the weaker evidence is visible; proof-grade matches say nothing.
+    var label: String? {
+        switch self {
+        case .displayName: return "matched by name"
+        case .binSymlink: return "command-line tool"
+        case .bundle, .bundleID, .groupContainer: return nil
+        }
+    }
 }
 
 /// The matching-ready form of a target. `make` is where every guard rail is applied, so `UninstallRules` is left with no judgement to exercise.
@@ -35,8 +40,11 @@ struct UninstallIdentity: Hashable, Sendable {
     let names: [String]
     let bundleURL: URL
 
-    /// Below this a name is too generic to attribute anything to — "Go", "Vim", "1Pa".
-    static let minimumNameLength = 4
+    /// Below this a name is too generic to attribute anything to — "Go", "1P". Three is the floor
+    /// rather than four because real apps live there: Zed, IINA, Xee all name their support folders
+    /// after themselves, and the exact-match, reserved-name and installed-app-collision guards below
+    /// are what carry the safety, not the length.
+    static let minimumNameLength = 3
 
     /// Standard Library subdirectories that belong to macOS rather than to any app, so an app sharing the name can never claim them.
     static let reservedNames: Set<String> = [

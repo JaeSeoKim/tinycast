@@ -110,7 +110,10 @@ Never break these without an explicit task to do so.
   directory **names**, never URLs, and hands the classifier a `PathFacts`. Every `FileManager`,
   `lstat` and Full Disk Access read lives in `UninstallScanner`, which **detects** FDA (a silent,
   promptless probe) and never requests it — this feature asks for no permission and never escalates
-  privilege. A locked candidate can never enter the checked set; that invariant lives in
+  privilege. `tccRelativePrefixes` is **measured, not assumed**: probe a location by creating and
+  trashing a throwaway directory there before adding it, because *listing* is not the test —
+  `~/Library/Containers` enumerates fine and still refuses the move, while
+  `~/Library/Application Scripts` allows it. A locked candidate can never enter the checked set; that invariant lives in
   `UninstallSelection`'s one intersection, not in the view. Tinycast also refuses to plan its own
   uninstall, compared against the **running** identity so the Dev channel refuses itself too.
   See [uninstall.md](docs/uninstall.md).

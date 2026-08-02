@@ -90,12 +90,14 @@ enum UninstallProtectionRules {
         return relative || path.hasPrefix("/Library/Application Support/com.apple.TCC")
     }
 
+    /// Measured, not assumed: a probe that creates and trashes a throwaway directory in each of these
+    /// shows `Containers`, `Group Containers` and `Cookies` refuse the move without Full Disk Access,
+    /// while `Application Scripts` and `Autosave Information` allow it. Listing a directory is *not*
+    /// the test — both container roots list fine and still refuse the trash. Re-measure before adding.
     static let tccRelativePrefixes: [String] = [
         "Library/Containers/",
         "Library/Group Containers/",
-        "Library/Application Scripts/",
         "Library/Cookies/",
-        "Library/Autosave Information/",
         "Library/Safari",
         "Library/Mail",
         "Library/Messages",

@@ -62,6 +62,29 @@ struct UninstallSearchRoot: Hashable, Sendable {
         UninstallSearchRoot(
             base: .userLibrary, relativePath: "Autosave Information", styles: [.bundleID]),
         UninstallSearchRoot(base: .userLibrary, relativePath: "LaunchAgents", styles: [.bundleID]),
+        // Plug-in wells. A child here is a wrapper named after the product that installed it, so
+        // both styles apply once `strippedExtensions` has taken the `.qlgenerator`/`.saver`/… off.
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Internet Plug-Ins", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "QuickLook", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Services", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "PreferencePanes", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Screen Savers", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Spotlight", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Automator", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Input Methods", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Audio/Plug-Ins/HAL", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .userLibrary, relativePath: "Audio/Plug-Ins/Components",
+            styles: [.bundleID, .displayName]),
         UninstallSearchRoot(
             base: .systemLibrary, relativePath: "Application Support",
             styles: [.bundleID, .displayName]),
@@ -72,6 +95,27 @@ struct UninstallSearchRoot: Hashable, Sendable {
         UninstallSearchRoot(
             base: .systemLibrary, relativePath: "LaunchDaemons", styles: [.bundleID]),
         UninstallSearchRoot(
-            base: .systemLibrary, relativePath: "PrivilegedHelperTools", styles: [.bundleID])
+            base: .systemLibrary, relativePath: "PrivilegedHelperTools", styles: [.bundleID]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "Internet Plug-Ins",
+            styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "QuickLook", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "PreferencePanes", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "Screen Savers", styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "Audio/Plug-Ins/HAL",
+            styles: [.bundleID, .displayName]),
+        UninstallSearchRoot(
+            base: .systemLibrary, relativePath: "Audio/Plug-Ins/Components",
+            styles: [.bundleID, .displayName])
+    ]
+
+    /// Where a CLI launcher lands. Scanned by link target rather than by name — see
+    /// `UninstallRules.isBundleSymlink` — so nothing here is matched by what the vendor called it.
+    static let binDirectories: [String] = [
+        "/usr/local/bin", "/opt/homebrew/bin", "~/.local/bin", "~/bin"
     ]
 }

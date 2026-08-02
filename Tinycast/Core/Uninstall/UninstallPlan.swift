@@ -47,12 +47,12 @@ struct UninstallPlan: Equatable, Sendable {
 
     var totalBytes: Int64 { candidates.reduce(0) { $0 + $1.size.bytes } }
 
-    /// Everything removable except name matches — evidence that weak is the user's call to make.
+    /// Everything the user can actually remove. Name matches are included: they are exact, confined to
+    /// human-named roots, and never claim a name another installed app answers to — and since the
+    /// whole feature only ever moves to the Trash, an unwanted row costs a drag back, not data. The
+    /// row still says "matched by name" so the weaker evidence stays visible before confirming.
     var defaultSelection: UninstallSelection {
-        UninstallSelection(
-            plan: self,
-            checked: Set(
-                candidates.lazy.filter { !$0.isLocked && $0.evidence.isAutoChecked }.map(\.id)))
+        UninstallSelection(plan: self, checked: removableIDs)
     }
 }
 

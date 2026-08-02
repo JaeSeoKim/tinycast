@@ -6,7 +6,10 @@ import Foundation
 enum UninstallScanner {
     struct SizeBudget: Sendable {
         /// Caps the tree walk behind one row so a pathological cache folder can't stall the scan.
-        var maxEntries = 20_000
+        /// Generous on purpose: an editor's support folder runs to ~90k entries (Zed's does), and
+        /// stopping short of that would show "≥ 796 MB" where the honest answer is 1.9 GB. Measured
+        /// at roughly a second for 250k entries, and the scan is off-main behind a progress state.
+        var maxEntries = 250_000
         static let `default` = SizeBudget()
     }
 
@@ -59,6 +62,29 @@ enum UninstallScanner {
                     let candidate = candidate(
                         path: path, evidence: match.evidence, environment: environment,
                         budget: budget, parentIsWritable: parentIsWritable)
+                else { continue }
+                candidates.append(candidate)
+            }
+        }
+
+        for directory in UninstallSearchRoot.binDirectories {
+            try Task.checkCancellation()
+            let rootPath = (directory as NSString).expandingTildeInPath
+            guard let names = childNames(of: rootPath) else { continue }
+            let parentIsWritable = FileManager.default.isWritableFile(atPath: rootPath)
+            for name in names {
+                let path = (rootPath + "/" + name as NSString).standardizingPath
+                guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: path)
+                else { continue }
+                // A relative link resolves against its own directory, not the process's cwd.
+                let resolved =
+                    target.hasPrefix("/")
+                    ? target : (rootPath as NSString).appendingPathComponent(target)
+                guard UninstallRules.isBundleSymlink(target: resolved, bundlePath: bundlePath),
+                    seen.insert(path).inserted,
+                    let candidate = candidate(
+                        path: path, evidence: .binSymlink, environment: environment, budget: budget,
+                        parentIsWritable: parentIsWritable)
                 else { continue }
                 candidates.append(candidate)
             }

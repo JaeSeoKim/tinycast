@@ -17,7 +17,7 @@ Same split as `WindowManagement`: a pure half that decides, an impure half that 
 | File | Role |
 | --- | --- |
 | `Core/Uninstall/UninstallTarget.swift` | `UninstallTarget`, `UninstallEvidence`, `UninstallIdentity` — and every guard rail, applied in `UninstallIdentity.make` |
-| `Core/Uninstall/UninstallSearchRoot.swift` | The root table: where to look and which match styles are legal there |
+| `Core/Uninstall/UninstallSearchRoot.swift` | The root table (where to look, which styles are legal there) and `binDirectories` |
 | `Core/Uninstall/UninstallRules.swift` | Matching, plus `isAcceptableCandidate` |
 | `Core/Uninstall/UninstallProtection.swift` | `PathFacts` → `UninstallProtection` |
 | `Core/Uninstall/UninstallPlan.swift` | `UninstallCandidate`, `UninstallPlan`, `UninstallSelection` |
@@ -32,15 +32,18 @@ URLs, which is what makes "no filesystem access in the pure layer" structural ra
 
 ## Attribution
 
-Three match styles, enabled per root by the table. All of them run against
+Three match styles enabled per root by the table, plus a fourth mechanism for CLI launchers. The
+first three run against
 `UninstallRules.matchableForms`, which strips `.plist`, `.savedState`, `.binarycookies`, `.lockfile`
 and friends — repeatedly, so `…​.plist.lockfile` reduces too.
 
-**`bundleID`** — exact, or a dot-namespaced child. The trailing dot in `hasPrefix(id + ".")` is
-load-bearing: a plain prefix makes `com.apple.SafariTechnologyPreview` a match for `com.apple.Safari`
-and trashes a different product's entire profile. Requiring the next character to be `.` means a
-match can only be a namespace *descendant* — `com.apple.iBooksX.CacheDelete` matches
-`com.apple.iBooksX`, `com.apple.iBooksXtra` does not.
+**`bundleID`** — exact, or a namespaced child. The boundary check is load-bearing: a plain prefix
+makes `com.apple.SafariTechnologyPreview` a match for `com.apple.Safari` and trashes a different
+product's entire profile. Requiring the next character to be a separator means a match can only be a
+namespace *descendant* — `com.apple.iBooksX.CacheDelete` matches `com.apple.iBooksX`,
+`com.apple.iBooksXtra` does not. Both `.` and `-` count, because `-` is how vendors name release
+variants: `dev.zed.Zed-Preview.plist` belongs to Zed, unless Zed Preview is itself installed, in
+which case the sibling rule below hands it straight back.
 
 Two further guards on that rule:
 
@@ -57,14 +60,25 @@ container), then applies the bundle-ID rule to the remainder.
 
 **`displayName`** — the weak one, and the only one hedged. Exact, case- and diacritic-folded equality;
 never a prefix or substring, so "Books" and "Books Reader" cannot claim each other's folders in either
-direction. On top of that a name must be ≥ 4 folded characters, must not be a standard Library
+direction. On top of that a name must be ≥ 3 folded characters, must not be a standard Library
 subdirectory name (`Preferences`, `Caches`, `Containers`, …), and **must not be shared with another
 installed app** — a second app called "Mail" is precisely what makes `~/Library/Application Support/Mail`
-unattributable. Enabled only in `Application Support`, `Caches` and `Logs`; everywhere else a child is
-a bundle ID by construction, so a name match there would be a false positive by definition.
+unattributable. Three, not four, is the floor: Zed, IINA and Xee all name their own folders, and the
+safety comes from those three guards rather than from length. Enabled in the human-named roots
+(`Application Support`, `Caches`, `Logs`) and the plug-in wells; everywhere else a child is a bundle
+ID by construction, so a name match there would be a false positive by definition.
 
-A `.displayName` match is **never checked by default** (`UninstallPlan.defaultSelection`) and the row
-says "matched by name". Evidence that weak is the user's call.
+A `.displayName` match **is** checked by default, and the row says "matched by name" so the weaker
+evidence is visible before confirming. It earns that because the match is exact, confined, and never
+claims a name another installed app answers to — and because the feature only ever moves to the
+Trash, so an unwanted row costs a drag back rather than data.
+
+**`binSymlink`** — a launcher in `/usr/local/bin`, `/opt/homebrew/bin`, `~/.local/bin` or `~/bin`
+whose symlink resolves inside the app bundle. Attribution is by **link target, never by name**: `zed`
+in `/usr/local/bin` is Zed's because it points at `Zed.app/Contents/MacOS/cli`, not because of what
+it is called. On a stock Mac `/usr/local/bin` is root-owned, so the row renders locked; where
+Homebrew has made it user-owned it is removable, and the classifier reaches that from the facts
+without a special case.
 
 `UninstallIdentity.make` returns `nil` — refusing the whole uninstall — when the target is Tinycast
 itself, by bundle ID *or* bundle URL, compared against the **running** identity so the Dev channel
@@ -73,10 +87,16 @@ refuses itself too.
 ### Roots
 
 Immediate children only, everywhere. `Preferences/ByHost` is its own root rather than raising
-`Preferences` to depth 2, which would descend into every unrelated app's subfolder. Deliberately out
-of scope, and worth keeping out: `/private/var/db/receipts` (root-owned, and deleting a receipt
-corrupts the installer's view of the system), `~/Library/Keychains`, `/Library/Extensions`,
-`/usr/local`, and every user-document location.
+`Preferences` to depth 2, which would descend into every unrelated app's subfolder. Beyond the
+`~/Library` and `/Library` staples the table covers the plug-in wells — `QuickLook`, `Services`,
+`PreferencePanes`, `Screen Savers`, `Internet Plug-Ins`, `Spotlight`, `Automator`, `Input Methods`,
+`Audio/Plug-Ins/{HAL,Components}` — whose children are wrappers named after the product that
+installed them, which is why `strippedExtensions` also drops `.qlgenerator`, `.saver`, `.prefPane`
+and friends. `.app` is deliberately **not** in that list. Deliberately out of scope, and worth
+keeping out: `/private/var/db/receipts` (root-owned, and deleting a receipt
+corrupts the installer's view of the system), `~/Library/Keychains`, `/Library/Extensions`, and every
+user-document location. `/usr/local` is reached **only** through `binDirectories`, and only for
+symlinks that resolve into the bundle — never by name, and never recursively.
 
 `UninstallRules.isAcceptableCandidate` is belt and braces over whatever matched: an immediate child of
 its own root, never the home directory or `/`, no relative components, and no overlap with the app
@@ -103,6 +123,14 @@ Precedence, asserted by the harness:
 A locked candidate can never enter the checked set. That invariant lives in `UninstallSelection`,
 whose every mutation funnels through one intersection with `plan.removableIDs`, so re-scanning drops
 a row that has since become locked for free.
+
+The TCC list is **measured, not assumed.** A probe that creates and then trashes a throwaway
+directory in each candidate location shows that `~/Library/Containers`, `~/Library/Group Containers`
+and `~/Library/Cookies` refuse the move, while `~/Library/Application Scripts` and
+`~/Library/Autosave Information` allow it — which is why Books' five `Application Scripts` rows are
+checkable while the five `Containers` rows beside them are locked. Note that *listing* a directory is
+not the test: both container roots enumerate fine and still refuse the trash. Re-measure before
+adding an entry.
 
 **Full Disk Access is detected, never requested.** The probe opens
 `~/Library/Application Support/com.apple.TCC/TCC.db` — TCC denies that read *silently*, with no

@@ -207,10 +207,26 @@ struct UninstallTests {
                 == .displayName,
             "the same name is usable when no other installed app claims it")
 
-        let short = identity(bundleID: "com.foo.Vim", name: "Vim")
+        let short = identity(bundleID: "com.foo.Go", name: "Go")
         expect(
-            evidence("Vim", "Application Support", short) == nil,
-            "a name under the minimum length never matches")
+            evidence("Go", "Application Support", short) == nil,
+            "a two-character name is under the minimum and never matches")
+        let zed = identity(bundleID: "dev.zed.Zed", name: "Zed")
+        expect(
+            evidence("Zed", "Application Support", zed) == .displayName,
+            "three characters is enough — Zed names its own support folder")
+        expect(
+            evidence("Zed", "Logs", zed) == .displayName, "and its logs folder")
+        expect(
+            evidence("dev.zed.Zed-Preview.plist", "Preferences", zed) == .bundleID,
+            "a hyphenated release variant belongs to the product it varies")
+        expect(
+            evidence(
+                "dev.zed.Zed-Preview.plist", "Preferences",
+                identity(
+                    bundleID: "dev.zed.Zed", name: "Zed",
+                    otherBundleIDs: ["dev.zed.Zed", "dev.zed.Zed-Preview"])) == nil,
+            "unless that variant is itself installed, in which case it owns its own preferences")
 
         let reserved = identity(bundleID: "com.foo.Prefs", name: "Preferences")
         expect(
@@ -222,6 +238,46 @@ struct UninstallTests {
                 displayName: "AppCleaner", bundleName: "AppCleaner", otherAppNames: [])
                 == ["appcleaner"],
             "a bundle name identical to the display name is deduped")
+    }
+
+    static func testPlugInsAndSymlinks() {
+        let app = identity(bundleID: "com.foo.Bar", name: "Barista")
+        expect(
+            evidence("com.foo.Bar.qlgenerator", "QuickLook", app) == .bundleID,
+            "a QuickLook generator is stripped to its bundle ID")
+        expect(
+            evidence("Barista.saver", "Screen Savers", app) == .displayName,
+            "a screen saver is stripped to its product name")
+        expect(
+            evidence("Barista.prefPane", "PreferencePanes", app) == .displayName,
+            "so is a preference pane")
+        expect(
+            evidence("Unrelated.qlgenerator", "QuickLook", app) == nil,
+            "another product's plug-in is left alone")
+        expect(
+            !UninstallRules.matchableForms("Barista.app").contains("Barista"),
+            ".app is never stripped — an app bundle is not a plug-in wrapper")
+
+        let bundle = "/Applications/Zed.app"
+        expect(
+            UninstallRules.isBundleSymlink(
+                target: "/Applications/Zed.app/Contents/MacOS/cli", bundlePath: bundle),
+            "a launcher resolving inside the bundle belongs to the app")
+        expect(
+            UninstallRules.isBundleSymlink(target: bundle, bundlePath: bundle),
+            "a link straight at the bundle counts too")
+        expect(
+            !UninstallRules.isBundleSymlink(
+                target: "/Applications/Zed2.app/Contents/MacOS/cli", bundlePath: bundle),
+            "a sibling bundle sharing a path prefix does not")
+        expect(
+            !UninstallRules.isBundleSymlink(target: "/opt/homebrew/bin/zed", bundlePath: bundle),
+            "and neither does an unrelated target — attribution is by link target, never by name")
+        expect(
+            UninstallSearchRoot.binDirectories.allSatisfy {
+                $0.hasPrefix("/") || $0.hasPrefix("~/")
+            },
+            "every bin directory is absolute or home-relative")
     }
 
     // MARK: - Identity refusal
@@ -374,6 +430,13 @@ struct UninstallTests {
             !UninstallProtectionRules.isTCCProtected(
                 path: home + "/Library/Preferences/com.foo.Bar.plist", home: home),
             "preferences are not TCC-gated")
+        expect(
+            !UninstallProtectionRules.isTCCProtected(
+                path: home + "/Library/Application Scripts/com.foo.Bar", home: home),
+            "Application Scripts is NOT TCC-gated — measured, and it is why Books' scripts are removable")
+        expect(
+            classify(PathFacts(path: home + "/Library/Application Scripts/com.foo.Bar")) == .removable,
+            "so those rows are checkable while the containers beside them stay locked")
     }
 
     // MARK: - Plan and selection
@@ -409,19 +472,21 @@ struct UninstallTests {
 
         var selection = plan.defaultSelection
         expect(
-            selection.checked == ["/a"],
-            "the default checks removable rows but leaves name matches to the user")
-        expect(selection.bytes(in: plan) == 10, "selected bytes sums only checked rows")
+            selection.checked == ["/a", "/c"],
+            "the default checks every removable row, name matches included")
+        expect(selection.bytes(in: plan) == 50, "selected bytes sums only checked rows")
+        expect(
+            !selection.checked.contains("/b"), "and never a locked one")
 
         selection.toggle("/b", in: plan)
-        expect(selection.checked == ["/a"], "toggling a locked row is a no-op")
+        expect(selection.checked == ["/a", "/c"], "toggling a locked row is a no-op")
         selection.toggle("/b", in: plan)
-        expect(selection.checked == ["/a"], "toggling a locked row twice is still a no-op")
+        expect(selection.checked == ["/a", "/c"], "toggling a locked row twice is still a no-op")
 
         selection.toggle("/c", in: plan)
-        expect(selection.checked == ["/a", "/c"], "toggling a removable row checks it")
+        expect(selection.checked == ["/a"], "toggling a checked row unchecks it")
         selection.toggle("/c", in: plan)
-        expect(selection.checked == ["/a"], "toggling it again unchecks it")
+        expect(selection.checked == ["/a", "/c"], "toggling it again checks it back")
 
         selection.setAll(true, in: plan)
         expect(selection.checked == plan.removableIDs, "select-all is exactly the removable set")
@@ -506,10 +571,21 @@ struct UninstallTests {
             roots.first { $0.base == .systemLibrary && $0.relativePath == "Caches" }?.path(home: home)
                 == "/Library/Caches",
             "a system root ignores the home directory")
-        let named = roots.filter { $0.styles.contains(.displayName) }.map(\.relativePath)
+        // A child of these is a bundle ID by construction, so a name match there is a false positive
+        // by definition. Asserting the exclusion rather than the inclusion keeps this honest as
+        // plug-in wells are added.
+        let bundleIDOnly: Set<String> = [
+            "Preferences", "Preferences/ByHost", "Containers", "Group Containers",
+            "Application Scripts", "Saved Application State", "HTTPStorages", "WebKit", "Cookies",
+            "Autosave Information", "LaunchAgents", "LaunchDaemons", "PrivilegedHelperTools"
+        ]
         expect(
-            Set(named) == ["Application Support", "Caches", "Logs"],
-            "display-name matching stays confined to the human-named roots")
+            roots.filter { bundleIDOnly.contains($0.relativePath) }
+                .allSatisfy { !$0.styles.contains(.displayName) },
+            "display-name matching never applies where a child is a bundle ID by construction")
+        expect(
+            roots.contains { $0.relativePath == "Application Support" && $0.styles.contains(.displayName) },
+            "but it does apply in the human-named roots")
         expect(
             !roots.contains { $0.relativePath.contains("receipts") || $0.relativePath == "Keychains" },
             "receipts and keychains stay out of scope")
@@ -520,6 +596,7 @@ struct UninstallTests {
         testExtensionStripping()
         testGroupContainers()
         testDisplayNames()
+        testPlugInsAndSymlinks()
         testIdentityRefusal()
         testPathSafety()
         testProtection()

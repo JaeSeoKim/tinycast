@@ -9,7 +9,10 @@ enum UninstallRules {
     /// Suffixes macOS appends to bundle-ID-named artifacts, stripped before matching so
     /// `com.foo.Bar.plist` compares as `com.foo.Bar`.
     static let strippedExtensions: Set<String> = [
-        "plist", "savedstate", "binarycookies", "lockfile", "lock", "sfl", "sfl2", "sfl3"
+        "plist", "savedstate", "binarycookies", "lockfile", "lock", "sfl", "sfl2", "sfl3",
+        // Plug-in wrappers, which are named after the product that installed them.
+        "qlgenerator", "saver", "prefpane", "service", "workflow", "mdimporter", "appex",
+        "component", "wdgt", "dext", "driver"
     ]
 
     /// The name plus each successively stripped form. Stripping only ever adds a comparison, so it
@@ -28,13 +31,17 @@ enum UninstallRules {
         return forms
     }
 
-    /// True when `component` is the bundle ID itself, or a dot-namespaced child of it.
+    /// What may follow a bundle ID for the remainder to still be part of the same product. `.` is the
+    /// ordinary namespace separator; `-` is how vendors name release variants — `dev.zed.Zed-Preview`
+    /// belongs to Zed, and if Zed Preview is itself installed the sibling rule below hands it back.
+    private static let namespaceSeparators: Set<Character> = [".", "-"]
+
+    /// True when `component` is the bundle ID itself, or a namespaced child of it.
     ///
-    /// The trailing dot is load-bearing. A plain `hasPrefix` makes `com.apple.SafariTechnologyPreview`
-    /// a match for `com.apple.Safari` — a separately installed product whose entire profile would go
-    /// to the Trash. Requiring the next character to be "." means a match can only be a namespace
-    /// descendant: `com.apple.iBooksX.CacheDelete` matches `com.apple.iBooksX`, `com.apple.iBooksXtra`
-    /// does not.
+    /// The boundary is load-bearing. A plain `hasPrefix` makes `com.apple.SafariTechnologyPreview` a
+    /// match for `com.apple.Safari` — a separately installed product whose entire profile would go to
+    /// the Trash. Requiring a separator next means a match can only be a namespace descendant:
+    /// `com.apple.iBooksX.CacheDelete` matches `com.apple.iBooksX`, `com.apple.iBooksXtra` does not.
     static func matchesBundleID(_ component: String, identity: UninstallIdentity) -> Bool {
         guard let id = identity.bundleID else { return false }
         return matchableForms(component).contains { form in
@@ -52,7 +59,18 @@ enum UninstallRules {
 
     private static func owns(_ folded: String, id: String, allowingPrefix: Bool) -> Bool {
         if folded == id { return true }
-        return allowingPrefix && folded.hasPrefix(id + ".")
+        guard allowingPrefix, folded.count > id.count, folded.hasPrefix(id) else { return false }
+        // The boundary check is what separates a namespace child from a different product:
+        // `com.apple.SafariTechnologyPreview` must never be read as a child of `com.apple.Safari`.
+        return namespaceSeparators.contains(folded[folded.index(folded.startIndex, offsetBy: id.count)])
+    }
+
+    /// A `/usr/local/bin`-style launcher belongs to the app when it resolves inside the bundle.
+    /// Attribution by link target, never by name — the name is whatever the vendor chose.
+    static func isBundleSymlink(target: String, bundlePath: String) -> Bool {
+        let target = (target as NSString).standardizingPath
+        let bundlePath = (bundlePath as NSString).standardizingPath
+        return target == bundlePath || isDescendant(target, of: bundlePath)
     }
 
     /// Strips a leading `group.` and/or a 10-character Team ID, in either order, leaving a plain
