@@ -526,12 +526,6 @@ struct UninstallTests {
         selection.toggle("/c", in: plan)
         expect(selection.checked == ["/a", "/c"], "toggling it again checks it back")
 
-        selection.setAll(true, in: plan)
-        expect(selection.checked == plan.removableIDs, "select-all is exactly the removable set")
-        expect(selection.bytes(in: plan) == 50, "and its byte total excludes the locked row")
-        selection.setAll(false, in: plan)
-        expect(selection.checked.isEmpty && selection.bytes(in: plan) == 0, "deselect-all clears")
-
         let relocked = UninstallPlan(
             target: target,
             candidates: [candidate("/a", protection: .notOwned, bytes: 10), locked, named],
@@ -541,7 +535,7 @@ struct UninstallTests {
             "re-scanning drops a row that has since become locked")
 
         expect(
-            selection.candidates(in: plan).isEmpty,
+            UninstallSelection(plan: plan).candidates(in: plan).isEmpty,
             "an empty selection resolves to no candidates")
     }
 

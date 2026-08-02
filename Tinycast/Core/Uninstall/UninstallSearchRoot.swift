@@ -1,7 +1,6 @@
 import Foundation
 
-/// One directory the uninstaller looks in, and the match styles allowed there. A table rather than
-/// per-root code: branching per directory is how a matcher grows unreviewable special cases.
+/// Where to look and which match styles are legal there. A table, because per-root code is how a matcher grows special cases.
 struct UninstallSearchRoot: Hashable, Sendable {
     enum Base: Hashable, Sendable {
         case userLibrary
@@ -26,25 +25,8 @@ struct UninstallSearchRoot: Hashable, Sendable {
         }
     }
 
-    /// Only immediate children are ever listed. `Preferences/ByHost` is its own root instead of
-    /// raising `Preferences` to depth 2, which would descend into every unrelated app's subfolder.
-    ///
-    /// Display-name matching is enabled only where a child is a human-named folder. In Preferences,
-    /// Containers, Group Containers, Saved Application State and the launch directories a child is a
-    /// bundle ID by construction, so a name match there would be a false positive by definition.
-    ///
-    /// The home directory itself is **not** a root, deliberately. Claiming `~/<name>` needs a name
-    /// match, and that is the one place a wrong match costs the user their own work rather than an
-    /// app's cache — VS Code's `CFBundleName` is literally "Code", and `~/Code` is a source tree on
-    /// a great many machines. Restricting it to dot-folders only moves the problem: an app named
-    /// "Local" would claim `~/.local`, and screening that needs a hand-kept blocklist with no source
-    /// of truth, which rots. Measured against 62 installed apps the whole root was worth one 115 kB
-    /// folder, so it buys almost nothing and carries the only catastrophic failure mode.
-    ///
-    /// Deliberately absent: `/private/var/db/receipts` (root-owned, and deleting a receipt corrupts
-    /// the installer's view of the system), `~/Library/Keychains` (credentials in shared files),
-    /// `/Library/Extensions` and `/usr/local` (shared between products), and every user-document
-    /// location — the user's own data is never ours to reap.
+    /// Immediate children only; display-name matching is off wherever a child is a bundle ID by construction.
+    /// The home directory is deliberately absent, as are receipts, Keychains and user documents — see docs/uninstall.md.
     static let all: [UninstallSearchRoot] = [
         UninstallSearchRoot(
             base: .userLibrary, relativePath: "Application Support",
@@ -70,8 +52,7 @@ struct UninstallSearchRoot: Hashable, Sendable {
         UninstallSearchRoot(
             base: .userLibrary, relativePath: "Autosave Information", styles: [.bundleID]),
         UninstallSearchRoot(base: .userLibrary, relativePath: "LaunchAgents", styles: [.bundleID]),
-        // Plug-in wells. A child here is a wrapper named after the product that installed it, so
-        // both styles apply once `strippedExtensions` has taken the `.qlgenerator`/`.saver`/… off.
+        // Plug-in wells: a child is a wrapper named after its product, once `strippedExtensions` has taken the suffix off.
         UninstallSearchRoot(
             base: .userLibrary, relativePath: "Internet Plug-Ins", styles: [.bundleID, .displayName]),
         UninstallSearchRoot(
@@ -121,8 +102,7 @@ struct UninstallSearchRoot: Hashable, Sendable {
             styles: [.bundleID, .displayName])
     ]
 
-    /// Where a CLI launcher lands. Scanned by link target rather than by name — see
-    /// `UninstallRules.isBundleSymlink` — so nothing here is matched by what the vendor called it.
+    /// Where a CLI launcher lands. Scanned by link target, never by name — see `UninstallRules.isBundleSymlink`.
     static let binDirectories: [String] = [
         "/usr/local/bin", "/opt/homebrew/bin", "~/.local/bin", "~/bin"
     ]

@@ -5,7 +5,7 @@ struct UninstallList: View {
     let results: [UninstallCandidate]
     let selectedID: UninstallCandidate.ID?
     let summary: String
-    /// Changes only when the list should scroll (keyboard nav / reset), so mouse selection never yanks the scroll position.
+    /// Changes only on keyboard nav / reset, so mouse selection never yanks the scroll position.
     let scroll: ScrollIntent
     let onSelect: (UninstallCandidate) -> Void
     let onToggle: (UninstallCandidate) -> Void
@@ -30,8 +30,7 @@ struct UninstallList: View {
                         )
                         .id(candidate.id)
                         .contentShape(Rectangle())
-                        // Matches the other lists: single click selects instantly, and the
-                        // double-click handler is simultaneous so the tap never waits on its timeout.
+                        // Simultaneous, so the single-click select never waits on the double-click timeout.
                         .onTapGesture { onSelect(candidate) }
                         .simultaneousGesture(
                             TapGesture(count: 2).onEnded {
@@ -74,7 +73,7 @@ private struct UninstallRow: View {
     let onToggle: () -> Void
     @State private var hovered = false
 
-    /// Selection wins over hover when a row is both; otherwise hover shows its fainter layer.
+    /// Selection wins over hover when a row is both.
     private var fill: Color {
         if selected { return Theme.Colors.selection }
         if hovered { return Theme.Colors.rowHover }
@@ -88,14 +87,12 @@ private struct UninstallRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
-            // The glyph is smaller than an app icon but sits in the same `rowIcon` slot every other
-            // list uses, so titles line up at one x across the palette and switching modes doesn't
-            // jog the column. The slot is also the hit target, which is why it takes the tap.
+            // Smaller glyph, same `rowIcon` slot as every other list, so titles line up at one x and switching modes doesn't jog the column.
             SymbolImage(name: glyph, size: Theme.Size.checkbox)
                 .foregroundStyle(candidate.isLocked ? Theme.Colors.textTertiary : .primary)
                 .frame(width: Theme.Size.rowIcon, height: Theme.Size.rowIcon)
                 .contentShape(Rectangle())
-                // Only the checkbox toggles on a single click; the rest of the row selects.
+                // Only the checkbox toggles; the rest of the row selects.
                 .onTapGesture(perform: onToggle)
                 .tooltip(candidate.lockReason)
             Text(candidate.name)
@@ -131,7 +128,7 @@ private struct UninstallRow: View {
     }
 }
 
-/// The Finder icon for any path — the app bundle's own artwork, a folder, or a document.
+/// The Finder icon for any path.
 private struct FileIconView: View {
     let path: String
     @State private var image: NSImage?
@@ -157,7 +154,7 @@ private struct FileIconView: View {
     }
 }
 
-/// Actions menu for a row on the Uninstall screen, shown bottom-right on right-click or from the pill.
+/// Actions menu for a row on the Uninstall screen.
 @MainActor
 enum UninstallActionsMenu {
     static func content(
@@ -179,12 +176,6 @@ enum UninstallActionsMenu {
                     systemImage: checked ? "circle" : "checkmark.circle", shortcut: "⌘↵"
                 ) { session.toggle(candidate.id) })
         }
-        let allSelected = session.selectedCount == session.plan?.removableIDs.count
-        items.append(
-            PopoverMenuItem(
-                title: allSelected ? "Deselect All" : "Select All",
-                systemImage: allSelected ? "square" : "checkmark.square"
-            ) { session.setAll(!allSelected) })
         items.append(
             PopoverMenuItem(title: "Copy Path", systemImage: "doc.on.clipboard", shortcut: "⌥⌘C") {
                 core.copyUninstallPath(candidate)

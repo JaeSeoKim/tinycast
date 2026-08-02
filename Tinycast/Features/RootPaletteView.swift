@@ -48,7 +48,7 @@ struct RootPaletteView: View {
     }
     private var clipResults: [ClipboardItem] { store.search(vm.query) }
     private var histResults: [CalcHistoryEntry] { calcHistory.search(vm.query) }
-    /// Uninstall candidates filtered by the search field, which on this screen filters files by name or location.
+    /// The search field filters files by name or location on this screen.
     private var uninstallResults: [UninstallCandidate] {
         let query = vm.query.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return uninstall.candidates }
@@ -278,7 +278,7 @@ struct RootPaletteView: View {
             vm.selection = 0
             showActions = false
             scroll = ScrollIntent(kind: .top)
-            // Covers every way out of the Uninstall screen — back chevron, bare backspace, a fresh summon.
+            // Every way out of the Uninstall screen: back chevron, bare backspace, a fresh summon.
             if vm.mode != .uninstall { uninstall.cancel() }
         }
         // Pop-to-root: `prepare` clears query/selection, but if both were already at their defaults the handlers above never fire — this intent guarantees the scroll itself snaps back to the origin.
@@ -459,15 +459,6 @@ struct RootPaletteView: View {
                 app.kind == .application, core.runningApps.isRunning(app)
             else { return .ignored }
             core.quit(app)
-            return .handled
-        }
-        // Mirrors the Actions row, and follows ⌃⇧Q's shape — both cases because Shift uppercases the key.
-        .onKeyPress(keys: ["u", "U"], phases: .down) { press in
-            guard press.modifiers.contains(.control), press.modifiers.contains(.shift),
-                !isCollapsed, vm.mode == .launcher, let app = selectedAppEntry,
-                app.kind == .application
-            else { return .ignored }
-            core.beginUninstall(app)
             return .handled
         }
     }
@@ -674,14 +665,14 @@ struct RootPaletteView: View {
         }
     }
 
-    /// The uninstall list's one header, standing in for the section headers the other lists use.
+    /// Stands in for the section headers the other lists use.
     private var uninstallSummary: String {
         let total = uninstall.plan?.removableIDs.count ?? 0
         let size = MeasuredSize(bytes: uninstall.selectedBytes).formatted
         return "\(uninstall.selectedCount) of \(total) files selected · \(size)"
     }
 
-    /// The Uninstall screen's primary action is destructive, so its pill is the one that isn't white.
+    /// The Uninstall screen's primary action is destructive, so its pill isn't white.
     private var pillTint: Color {
         vm.mode == .uninstall ? Theme.Colors.destructive : .primary
     }

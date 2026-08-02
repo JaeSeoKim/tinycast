@@ -1,6 +1,6 @@
 import Foundation
 
-/// Bytes plus whether the size walk hit its budget, so a huge tree can honestly read "at least".
+/// Bytes, plus whether the walk hit its budget so a huge tree can honestly read "at least".
 struct MeasuredSize: Hashable, Sendable {
     var bytes: Int64 = 0
     var isLowerBound = false
@@ -8,17 +8,17 @@ struct MeasuredSize: Hashable, Sendable {
     static let zero = MeasuredSize()
 
     var formatted: String {
-        // `spellsOutZero` off: the default renders an empty folder as "Zero kB", which reads as a bug.
+        // Without this an empty folder renders as "Zero kB", which reads as a bug.
         let size = bytes.formatted(.byteCount(style: .file, spellsOutZero: false))
         return isLowerBound ? "≥ " + size : size
     }
 }
 
-/// One item an uninstall would move to the Trash: the app bundle itself, or a leftover attributed to it.
+/// One item an uninstall would trash: the bundle itself, or a leftover attributed to it.
 struct UninstallCandidate: Identifiable, Hashable, Sendable {
-    /// The standardized path, which is also what `UninstallSelection` stores.
+    /// Standardized, and what `UninstallSelection` stores.
     let path: String
-    /// Row title: the file name, with `.app` stripped from the bundle.
+    /// Row title, with `.app` stripped from the bundle.
     let name: String
     /// Row subtitle: the enclosing directory, tilde-abbreviated.
     let locationLabel: String
@@ -33,7 +33,7 @@ struct UninstallCandidate: Identifiable, Hashable, Sendable {
     var lockReason: String? { protection.lockReason }
 }
 
-/// The result of a scan: everything attributable to one app, with the bundle pinned first.
+/// Everything attributable to one app, bundle pinned first.
 struct UninstallPlan: Equatable, Sendable {
     let target: UninstallTarget
     let candidates: [UninstallCandidate]
@@ -47,20 +47,14 @@ struct UninstallPlan: Equatable, Sendable {
 
     var totalBytes: Int64 { candidates.reduce(0) { $0 + $1.size.bytes } }
 
-    /// Everything the user can actually remove. Name matches are included: they are exact, confined to
-    /// human-named roots, and never claim a name another installed app answers to — and since the
-    /// whole feature only ever moves to the Trash, an unwanted row costs a drag back, not data. The
-    /// row still says "matched by name" so the weaker evidence stays visible before confirming.
+    /// Everything removable, name matches included: they're exact, confined, and only ever cost a drag back out of the Trash.
     var defaultSelection: UninstallSelection {
         UninstallSelection(plan: self, checked: removableIDs)
     }
 }
 
-/// The only thing that can hold a checked set, and it can only ever hold removable ids.
-///
-/// Every mutation funnels through the same intersection with `plan.removableIDs`, so the invariant
-/// "a locked candidate is never checked" is one line to review rather than a rule spread across the
-/// view and the session.
+/// The only thing holding a checked set, and it can only hold removable ids. Every mutation funnels through one
+/// intersection with `plan.removableIDs`, so "a locked candidate is never checked" is one line to review.
 struct UninstallSelection: Equatable, Sendable {
     private(set) var checked: Set<UninstallCandidate.ID>
 
@@ -74,10 +68,6 @@ struct UninstallSelection: Equatable, Sendable {
         } else if plan.removableIDs.contains(id) {
             checked.insert(id)
         }
-    }
-
-    mutating func setAll(_ on: Bool, in plan: UninstallPlan) {
-        checked = on ? plan.removableIDs : []
     }
 
     func isChecked(_ id: UninstallCandidate.ID) -> Bool { checked.contains(id) }

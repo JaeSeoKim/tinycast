@@ -1,7 +1,7 @@
 # Uninstall Application
 
 Removes an app *and* the files it leaves behind — caches, preferences, containers, saved state,
-launch agents. Reached from the launcher's Actions menu (⌘K → **Uninstall Application**, or ⌃⇧U) on
+launch agents. Reached from the launcher's Actions menu (⌘K → **Uninstall Application**) on
 any `.application` entry; it opens the `.uninstall` palette sub-screen scoped to that app.
 
 **Everything goes to the Trash.** `FileManager.trashItem` is the only removal call in the feature —
@@ -173,8 +173,8 @@ name or location; there is no sort control, and the footer's leading corner keep
 circle. The primary pill is the one rendered in `Theme.Colors.destructive`.
 
 ↵ uninstalls, ⌘↵ toggles the highlighted row, clicking the checkbox toggles, double-clicking a row
-toggles. ⌘K carries Uninstall, Select/Unselect File, Select/Deselect All, Copy Path, Show in Finder
-and Show Info in Finder. Copy Path stays on the screen (losing a whole scan to copy one path is a bad
+toggles. ⌘K carries Uninstall, Select/Unselect File, Copy Path, Show in Finder and Show Info in
+Finder. There is no launcher keybinding for Uninstall — it is a menu action only. Copy Path stays on the screen (losing a whole scan to copy one path is a bad
 trade); the two Finder actions hand focus to Finder and so hide the palette. Show Info has no AppKit
 route and drives Finder over Apple events, which raises the system Automation prompt on first use.
 

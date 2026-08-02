@@ -1,14 +1,11 @@
 import Darwin
 import Foundation
 
-/// Every filesystem, stat and permission read the uninstaller performs. Deliberately not compiled by
-/// `Tools/uninstall-test.swift` — the matching and locking decisions it defers to are the pure half.
+/// Every filesystem, stat and permission read. Not compiled by the harness — the decisions it defers to are the pure half.
 enum UninstallScanner {
     struct SizeBudget: Sendable {
-        /// Caps the tree walk behind one row so a pathological cache folder can't stall the scan.
-        /// Generous on purpose: an editor's support folder runs to ~90k entries (Zed's does), and
-        /// stopping short of that would show "≥ 796 MB" where the honest answer is 1.9 GB. Measured
-        /// at roughly a second for 250k entries, and the scan is off-main behind a progress state.
+        /// Generous: an editor's support folder runs to ~90k entries, and stopping short would show "≥ 796 MB" for 1.9 GB.
+        /// Roughly a second at 250k, off-main behind a progress state.
         var maxEntries = 250_000
         static let `default` = SizeBudget()
     }
@@ -24,7 +21,7 @@ enum UninstallScanner {
         }
     }
 
-    /// Runs off the main actor via `Task.detached`, exactly like `AppIndex.refresh()`.
+    /// Runs off-main via `Task.detached`, like `AppIndex.refresh()`.
     nonisolated static func scan(
         target: UninstallTarget, otherAppNames: [String], otherBundleIDs: [String],
         isTargetRunning: Bool, roots: [UninstallSearchRoot] = UninstallSearchRoot.all,
@@ -51,7 +48,7 @@ enum UninstallScanner {
             try Task.checkCancellation()
             let rootPath = root.path(home: home)
             guard let names = childNames(of: rootPath) else { continue }
-            // Permissions belong to the root, not to each match — one stat per root, not per row.
+            // One stat per root, not per row.
             let parent = parentFacts(of: rootPath)
             for match in UninstallRules.matches(childNames: names, in: root, identity: identity) {
                 let path = (rootPath + "/" + match.name as NSString).standardizingPath
@@ -76,7 +73,7 @@ enum UninstallScanner {
                 let path = (rootPath + "/" + name as NSString).standardizingPath
                 guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: path)
                 else { continue }
-                // A relative link resolves against its own directory, not the process's cwd.
+                // A relative link resolves against its own directory, not the cwd.
                 let resolved =
                     target.hasPrefix("/")
                     ? target : (rootPath as NSString).appendingPathComponent(target)
@@ -90,7 +87,7 @@ enum UninstallScanner {
             }
         }
 
-        // The bundle stays pinned first; the rest sort by path, which is the order the list shows.
+        // Bundle pinned first; the rest by path, which is the order the list shows.
         let leftovers = candidates.filter { $0.evidence != .bundle }.sorted { $0.path < $1.path }
         return UninstallPlan(
             target: target, candidates: candidates.filter { $0.evidence == .bundle } + leftovers,
@@ -100,7 +97,7 @@ enum UninstallScanner {
     // MARK: - Private
 
     private static func childNames(of directory: String) -> [String]? {
-        // Not `.skipsHiddenFiles`: dot-named leftovers are exactly the ones a user would never find.
+        // Not `.skipsHiddenFiles`: dot-named leftovers are the ones a user would never find.
         try? FileManager.default.contentsOfDirectory(atPath: directory)
     }
 
@@ -111,7 +108,7 @@ enum UninstallScanner {
         guard let scanned = inspect(path, parent: parent) else { return nil }
         let protection = UninstallProtectionRules.classify(scanned.facts, environment: environment)
         guard protection != .missing else { return nil }
-        // A symlink is trashed as the link itself, so it never costs more than its own bytes.
+        // A symlink is trashed as the link, so it never costs more than its own bytes.
         let walkable = scanned.isDirectory && !scanned.facts.isSymbolicLink
         return UninstallCandidate(
             path: path,
@@ -125,8 +122,7 @@ enum UninstallScanner {
             protection: protection)
     }
 
-    /// `lstat`, never `stat`: a symlinked candidate must be judged as the link, not as whatever it
-    /// points at, which could sit outside every root.
+    /// `lstat`, never `stat`: a symlink is judged as the link, not as whatever it points at.
     private static func inspect(_ path: String, parent: ParentFacts?)
         -> (facts: PathFacts, isDirectory: Bool, byteSize: Int64)?
     {
@@ -148,8 +144,7 @@ enum UninstallScanner {
         return (facts, (info.st_mode & S_IFMT) == S_IFDIR, Int64(info.st_blocks) * 512)
     }
 
-    /// What the enclosing directory says about removing things from it — the permission that actually
-    /// governs a trash, resolved once per root rather than once per candidate.
+    /// The permission that actually governs a trash, resolved once per root.
     private static func parentFacts(of directory: String) -> ParentFacts {
         var info = stat()
         let sticky = stat(directory, &info) == 0 && (info.st_mode & S_ISVTX) != 0
@@ -162,8 +157,7 @@ enum UninstallScanner {
         let isSticky: Bool
     }
 
-    /// On-disk bytes, matching Finder. The enumerator's error handler keeps counting past an
-    /// unreadable subtree instead of abandoning the row, and symlinks are never followed.
+    /// On-disk bytes, like Finder. The error handler keeps counting past an unreadable subtree instead of abandoning the row.
     private static func directorySize(of path: String, budget: SizeBudget) -> MeasuredSize {
         let url = URL(fileURLWithPath: path)
         let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
@@ -187,9 +181,7 @@ enum UninstallScanner {
         return size
     }
 
-    /// Detected, never requested. TCC denies this read silently — no prompt — which is what makes it
-    /// usable under the rule that Tinycast asks for no permission here. It can only under-report
-    /// (a per-folder grant reads as "no access"), and that direction just leaves a row locked.
+    /// Detected, never requested: TCC denies this read silently, no prompt. It can only under-report, which just leaves a row locked.
     private static func detectFullDiskAccess(home: String) -> Bool {
         let descriptor = open(home + "/Library/Application Support/com.apple.TCC/TCC.db", O_RDONLY)
         guard descriptor >= 0 else { return false }

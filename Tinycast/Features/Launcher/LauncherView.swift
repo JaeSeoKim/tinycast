@@ -284,8 +284,7 @@ enum AppActionsMenu {
         if app.kind == .application {
             items.append(
                 PopoverMenuItem(
-                    title: "Uninstall Application", systemImage: "trash", shortcut: "⌃⇧U",
-                    isDestructive: true
+                    title: "Uninstall Application", systemImage: "trash", isDestructive: true
                 ) {
                     core.beginUninstall(app)
                 })

@@ -1,12 +1,10 @@
 import Foundation
 
-/// Everything the classifier is allowed to know about one path, gathered by `UninstallScanner`.
-/// Injecting the facts is what keeps the classifier pure and drivable from the harness.
+/// All the classifier may know about one path. Injected, which is what keeps it pure and harness-drivable.
 struct PathFacts: Hashable, Sendable {
     let path: String
     var exists = true
-    /// Never followed: a symlinked directory can point anywhere, so sizing through it could walk the
-    /// whole disk and classifying it would read facts from outside the roots.
+    /// Never followed: sizing through one could walk the whole disk.
     var isSymbolicLink = false
     var volumeIsReadOnly = false
     /// `SF_RESTRICTED` / `SF_IMMUTABLE` — SIP.
@@ -26,11 +24,8 @@ struct UninstallEnvironment: Hashable, Sendable {
     let hasFullDiskAccess: Bool
 }
 
-/// Why a candidate can or can't be moved to the Trash.
-///
-/// Advisory, not a security boundary: TCC is evaluated at the syscall, so this can be wrong in both
-/// directions. It exists to explain why a row is gray and to skip obviously doomed attempts —
-/// `UninstallRunner` still reports per-item failure.
+/// Why a candidate can or can't be trashed. Advisory, not a boundary: TCC is evaluated at the syscall, so this can be wrong either way.
+/// It grays a row with a reason and skips doomed attempts; `UninstallRunner` still reports per-item failure.
 enum UninstallProtection: String, Hashable, Sendable, CaseIterable {
     case removable
     case systemProtected
@@ -42,7 +37,7 @@ enum UninstallProtection: String, Hashable, Sendable, CaseIterable {
 
     var isRemovable: Bool { self == .removable }
 
-    /// Nil for exactly `.removable` — the harness asserts that, since the row's lock icon keys off it.
+    /// Nil for exactly `.removable`; the row's lock icon keys off it.
     var lockReason: String? {
         switch self {
         case .removable:
@@ -66,10 +61,7 @@ enum UninstallProtection: String, Hashable, Sendable, CaseIterable {
 }
 
 enum UninstallProtectionRules {
-    /// Precedence matters and is asserted: a SIP file is also root-owned and often TCC-gated, and
-    /// "part of macOS" is the more useful sentence than either of the others. This is the branch
-    /// that locks `/System/Applications/Books.app`, and it falls out of the facts rather than a
-    /// hardcoded `/System` prefix.
+    /// Precedence is asserted: a SIP file is also root-owned and often TCC-gated, and "part of macOS" is the most useful reason.
     static func classify(_ facts: PathFacts, environment: UninstallEnvironment) -> UninstallProtection
     {
         guard facts.exists else { return .missing }
@@ -80,27 +72,21 @@ enum UninstallProtectionRules {
         {
             return .needsFullDiskAccess
         }
-        // Trashing is a rename out of the enclosing directory, so the parent's write permission is
-        // what decides it — *not* who owns the item. A root-owned file inside a folder you can write
-        // is yours to remove, and locking on ownership alone grays out rows that trash perfectly well.
+        // Trashing is a rename out of the parent, so its write bit decides — not who owns the item.
         if !facts.parentIsWritable { return .parentNotWritable }
         // The one case where ownership does decide: a sticky parent lets only an owner unlink.
         if facts.parentIsSticky, !facts.isOwnedByCurrentUser { return .notOwned }
         return .removable
     }
 
-    /// Paths TCC gates for a non-sandboxed app without Full Disk Access. The list runs wider than
-    /// the current search roots on purpose, so adding a root later can't silently start attempting
-    /// reads macOS would deny.
+    /// Wider than the current roots on purpose, so adding one later can't silently start attempting denied reads.
     static func isTCCProtected(path: String, home: String) -> Bool {
         let relative = tccRelativePrefixes.contains { path.hasPrefix(home + "/" + $0) }
         return relative || path.hasPrefix("/Library/Application Support/com.apple.TCC")
     }
 
-    /// Measured, not assumed: a probe that creates and trashes a throwaway directory in each of these
-    /// shows `Containers`, `Group Containers` and `Cookies` refuse the move without Full Disk Access,
-    /// while `Application Scripts` and `Autosave Information` allow it. Listing a directory is *not*
-    /// the test — both container roots list fine and still refuse the trash. Re-measure before adding.
+    /// Measured, not assumed — probe by creating and trashing a throwaway directory. Listing is *not* the test:
+    /// both container roots list fine and still refuse the trash. Re-measure before adding an entry.
     static let tccRelativePrefixes: [String] = [
         "Library/Containers/",
         "Library/Group Containers/",

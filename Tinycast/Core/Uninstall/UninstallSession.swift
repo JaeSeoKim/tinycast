@@ -1,7 +1,6 @@
 import Foundation
 
-/// The state behind the palette's Uninstall screen: one scan, its plan, and what the user checked.
-/// The checked-set invariant lives in `UninstallSelection`, so this class only owns the lifecycle.
+/// One scan, its plan, and what the user checked. The checked-set invariant lives in `UninstallSelection`; this owns the lifecycle.
 @MainActor
 final class UninstallSession: ObservableObject {
     enum State: Equatable {
@@ -14,7 +13,7 @@ final class UninstallSession: ObservableObject {
     @Published private(set) var state: State = .idle
     @Published private(set) var selection: UninstallSelection?
     @Published private(set) var isTrashing = false
-    /// The app being uninstalled, kept for the confirmation copy and post-uninstall cleanup.
+    /// Kept for the confirmation copy and the post-uninstall cleanup.
     private(set) var app: AppEntry?
 
     private var scanTask: Task<Void, Never>?
@@ -66,7 +65,7 @@ final class UninstallSession: ObservableObject {
         }
     }
 
-    /// Releases an in-flight scan. Called whenever the palette leaves the Uninstall screen.
+    /// Releases an in-flight scan; called whenever the palette leaves the screen.
     func cancel() {
         scanTask?.cancel()
         scanTask = nil
@@ -80,16 +79,11 @@ final class UninstallSession: ObservableObject {
         selection?.toggle(id, in: plan)
     }
 
-    func setAll(_ on: Bool) {
-        guard let plan else { return }
-        selection?.setAll(on, in: plan)
-    }
-
     func setTrashing(_ trashing: Bool) {
         isTrashing = trashing
     }
 
-    /// Reads the bundle for the names a leftover can be attributed by. Off-main: it opens a file.
+    /// Off-main: it opens a file.
     private nonisolated static func makeTarget(url: URL, name: String, bundleID: String?)
         -> UninstallTarget
     {

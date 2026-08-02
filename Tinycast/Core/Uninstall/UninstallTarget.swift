@@ -1,12 +1,11 @@
 import Foundation
 
-/// What an uninstall is aimed at: the app bundle plus the strings a leftover can be attributed to.
-/// Foundation-only and pure so `Tools/uninstall-test.swift` can compile it standalone.
+/// What an uninstall is aimed at. Pure, for `Tools/uninstall-test.swift`.
 struct UninstallTarget: Hashable, Sendable {
     let bundleURL: URL
     let bundleID: String?
     let displayName: String
-    /// `CFBundleName` when it differs from the display name — some apps name their support folder after it.
+    /// Some apps name their support folder after `CFBundleName` rather than the display name.
     let bundleName: String?
 }
 
@@ -18,7 +17,7 @@ enum UninstallEvidence: String, Hashable, Sendable, CaseIterable {
     case displayName
     case binSymlink
 
-    /// Shown on the row so the weaker evidence is visible; proof-grade matches say nothing.
+    /// Weak evidence names itself on the row; proof-grade matches stay silent.
     var label: String? {
         switch self {
         case .displayName: return "matched by name"
@@ -28,25 +27,22 @@ enum UninstallEvidence: String, Hashable, Sendable, CaseIterable {
     }
 }
 
-/// The matching-ready form of a target. `make` is where every guard rail is applied, so `UninstallRules` is left with no judgement to exercise.
+/// Matching-ready form of a target. `make` applies every guard rail, leaving `UninstallRules` no judgement to exercise.
 struct UninstallIdentity: Hashable, Sendable {
     /// Case-folded bundle ID, or nil when the target has none.
     let bundleID: String?
-    /// A two-component ID like `com.adobe` names a vendor, not a product — prefix-matching it would sweep every app that vendor ships, so those get exact matches only.
+    /// False for a two-component ID: `com.adobe` names a vendor, and prefix-matching it would sweep every app they ship.
     let allowsBundleIDPrefixMatch: Bool
-    /// Every *other* installed app's folded bundle ID. A sibling shipping under a longer ID in the same namespace owns its own artifacts, which is what stops one release channel claiming another's data.
+    /// Other installed apps' folded IDs: a longer-ID sibling owns its own artifacts, so one channel can't claim another's.
     let otherBundleIDs: Set<String>
-    /// Case-folded names safe enough to claim a whole directory. Usually empty or a single entry.
+    /// Case-folded names safe enough to claim a whole directory.
     let names: [String]
     let bundleURL: URL
 
-    /// Below this a name is too generic to attribute anything to — "Go", "1P". Three is the floor
-    /// rather than four because real apps live there: Zed, IINA, Xee all name their support folders
-    /// after themselves, and the exact-match, reserved-name and installed-app-collision guards below
-    /// are what carry the safety, not the length.
+    /// Three, not four: Zed and IINA name their own folders. The guards below carry the safety, not the length.
     static let minimumNameLength = 3
 
-    /// Standard Library subdirectories that belong to macOS rather than to any app, so an app sharing the name can never claim them.
+    /// Standard Library subdirectories, so an app sharing the name can never claim them.
     static let reservedNames: Set<String> = [
         "apple", "application support", "application scripts", "autosave information", "caches",
         "containers", "cookies", "crashreporter", "fonts", "frameworks", "group containers",
@@ -55,8 +51,7 @@ struct UninstallIdentity: Hashable, Sendable {
         "syncservices", "webkit"
     ]
 
-    /// Nil refuses the whole uninstall: Tinycast can never plan its own removal, and a target with
-    /// neither a usable bundle ID nor a safe name has nothing to attribute leftovers by.
+    /// Nil refuses the uninstall: Tinycast never plans its own, and a target with no ID and no safe name can attribute nothing.
     /// `ownBundleID` is the *running* identity, so the Dev channel refuses itself too.
     static func make(
         target: UninstallTarget, otherAppNames: [String], otherBundleIDs: [String] = [],
@@ -83,9 +78,7 @@ struct UninstallIdentity: Hashable, Sendable {
             bundleURL: target.bundleURL.standardizedFileURL)
     }
 
-    /// The four gates a display name has to clear before it may claim a directory: long enough, not
-    /// a macOS-owned folder name, and unique among the installed apps — a second app called "Mail"
-    /// is exactly what makes `~/Library/Application Support/Mail` unattributable.
+    /// Gates a name must clear: long enough, not a macOS folder name, and not shared with another installed app.
     static func safeNames(
         displayName: String, bundleName: String?, otherAppNames: [String]
     ) -> [String] {

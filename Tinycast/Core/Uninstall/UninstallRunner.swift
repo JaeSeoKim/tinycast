@@ -12,22 +12,17 @@ struct UninstallReport: Sendable {
     var trashedCount: Int { trashed.count }
     var freedBytes: Int64 { trashed.reduce(0) { $0 + $1.size.bytes } }
     var hasFailures: Bool { !failed.isEmpty }
-    /// Only when the bundle itself went may the app's hotkey, favorite and ranking be cleared —
-    /// a leftovers-only cleanup leaves the app installed.
+    /// Gates the reference cleanup: a leftovers-only run leaves the app installed.
     var removedBundle: Bool { trashed.contains { $0.evidence == .bundle } }
 }
 
-/// Moves an uninstall's checked items to the Trash. `FileManager.trashItem` is the only removal call
-/// in this feature — `removeItem` never appears, so every uninstall stays undoable from Finder.
+/// `FileManager.trashItem` is the only removal call in this feature — `removeItem` never appears, so an uninstall stays undoable.
 /// Presenting the outcome is `AppCore`'s job; this reports and never shows UI.
 enum UninstallRunner {
     static func moveToTrash(_ candidates: [UninstallCandidate]) async -> UninstallReport {
-        // Defensive: a locked candidate should never have been checked, so treat one here as a bug
-        // to skip rather than an attempt to make.
+        // A locked candidate should never have been checked; skip rather than attempt.
         let removable = candidates.filter { !$0.isLocked }
-        // The bundle goes last. Either order can leave a partial state, but with the bundle still in
-        // place the user can re-run the uninstall to retry the leftovers; once it's gone, the
-        // launcher entry that reaches this screen is gone with it.
+        // Bundle last: on partial failure it's still there to re-run from, and the launcher entry that reaches this screen survives.
         let ordered =
             removable.filter { $0.evidence != .bundle } + removable.filter { $0.evidence == .bundle }
 

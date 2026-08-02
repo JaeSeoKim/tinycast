@@ -12,9 +12,7 @@ enum AppLauncher {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
-    /// Finder's Get Info window. Unlike reveal there's no AppKit route, so this drives Finder over
-    /// Apple events — which means the first use raises the system Automation prompt. False lets the
-    /// caller say so; `-1743` is the user declining that prompt.
+    /// No AppKit route for Get Info, so this drives Finder over Apple events — the first use raises the Automation prompt.
     @MainActor
     static func showInfoInFinder(_ url: URL) -> Bool {
         let source = """

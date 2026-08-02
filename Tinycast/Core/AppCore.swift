@@ -657,12 +657,10 @@ final class AppCore: ObservableObject {
 
     // MARK: - Uninstall
 
-    /// Opens the Uninstall screen for an app. Reached only from the launcher's Actions menu, so the
-    /// palette is already up — this swaps the sub-screen in place instead of re-showing the window.
+    /// The palette is already up when this runs, so it swaps the sub-screen in place rather than re-showing the window.
     func beginUninstall(_ app: AppEntry) {
         guard app.kind == .application else { return }
-        // The other installed apps are what stop a name or a shared bundle-ID namespace being
-        // misattributed; see `UninstallIdentity`.
+        // What stops a name or a shared bundle-ID namespace being misattributed; see `UninstallIdentity`.
         let others = appIndex.apps.filter { $0.kind == .application && $0.id != app.id }
         uninstall.begin(
             app: app, otherAppNames: others.map(\.name),
@@ -670,8 +668,7 @@ final class AppCore: ObservableObject {
         palette.prepare(mode: .uninstall)
     }
 
-    /// The one funnel for the Uninstall screen's ↵ and its Actions row, so neither can skip the
-    /// confirmation. Everything it moves goes to the Trash, never to a permanent delete.
+    /// The one funnel for the screen's ↵ and its Actions row, so neither can skip the confirmation.
     func performUninstall() {
         guard let app = uninstall.app, let plan = uninstall.plan, uninstall.canConfirm else { return }
         let items = uninstall.selectedCandidates
@@ -702,7 +699,7 @@ final class AppCore: ObservableObject {
         }
     }
 
-    /// Stays on the Uninstall screen: losing a whole scan to copy one path would be a poor trade.
+    /// Stays on the screen: losing a whole scan to copy one path is a poor trade.
     func copyUninstallPath(_ candidate: UninstallCandidate) {
         Paster.copyPlainText(candidate.path)
         messageHUD.show(message: "Copied path")
