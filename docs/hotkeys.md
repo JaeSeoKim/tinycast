@@ -76,5 +76,11 @@ where a bare ⇧ combo would shadow typing.
 The settings recorder (`Features/Settings/ShortcutRecorder.swift`) is deliberately **not** a focusable
 control: the active recorder is `HotKeyManager.recordingAction` state, and keys are captured by local
 NSEvent monitors while both engines are paused. It records both kinds — type a combo, or double-tap a
-modifier — by feeding its existing `.flagsChanged` / `.keyDown` monitors into the *same*
-`DoubleTapDetector` the global monitor uses, so recording needs no event tap and no permission.
+modifier — by feeding its `.flagsChanged` / `.keyDown` monitors into the *same* `DoubleTapDetector`
+the global monitor uses, so recording needs no event tap and no permission.
+
+Setting `recordingAction` is what starts and stops the capture, so there is exactly **one**
+`ShortcutCaptureSession` (`Core/HotKey/`) for the app rather than one per row — which is what lets the
+callout above the field render the live state from outside the row that opened it. The field itself
+only ever shows the binding; the prompt, the live preview and the conflict message all live in the
+callout. See [ui.md](ui.md#the-shortcut-recorder-callout).

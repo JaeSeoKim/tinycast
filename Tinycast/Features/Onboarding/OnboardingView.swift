@@ -33,6 +33,8 @@ struct OnboardingView: View {
         )
         // Extend under the transparent titlebar (top padding clears the traffic lights) so the window height equals the fixed content height.
         .ignoresSafeArea()
+        // Onboarding's shortcut step has a recorder too, and it isn't inside a `SettingsPane`.
+        .shortcutRecorderPopoverHost()
         .animation(.easeInOut(duration: 0.2), value: step)
         .onAppear { accessibilityTrusted = Permissions.isAccessibilityTrusted() }
         .onReceive(refreshTimer) { _ in

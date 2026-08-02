@@ -48,7 +48,7 @@ final class DoubleTapMonitor: ObservableObject {
     private var sessionActive = true
     private var loggedTapFailure = false
 
-    // Isolated so teardown runs on main; the tap holds an unretained pointer to `self`, so it must not outlive it. This is an AppCore-owned singleton today, so it only matters if one is ever recreated.
+    // The tap holds an unretained `self`, so it must not outlive it.
     isolated deinit {
         tearDownTap()
         stopHealthTimer()
@@ -95,7 +95,7 @@ final class DoubleTapMonitor: ObservableObject {
         return held
     }
 
-    // Only `fn`, never `maskAlphaShift`: that bit tracks the Caps Lock *latch*, not a press, so testing it would disqualify every tap for as long as Caps Lock happens to be on.
+    // Never `maskAlphaShift`: it tracks the Caps Lock latch, so it would kill every tap while Caps Lock is on.
     private static func hasOtherModifiers(in flags: CGEventFlags) -> Bool {
         flags.contains(.maskSecondaryFn)
     }

@@ -13,6 +13,14 @@ enum HotKeyBinding: Hashable, Sendable {
         }
     }
 
+    /// Modifiers collapsed into one cap, so the narrow field shows any binding in two chips.
+    @MainActor var compactKeycaps: [String] {
+        guard case .combo(let shortcut) = self else { return keycaps }
+        let caps = shortcut.keycaps
+        guard caps.count > 2, let key = caps.last else { return caps }
+        return [caps.dropLast().joined(), key]
+    }
+
     var shortcut: KeyShortcut? {
         if case .combo(let shortcut) = self { return shortcut }
         return nil

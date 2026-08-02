@@ -10,20 +10,28 @@ final class HotKeyManager: ObservableObject {
     var onRunSystemAction: ((SystemAction.ID) -> Void)?
     var onRunWindowCommand: ((WindowCommand.ID) -> Void)?
 
-    /// The recorder currently capturing keystrokes, or `nil`; keeping this as plain app state makes recorders glitch-free, and any active recorder pauses both engines so the shortcut being typed can't fire the binding it's replacing.
+    /// The recorder currently capturing keystrokes, or `nil`; keeping this as plain app state makes recorders glitch-free, and any active recorder pauses both engines so the shortcut being typed can't fire the binding it's replacing. Setting it also starts/stops `capture`.
     @Published var recordingAction: HotKeyAction? {
         didSet {
+            guard recordingAction != oldValue else { return }
             let recording = recordingAction != nil
             center.isPaused = recording
             doubleTapMonitor.isPaused = recording
+            if let recordingAction {
+                capture.start(action: recordingAction, hotKeys: self)
+            } else {
+                capture.stop()
+            }
         }
     }
 
     let doubleTapMonitor = DoubleTapMonitor()
+    /// Live state of the open recorder, read by its callout.
+    let capture = ShortcutCaptureSession()
 
     private let center = HotKeyCenter()
     private var doubleTaps: [DoubleTapModifier: HotKeyAction] = [:]
-    // Reused: `conflictOwner` and `syncDoubleTaps` each decode once per candidate action, so a per-call coder would allocate dozens of times per edit.
+    // Reused: a scan decodes once per candidate action, so a per-call coder allocates dozens per edit.
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
     private let boundKey = "boundAppBundleIDs"
@@ -104,7 +112,7 @@ final class HotKeyManager: ObservableObject {
         case .togglePalette, .toggleClipboard, .toggleEmoji, .systemAction, .windowCommand:
             break
         }
-        // Rebuilding the map re-decodes every candidate action, so skip it unless a double-tap is actually entering or leaving — the common combo edit changes nothing in it.
+        // A rebuild re-decodes every action; only a double-tap entering or leaving changes the map.
         if previous?.doubleTapModifier != nil || binding?.doubleTapModifier != nil {
             syncDoubleTaps()
         }
