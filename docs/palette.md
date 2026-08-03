@@ -53,6 +53,26 @@ in the half-open interval `(minY, maxY]`: the topmost row is exactly `maxY`, whi
 while that same value is the `minY` of the display stacked above. `contains` would therefore hand a
 pointer parked at the top of one display to its neighbour. `NSMouseInRect` exists for precisely this.
 
+## The placeholder is Tinycast's, not the field's
+
+The search field is a SwiftUI `TextField` with **no `prompt`**; `RootPaletteView` draws the
+placeholder itself as a leading-aligned background `Text`.
+
+AppKit gives an `NSTextField` a field editor one point taller than the field (measured: a 24pt editor
+in a 23pt field), and a `prompt` is rendered by whichever of the cell and the editor currently owns
+the text. The same placeholder glyphs therefore sit **one point higher** once the field takes the
+panel's shared field editor. That editor is created lazily and then cached on the window for its
+lifetime, so the step was only ever visible on the first summon after launch — and only where the eye
+could track it, when the outgoing and incoming placeholders share a leading word.
+
+Drawing it in SwiftUI pins it to the layout instead: measured ink is identical in both focus states,
+against a two-backing-pixel step for the real prompt. It is a **background**, not an overlay, so the
+caret still draws over it, and it carries `allowsHitTesting(false)` so clicking the placeholder still
+lands the caret. `PaletteMode.placeholder` is still the one source of the strings; the field takes an
+explicit `accessibilityLabel` because the prompt used to supply it.
+
+This is the same class of bug as the freeze below — both come from the cell/field-editor swap.
+
 ## Menu-open input freeze
 
 While a footer popover menu (⌘K Actions / app menu) is open the search field reads as inert but

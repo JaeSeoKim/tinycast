@@ -559,16 +559,35 @@ struct RootPaletteView: View {
     }
 
     /// The one search field, kept in a single tree position (the `header`) so its focus survives the compact↔expanded swap.
+    ///
+    /// The placeholder is drawn here rather than passed as the field's `prompt`. AppKit gives an
+    /// `NSTextField` a field editor one point taller than the field itself, and a prompt is rendered
+    /// by whichever of the two currently owns the text — so the *same* placeholder glyphs sit a point
+    /// higher once the field takes the panel's shared field editor. That editor is created lazily and
+    /// then cached on the window, which is why the step was only ever visible on the first summon
+    /// after launch. Drawing it here pins it to SwiftUI's layout, where nothing can move it —
+    /// measured identical in both focus states, against a one-point step for the real prompt.
+    ///
+    /// A background rather than an overlay, so the caret still draws over it.
     private var searchField: some View {
-        TextField(
-            "", text: $vm.query,
-            prompt: Text(searchPrompt).foregroundStyle(Theme.Colors.textTertiary)
-        )
-        .textFieldStyle(.plain)
-        .font(Theme.Typography.searchField)
-        .tint(.white)
-        .focused($searchFocused)
-        .onSubmit(activateSelection)
+        TextField("", text: $vm.query)
+            .textFieldStyle(.plain)
+            .font(Theme.Typography.searchField)
+            .tint(.white)
+            .focused($searchFocused)
+            .onSubmit(activateSelection)
+            .background(alignment: .leading) {
+                if vm.query.isEmpty {
+                    Text(searchPrompt)
+                        .font(Theme.Typography.searchField)
+                        .foregroundStyle(Theme.Colors.textTertiary)
+                        .lineLimit(1)
+                        // Never a click target: tapping the placeholder must still land the caret.
+                        .allowsHitTesting(false)
+                }
+            }
+            // The prompt used to carry this; without it the field would be unlabelled.
+            .accessibilityLabel(Text(searchPrompt))
     }
 
     @ViewBuilder
