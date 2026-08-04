@@ -14,7 +14,55 @@ Read these documents in this order:
 
 If this prompt and the phase document disagree, the phase document wins.
 
-## Migration and compatibility policy — read this before the phase document
+## Refactor Context
+
+This task is part of the approved Tinycast Architecture Refactor.
+
+The phase document defines the approved architectural changes for this phase.
+
+Behavioral invariants from `AGENTS.md` always remain in force unless this phase explicitly overrides them.
+
+If an architectural guideline in `AGENTS.md` conflicts with this phase, **follow the phase document**. This is expected during the refactor.
+
+Only stop and ask for clarification if:
+
+- the phase contradicts a behavioral invariant from `AGENTS.md`,
+- the phase is ambiguous,
+- or the requested implementation cannot satisfy both the phase objectives and the project's behavioral guarantees.
+
+Implement **only** the architectural changes described by this phase. Do not begin work from future phases.
+
+### Why you will see conflicts, and how to resolve them
+
+`AGENTS.md` is loaded into your context automatically, **before** this prompt. It describes the codebase
+as it is **today** — the architecture this refactor is deliberately changing. So you will hit
+contradictions like these, and they are expected, not errors:
+
+| `AGENTS.md` says | A phase asks you to |
+|---|---|
+| "`AppCore` is the sole owner … don't create competing singletons" | Extract six coordinators (24, 25) |
+| "the flat `selection` index must match the visible row order" | Rewrite how that index is produced (19–23) |
+| "`Core/…` must stay Foundation-only for `Tools/…`" | Move that file to a new folder (27–29) |
+| "hotkeys persist under legacy `KeyboardShortcuts_` keys" | Delete that namespace (35) |
+
+**Resolve them with this precedence ladder. Higher wins.**
+
+1. **Behavioral invariants** — from `AGENTS.md` and the "What this project protects" section below: UI,
+   keyboard, accessibility, permission and consent behaviour, Swift 6 data-race safety, and the
+   explicitly off-limits files. **Never overridden by anything.**
+2. **`docs/refactor/POLICY.md`** — authoritative **on migration and compatibility questions only**.
+   Nothing else.
+3. **The phase document** — beats `AGENTS.md`'s *architectural* guidance, and beats this prompt.
+4. **This prompt** — the general working contract.
+5. **`docs/architecture-review.md`** — rationale and context. **Never an instruction.**
+
+A structural rule in `AGENTS.md` that a phase contradicts is a rule the refactor is *changing*. Proceed,
+and note it in your summary. A **behavioral** invariant a phase contradicts means the phase is wrong —
+stop and say so.
+
+## Migration and compatibility policy
+
+Rank 2 on the ladder above: this settles compatibility questions and nothing else.
 
 **Treat this application as brand new. Implement no backward compatibility, no migration logic, no
 legacy support.** There are no existing users, there is no upgrade path, a clean install is the only
@@ -37,27 +85,9 @@ Three things this does **not** license — full detail in `docs/refactor/POLICY.
    Markdown files stay exactly as they are. Tinycast's own export JSON may change, provided
    export → import round-trips within the same build.
 
-**This policy overrides any contrary instruction in a phase document, a checklist,
-`docs/architecture-review.md`, or `AGENTS.md`.** Where a phase still says a key or format is "frozen"
-for compatibility, that clause is void — proceed and note it in your summary.
-
-## Refactor Context
-
-This task is part of the approved Tinycast Architecture Refactor.
-
-The phase document defines the approved architectural changes for this phase.
-
-Behavioral invariants from `AGENTS.md` always remain in force unless this phase explicitly overrides them.
-
-If an architectural guideline in `AGENTS.md` conflicts with this phase, **follow the phase document**. This is expected during the refactor.
-
-Only stop and ask for clarification if:
-
-- the phase contradicts a behavioral invariant from `AGENTS.md`,
-- the phase is ambiguous,
-- or the requested implementation cannot satisfy both the phase objectives and the project's behavioral guarantees.
-
-Implement **only** the architectural changes described by this phase. Do not begin work from future phases.
+Where `AGENTS.md`, a checklist, or a phase document still calls a key or format "frozen" **for
+compatibility**, that clause is void — proceed and note it in your summary. On anything that is not a
+compatibility question, the phase document wins.
 
 ## What this project protects
 

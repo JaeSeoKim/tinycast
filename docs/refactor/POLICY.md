@@ -1,7 +1,18 @@
 # Migration and compatibility policy
 
-**This document is authoritative. It overrides any contrary instruction in a phase document, a
-checklist, `docs/architecture-review.md`, or `AGENTS.md`.**
+**Authoritative on migration and compatibility questions — and only those.** On any such question it
+overrides a phase document, a checklist, `docs/architecture-review.md` or `AGENTS.md`. On anything else
+it has no authority: the phase document wins.
+
+That is rank 2 of the precedence ladder in
+[`prompts/system-prompt.md`](prompts/system-prompt.md#why-you-will-see-conflicts-and-how-to-resolve-them):
+
+1. **Behavioral invariants** — UI, keyboard, accessibility, permissions and consent, Swift 6 data-race
+   safety, the off-limits files. Never overridden.
+2. **This document** — compatibility and migration only.
+3. **The phase document** — beats `AGENTS.md`'s architectural guidance.
+4. **The standing prompt.**
+5. **`docs/architecture-review.md`** — rationale, never an instruction.
 
 ---
 
@@ -135,8 +146,9 @@ settings take their intended defaults, nothing crashes on an absent key or an ab
 
 ## Conflicts with `AGENTS.md`
 
-`AGENTS.md` currently states three things this policy overrides. They are listed here so the conflict is
-recorded rather than discovered:
+`AGENTS.md` is loaded into every Claude Code session **before** anything the operator pastes, and it
+describes the codebase as it is today. Conflicts with this policy are therefore guaranteed, not
+accidental. Three are known and listed here so they are recorded rather than discovered mid-phase:
 
 1. > _"Hotkeys persist under legacy `KeyboardShortcuts_<name>` UserDefaults keys (from the removed
    > KeyboardShortcuts package) so old bindings survive."_
