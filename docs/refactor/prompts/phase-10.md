@@ -9,8 +9,8 @@ Three separate 1-second `Timer`s run the same three-step health check. Consolida
 
 ## Hard gates
 
-- **Each subscriber keeps its own `healthCheck()` body verbatim.** The ticker decides *when* to call,
-  never *what* to check. The three bodies look similar and are not the same — do not merge them.
+- **Each subscriber keeps its own `healthCheck()` body verbatim.** The ticker decides _when_ to call,
+  never _what_ to check. The three bodies look similar and are not the same — do not merge them.
 - The ticker's timer must **not** run when the subscriber list is empty. A user who binds no double-tap,
   configures no Hyper key and never enables snippets must pay nothing.
 - Subscription must be **weak**, or use an explicit unsubscribe token. A strong list leaks a torn-down

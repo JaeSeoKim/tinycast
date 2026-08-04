@@ -13,6 +13,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 ## Core sweep — after every phase
 
 ### Palette lifecycle
+
 - [ ] Palette hotkey opens the launcher; pressing it again closes it
 - [ ] Escape closes it
 - [ ] Clicking away closes it (`windowDidResignKey`)
@@ -22,6 +23,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] The top edge stays anchored across the compact↔expanded swap
 
 ### Search and selection
+
 - [ ] Typing filters results; results appear instantly with no visible lag
 - [ ] ↑/↓ move the highlight and scroll it into view without yanking the list
 - [ ] The highlight always sits on the row the footer pill describes
@@ -31,6 +33,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
       Quicklinks, Snippets, System Actions, Window Management, Custom Commands, Commands
 
 ### Menus and keys
+
 - [ ] ⌘K opens the Actions menu for the current selection
 - [ ] ↑/↓ move the menu highlight; ↵ activates; Escape closes the menu, not the palette
 - [ ] While a menu is open, typing does **not** change the query and the caret is hidden
@@ -40,11 +43,13 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] ⌘, opens Settings; ⌘W closes the palette
 
 ### Focus restoration
+
 - [ ] Launching an app from the palette gives that app focus
 - [ ] Escaping the palette returns focus to the app you were in
 - [ ] Paste from clipboard history lands in the app you were in, not in Tinycast
 
 ### Visual
+
 - [ ] Dark surface, glass materials and blur identical to before — compare against a screenshot
 - [ ] Row heights, spacing, icon sizes, keycap chips unchanged
 - [ ] No flash, flicker or reflow on open
@@ -54,6 +59,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 ## Scoped sections
 
 ### Clipboard — phases 09, 10, 17, 22
+
 - [ ] Copying text anywhere records a new entry at the top within ~1 second
 - [ ] Copying an image records a thumbnail
 - [ ] Search filters; results are correct for queries under and over 3 characters
@@ -65,6 +71,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Password-manager copies are still not recorded
 
 ### Launcher & icons — phases 02, 07, 09, 17, 23, 31
+
 - [ ] Every installed app appears; Settings panes appear under System Settings
 - [ ] Icons render with no placeholder flash on reopen
 - [ ] Settings ▸ Applications scrolls smoothly with no hitch on first paint
@@ -73,6 +80,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Learned ranking still surfaces your habitual result for a short query
 
 ### Hotkeys — phases 06, 15, 26
+
 - [ ] The palette, clipboard and emoji global shortcuts all fire
 - [ ] A per-app shortcut still toggles that app
 - [ ] Recording a shortcut in Settings captures it, and the old binding does not fire while recording
@@ -82,6 +90,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Quit and relaunch: every binding survives
 
 ### Uninstall — phases 08, 25
+
 - [ ] The Uninstall action from the launcher opens the scan screen
 - [ ] **List order is identical to before**: the bundle first, leftovers sorted by path
 - [ ] The size total matches what it showed before the phase
@@ -91,6 +100,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Escaping mid-scan cancels promptly with no spinner left behind
 
 ### Quicklinks — phases 17, 21, 24
+
 - [ ] A quicklink opens its destination
 - [ ] One with `{argument}` prompts for each argument in order; Backspace steps back
 - [ ] `{selection}` falls back per the Settings choice
@@ -99,6 +109,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Display order: pinned first by pin time, then by name
 
 ### Snippets — phases 04, 17, 24
+
 - [ ] With snippets **off**: no launcher entries, no keyword expansion, no permission prompt at launch
 - [ ] Enabling shows the consent dialog **before** the Accessibility prompt
 - [ ] Declining the consent dialog leaves the feature off and prompts for nothing
@@ -107,12 +118,14 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] Editing a snippet file externally reloads it
 
 ### Calculator & currency — phases 09, 14, 17
+
 - [ ] `2+2` shows a card; ↵ copies and records to history
 - [ ] Unit and date conversions still work
 - [ ] With currency conversion **off**, a currency query produces no card and no network request
 - [ ] Turning it on shows the consent sheet naming the provider first
 
 ### System actions & window management — phases 14, 25, 26, 31
+
 - [ ] A confirmation-gated action (Restart, Quit All) still confirms, with the subject's own glyph
 - [ ] Volume actions show the volume HUD; other actions show the message pill
 - [ ] Holding a bound hotkey does **not** stack dialogs
@@ -121,6 +134,7 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 - [ ] "Top Half" lands flush with the top of the visible frame — on a secondary display too
 
 ### Settings & backup — phases 05, 16, 32, 33
+
 - [ ] Every pane renders; the sidebar switches without flicker
 - [ ] Toggling a feature switch takes effect in the launcher immediately
 - [ ] Every setting survives quit and relaunch

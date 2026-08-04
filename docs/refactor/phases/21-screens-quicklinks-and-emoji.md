@@ -28,20 +28,20 @@ phases 22–23.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Quicklinks/QuicklinkListScreen.swift` | **New.** |
-| `Tinycast/Features/Emoji/EmojiScreen.swift` | **New.** |
-| `Tinycast/Features/PaletteScreen.swift` | Likely gains a `move(_:from:)` hook — see boundaries. |
-| `Tinycast/Features/RootPaletteView.swift` | Two more arms out of each switch; chord routing. |
-| `Tinycast/Features/Quicklinks/QuicklinkListView.swift` | Body + `QuicklinkActionsMenu` move into the screen. |
-| `Tinycast/Features/Emoji/EmojiGridView.swift` | Body + `EmojiActionsMenu` move into the screen. |
-| `Tools/palette-selection-test.swift` | Add grid-geometry cases. |
+| File                                                     | Change                                                |
+| -------------------------------------------------------- | ----------------------------------------------------- |
+| `Tinycast/Features/Quicklinks/QuicklinkListScreen.swift` | **New.**                                              |
+| `Tinycast/Features/Emoji/EmojiScreen.swift`              | **New.**                                              |
+| `Tinycast/Features/PaletteScreen.swift`                  | Likely gains a `move(_:from:)` hook — see boundaries. |
+| `Tinycast/Features/RootPaletteView.swift`                | Two more arms out of each switch; chord routing.      |
+| `Tinycast/Features/Quicklinks/QuicklinkListView.swift`   | Body + `QuicklinkActionsMenu` move into the screen.   |
+| `Tinycast/Features/Emoji/EmojiGridView.swift`            | Body + `EmojiActionsMenu` move into the screen.       |
+| `Tools/palette-selection-test.swift`                     | Add grid-geometry cases.                              |
 
 ## Files that must NOT change
 
 - `Tinycast/Core/Emoji/EmojiGridGeometry.swift` — **harness-compiled and pure.** The grid maths is
-  already correct and already tested; the screen *calls* it.
+  already correct and already tested; the screen _calls_ it.
 - `Tinycast/Core/Emoji/EmojiCatalog.swift`, `EmojiData.generated.swift`
 - `Tinycast/Core/Quicklinks/*`
 - `Tinycast/Core/AppCore.swift`
@@ -100,13 +100,13 @@ phases 22–23.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                                           | Mitigation                                                      |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | **Emoji grid navigation breaks.** The column-preserving spill is subtle and easy to get wrong. | AC3/AC4 + `EmojiGridGeometry` staying untouched + harness cases |
-| ← / → get consumed in non-emoji screens, breaking the caret | AC5 — test in the launcher explicitly |
-| A chord moves to the screen but is not routed, so it silently does nothing | Every chord in the checklist |
-| The protocol grows a navigation framework | AC2 — one member |
-| Skin tone is applied at only one of the two points | AC10 |
+| ← / → get consumed in non-emoji screens, breaking the caret                                    | AC5 — test in the launcher explicitly                           |
+| A chord moves to the screen but is not routed, so it silently does nothing                     | Every chord in the checklist                                    |
+| The protocol grows a navigation framework                                                      | AC2 — one member                                                |
+| Skin tone is applied at only one of the two points                                             | AC10                                                            |
 
 ## Rollback strategy
 

@@ -27,15 +27,15 @@ on the two screens where being wrong is cheapest to correct.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Quicklinks/QuicklinkArgumentsScreen.swift` | **New.** |
-| `Tinycast/Features/Uninstall/UninstallScreen.swift` | **New.** |
-| `Tinycast/Features/PaletteScreen.swift` | Only if adoption reveals a real gap. |
-| `Tinycast/Features/RootPaletteView.swift` | Two arms removed from each of the eight switches. |
-| `Tinycast/Features/Quicklinks/QuicklinkArgumentsView.swift` | May move into the screen or stay as its body. |
-| `Tinycast/Features/Uninstall/UninstallView.swift` | Same; `UninstallActionsMenu` moves to the screen. |
-| `Tools/palette-selection-test.swift` | Add cases for these two row shapes. |
+| File                                                          | Change                                            |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| `Tinycast/Features/Quicklinks/QuicklinkArgumentsScreen.swift` | **New.**                                          |
+| `Tinycast/Features/Uninstall/UninstallScreen.swift`           | **New.**                                          |
+| `Tinycast/Features/PaletteScreen.swift`                       | Only if adoption reveals a real gap.              |
+| `Tinycast/Features/RootPaletteView.swift`                     | Two arms removed from each of the eight switches. |
+| `Tinycast/Features/Quicklinks/QuicklinkArgumentsView.swift`   | May move into the screen or stay as its body.     |
+| `Tinycast/Features/Uninstall/UninstallView.swift`             | Same; `UninstallActionsMenu` moves to the screen. |
+| `Tools/palette-selection-test.swift`                          | Add cases for these two row shapes.               |
 
 ## Files that must NOT change
 
@@ -93,13 +93,13 @@ on the two screens where being wrong is cheapest to correct.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| Row order or selection index shifts | `palette-selection-test` + interactive ↑/↓ walk |
-| The uninstall summary string changes | AC6, compared against a screenshot |
+| Risk                                                        | Mitigation                                                                               |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Row order or selection index shifts                         | `palette-selection-test` + interactive ↑/↓ walk                                          |
+| The uninstall summary string changes                        | AC6, compared against a screenshot                                                       |
 | The argument form's "no rows but ↵ still works" case breaks | AC4/5 — this is the one screen where `resultCount` can be 0 and the pill must still show |
-| Mode-exit cleanup is moved prematurely and a session leaks | Boundary: cleanup stays in `RootPaletteView` |
-| The protocol is bent to fit rather than fixed | Summary must state any protocol change and why |
+| Mode-exit cleanup is moved prematurely and a session leaks  | Boundary: cleanup stays in `RootPaletteView`                                             |
+| The protocol is bent to fit rather than fixed               | Summary must state any protocol change and why                                           |
 
 ## Rollback strategy
 
@@ -140,7 +140,7 @@ five modes still to migrate. Behaviour and strings copied verbatim.
 
 ## Notes for reviewers
 
-- Diff the *moved* code against its original with `git diff -M` — the bodies should be byte-identical
+- Diff the _moved_ code against its original with `git diff -M` — the bodies should be byte-identical
   apart from indentation and the `self.` prefix changes adoption forces.
 - The uninstall summary line is assembled from three pieces (`selectedCount`, `plan.removableIDs.count`,
   `MeasuredSize.formatted`). Compare the rendered string, not the code.

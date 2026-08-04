@@ -32,9 +32,9 @@ right call here, and it is the one place in the app where it is.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/Uninstall/UninstallScanner.swift` | Both phases become task groups; `scan` becomes `async`. |
+| File                                             | Change                                                                 |
+| ------------------------------------------------ | ---------------------------------------------------------------------- |
+| `Tinycast/Core/Uninstall/UninstallScanner.swift` | Both phases become task groups; `scan` becomes `async`.                |
 | `Tinycast/Core/Uninstall/UninstallSession.swift` | Await the now-`async` scan; keep the existing `scanTask` cancellation. |
 
 ## Files that must NOT change
@@ -45,7 +45,8 @@ right call here, and it is the one place in the app where it is.
 - `Tinycast/Core/Uninstall/UninstallProtection.swift`
 - `Tinycast/Core/Uninstall/UninstallPlan.swift`
 
-  *All five are the harness-compiled pure layer. This phase must not touch them.*
+  _All five are the harness-compiled pure layer. This phase must not touch them._
+
 - `Tinycast/Core/Uninstall/UninstallRunner.swift`
 - `Tinycast/Features/Uninstall/UninstallView.swift`
 
@@ -101,14 +102,14 @@ right call here, and it is the one place in the app where it is.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **List order changes** — the explicit user requirement | AC4, verified by screenshot on a real app, twice |
-| Non-deterministic output because dedup raced | AC3 + the "run it twice" check |
-| A candidate is dropped because two roots produced the same path and dedup ran per-task | Dedup is one pass over the flattened array |
-| Cancellation stops working, leaving work running after the screen closes | AC6 |
-| Peak RAM spikes beyond acceptable | One enumerator per walk, a few KB each; measure and record |
-| The pure layer gets edited to make the parallelism easier | The five files are on the must-not-change list |
+| Risk                                                                                   | Mitigation                                                 |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **List order changes** — the explicit user requirement                                 | AC4, verified by screenshot on a real app, twice           |
+| Non-deterministic output because dedup raced                                           | AC3 + the "run it twice" check                             |
+| A candidate is dropped because two roots produced the same path and dedup ran per-task | Dedup is one pass over the flattened array                 |
+| Cancellation stops working, leaving work running after the screen closes               | AC6                                                        |
+| Peak RAM spikes beyond acceptable                                                      | One enumerator per walk, a few KB each; measure and record |
+| The pure layer gets edited to make the parallelism easier                              | The five files are on the must-not-change list             |
 
 ## Rollback strategy
 

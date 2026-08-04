@@ -10,7 +10,7 @@ branch is ideal.
 
 - **`PaletteWindowController` must not appear in the diff.** It solely owns the palette frame —
   `applyCollapsed`, `positionPanel`, `resolveAnchor` and `sizingOptions = []` do not move and are not
-  touched. `PaletteCoordinator` decides *which mode to show*; the controller decides *where and how big*.
+  touched. `PaletteCoordinator` decides _which mode to show_; the controller decides _where and how big_.
   Splitting frame ownership produces the drifting-top-edge bug `AGENTS.md` names.
 - Pop-to-root (`consumePreservedState`, the timer) stays in `PaletteWindowController`.
 - `paletteIsCollapsed` stays the single source of truth for compact vs expanded.

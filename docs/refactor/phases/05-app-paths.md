@@ -14,8 +14,8 @@ the same `?? "com.tinycast.app"` fallback. Replace them with one helper.
 
 ## Why this phase exists
 
-Channel isolation is a named invariant: *"Anything newly persisted must stay keyed by
-`Bundle.main.bundleIdentifier`"* — so a Dev build never shares prefs, caches or TCC grants with an
+Channel isolation is a named invariant: _"Anything newly persisted must stay keyed by
+`Bundle.main.bundleIdentifier`"_ — so a Dev build never shares prefs, caches or TCC grants with an
 installed stable. Eight copies means eight chances for the ninth store to forget, and no single place to
 audit.
 
@@ -33,16 +33,16 @@ audit.
 
 ## Expected files to modify
 
-| File | Current directory |
-|---|---|
-| `Tinycast/Core/AppPaths.swift` | **New.** ~25 lines. |
-| `Tinycast/Core/ClipboardStore.swift` | Caches |
-| `Tinycast/Core/LauncherRankingStore.swift` | Caches |
-| `Tinycast/Core/CalculatorHistoryStore.swift` | Caches |
-| `Tinycast/Core/Emoji/FrequentEmojiStore.swift` | Caches |
-| `Tinycast/Core/CurrencyRateStore.swift` | Caches |
-| `Tinycast/Core/Quicklinks/QuicklinkStore.swift` | Application Support |
-| `Tinycast/Core/OnboardingState.swift` | Application Support |
+| File                                             | Current directory   |
+| ------------------------------------------------ | ------------------- |
+| `Tinycast/Core/AppPaths.swift`                   | **New.** ~25 lines. |
+| `Tinycast/Core/ClipboardStore.swift`             | Caches              |
+| `Tinycast/Core/LauncherRankingStore.swift`       | Caches              |
+| `Tinycast/Core/CalculatorHistoryStore.swift`     | Caches              |
+| `Tinycast/Core/Emoji/FrequentEmojiStore.swift`   | Caches              |
+| `Tinycast/Core/CurrencyRateStore.swift`          | Caches              |
+| `Tinycast/Core/Quicklinks/QuicklinkStore.swift`  | Application Support |
+| `Tinycast/Core/OnboardingState.swift`            | Application Support |
 | `Tinycast/Core/Snippets/SnippetRepository.swift` | Application Support |
 
 ## Files that must NOT change
@@ -104,12 +104,12 @@ Therefore:
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **Channel isolation breaks** and a Dev build writes into the stable app's directory | AC4 + the last verification step. This is the one storage invariant the policy does *not* relax |
-| A harness breaks because a pure file gained a dependency | AC3 + AC5; the boundary forbids touching those four |
-| `createDirectory` moves and a first-run store fails to write | AC1 keeps creation inside `AppPaths`; AC7's clean install is the test |
-| A store crashes rather than starting empty when its file is absent | AC7 |
+| Risk                                                                                | Mitigation                                                                                      |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Channel isolation breaks** and a Dev build writes into the stable app's directory | AC4 + the last verification step. This is the one storage invariant the policy does _not_ relax |
+| A harness breaks because a pure file gained a dependency                            | AC3 + AC5; the boundary forbids touching those four                                             |
+| `createDirectory` moves and a first-run store fails to write                        | AC1 keeps creation inside `AppPaths`; AC7's clean install is the test                           |
+| A store crashes rather than starting empty when its file is absent                  | AC7                                                                                             |
 
 ## Rollback strategy
 
@@ -144,7 +144,7 @@ Phase 01.
 
 ## Estimated difficulty
 
-**Low.** The code is trivial; knowing which four types *not* to touch is the phase.
+**Low.** The code is trivial; knowing which four types _not_ to touch is the phase.
 
 ## Estimated Claude context usage
 

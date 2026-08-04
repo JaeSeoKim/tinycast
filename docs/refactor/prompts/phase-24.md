@@ -20,7 +20,7 @@ of snippet expansion — into coordinators.
 - **Ordering that must not change:**
   - `openQuicklink`: feature-switch guard → resolve target app → decide encoding → capture context →
     selection fallback → expand → if arguments remain, begin the session and show the prompt → else open.
-  - `expandSnippet`: the **interactive** path gates with `prepareInteractiveExpansion` *before* the
+  - `expandSnippet`: the **interactive** path gates with `prepareInteractiveExpansion` _before_ the
     argument prompt; the **automatic** path was already gated by `beginAutomaticExpansion` and must not
     be re-gated.
 - `pendingQuicklinkForcesDefaultApp` moves with the quicklink flow — it carries the menu's default-app

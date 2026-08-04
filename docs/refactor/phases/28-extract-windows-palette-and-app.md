@@ -29,33 +29,33 @@ file for one of the three windows it serves.
 
 **→ `Tinycast/Windows/`**
 
-| From | To |
-|---|---|
-| `Core/Dialog/*` (4 files) | `Windows/Dialog/` |
-| `Features/Dialog/*` (2 files) | `Windows/Dialog/` |
-| `Core/HUD/*` (4 files) | `Windows/HUD/` |
-| `Features/HUD/*` (2 files) | `Windows/HUD/` |
+| From                                                                        | To                                  |
+| --------------------------------------------------------------------------- | ----------------------------------- |
+| `Core/Dialog/*` (4 files)                                                   | `Windows/Dialog/`                   |
+| `Features/Dialog/*` (2 files)                                               | `Windows/Dialog/`                   |
+| `Core/HUD/*` (4 files)                                                      | `Windows/HUD/`                      |
+| `Features/HUD/*` (2 files)                                                  | `Windows/HUD/`                      |
 | `AuxWindowController` — **extracted** from `Features/About/AboutView.swift` | `Windows/AuxWindowController.swift` |
-| `Features/About/AboutView.swift` | `Windows/About/AboutView.swift` |
+| `Features/About/AboutView.swift`                                            | `Windows/About/AboutView.swift`     |
 
 **→ `Tinycast/Palette/`**
 
-| From | To |
-|---|---|
-| `Core/PalettePanel.swift` | `Palette/PalettePanel.swift` |
-| `Core/PaletteWindowController.swift` | `Palette/PaletteWindowController.swift` |
-| `Features/RootPaletteView.swift` | `Palette/RootPaletteView.swift` |
-| `Features/PaletteScreen.swift` | `Palette/PaletteScreen.swift` |
-| `Features/Palette/PaletteCoordinator.swift` | `Palette/PaletteCoordinator.swift` |
-| `PaletteViewModel` — **extracted** from `Core/AppCore.swift` | `Palette/PaletteViewModel.swift` |
-| `PaletteMode` + `PasteTarget` — **extracted** from `Core/AppCore.swift` | `Palette/PaletteMode.swift` |
+| From                                                                    | To                                      |
+| ----------------------------------------------------------------------- | --------------------------------------- |
+| `Core/PalettePanel.swift`                                               | `Palette/PalettePanel.swift`            |
+| `Core/PaletteWindowController.swift`                                    | `Palette/PaletteWindowController.swift` |
+| `Features/RootPaletteView.swift`                                        | `Palette/RootPaletteView.swift`         |
+| `Features/PaletteScreen.swift`                                          | `Palette/PaletteScreen.swift`           |
+| `Features/Palette/PaletteCoordinator.swift`                             | `Palette/PaletteCoordinator.swift`      |
+| `PaletteViewModel` — **extracted** from `Core/AppCore.swift`            | `Palette/PaletteViewModel.swift`        |
+| `PaletteMode` + `PasteTarget` — **extracted** from `Core/AppCore.swift` | `Palette/PaletteMode.swift`             |
 
 **→ `Tinycast/App/`**
 
-| From | To |
-|---|---|
-| `Core/AppCore.swift` | `App/AppCore.swift` |
-| `Core/OnboardingState.swift` | `Features/Onboarding/OnboardingState.swift` *(with its view, in phase 29)* |
+| From                         | To                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `Core/AppCore.swift`         | `App/AppCore.swift`                                                        |
+| `Core/OnboardingState.swift` | `Features/Onboarding/OnboardingState.swift` _(with its view, in phase 29)_ |
 
 ## Files that must NOT change (contents)
 
@@ -106,12 +106,12 @@ file for one of the three windows it serves.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| `AuxWindowController`'s activation-policy flip breaks → a stray Dock icon or a window that never becomes key | The three aux-window checks |
-| The `DispatchQueue.main.async` re-assert of key status is lost in the extraction | Open Settings from the menu bar specifically — that is the path it exists for |
-| Palette frame behaviour changes | AC5 — byte-identical |
-| A `fileprivate` in `AboutView.swift` was relied on by `AuxWindowController` | Compiler catches it; do not widen access beyond `internal` |
+| Risk                                                                                                         | Mitigation                                                                    |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `AuxWindowController`'s activation-policy flip breaks → a stray Dock icon or a window that never becomes key | The three aux-window checks                                                   |
+| The `DispatchQueue.main.async` re-assert of key status is lost in the extraction                             | Open Settings from the menu bar specifically — that is the path it exists for |
+| Palette frame behaviour changes                                                                              | AC5 — byte-identical                                                          |
+| A `fileprivate` in `AboutView.swift` was relied on by `AuxWindowController`                                  | Compiler catches it; do not widen access beyond `internal`                    |
 
 ## Rollback strategy
 

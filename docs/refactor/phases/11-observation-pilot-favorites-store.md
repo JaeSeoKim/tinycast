@@ -12,7 +12,7 @@ the recipe every later M2 phase follows. One type, one conversation, one commit.
 ## Why this phase exists
 
 The Observation migration is the largest single win in the roadmap and touches 26 types. Doing it
-type-by-type is only safe if the *first* one is done deliberately and the resulting recipe is recorded.
+type-by-type is only safe if the _first_ one is done deliberately and the resulting recipe is recorded.
 `FavoritesStore` is the right pilot: 53 lines, one `@Published` property, two consumers, and its effects
 are immediately visible in the launcher.
 
@@ -28,11 +28,11 @@ are immediately visible in the launcher.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/FavoritesStore.swift` | `@Observable`; drop `@Published`; drop `import Combine` if unused. |
-| `Tinycast/Core/PaletteWindowController.swift` | `.environmentObject(core.favorites)` → `.environment(core.favorites)`. |
-| `Tinycast/Features/RootPaletteView.swift` | `@EnvironmentObject private var favorites` → `@Environment(FavoritesStore.self)`. |
+| File                                            | Change                                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `Tinycast/Core/FavoritesStore.swift`            | `@Observable`; drop `@Published`; drop `import Combine` if unused.                            |
+| `Tinycast/Core/PaletteWindowController.swift`   | `.environmentObject(core.favorites)` → `.environment(core.favorites)`.                        |
+| `Tinycast/Features/RootPaletteView.swift`       | `@EnvironmentObject private var favorites` → `@Environment(FavoritesStore.self)`.             |
 | `Tinycast/Features/Launcher/LauncherView.swift` | Only if `AppActionsMenu` takes `favorites` — it takes it as a parameter, so likely no change. |
 
 ## Files that must NOT change
@@ -78,12 +78,12 @@ are immediately visible in the launcher.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **The view stops updating.** A missing `@Environment` registration compiles fine and fails silently at runtime. | AC4 + the interactive add/remove test |
-| The compact bar's slots go stale | Explicit compact-mode check |
-| `revision` is dropped as "redundant now" | AC3 — it serves the memo, not the view |
-| The optional `@Environment` form leaks into the view and hides a missing injection | Boundary note |
+| Risk                                                                                                            | Mitigation                             |
+| --------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **The view stops updating.** A missing `@Environment` registration compiles fine and fails silently at runtime. | AC4 + the interactive add/remove test  |
+| The compact bar's slots go stale                                                                                | Explicit compact-mode check            |
+| `revision` is dropped as "redundant now"                                                                        | AC3 — it serves the memo, not the view |
+| The optional `@Environment` form leaks into the view and hides a missing injection                              | Boundary note                          |
 
 ## Rollback strategy
 
@@ -130,7 +130,7 @@ Phase 01. Phase 09 if it landed first (for `revision`). **Blocks phases 12–18.
 - This phase's real deliverable is the **recipe**. If the progress file's recipe section is thin, the
   next seven phases will each rediscover the same problems. Push back on a thin write-up harder than on
   the code.
-- Verify the view genuinely still updates by *using* it, not by reading the diff. This is the failure
+- Verify the view genuinely still updates by _using_ it, not by reading the diff. This is the failure
   mode that compiles cleanly and ships broken.
 - Confirm `PaletteWindowController.ensurePanel()` converted the right one of its 15 `.environmentObject`
   calls and left the other 14 alone.

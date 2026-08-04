@@ -28,8 +28,8 @@ git diff --name-only
 
 ## 2 · Behaviour preservation
 
-Read the actual hunks. For each one ask: *does this change what the program does, or only how it is
-arranged?*
+Read the actual hunks. For each one ask: _does this change what the program does, or only how it is
+arranged?_
 
 - [ ] No condition added, removed or inverted
 - [ ] No comparison operator changed
@@ -141,10 +141,10 @@ Spot-check the ones this phase's blast radius could reach:
 
 ## Verdict
 
-| Outcome | Action |
-|---|---|
-| All sections clean | Fill in the progress file, commit, merge, **stop for the day** |
-| Small scoped fixes needed | Same conversation, one specific instruction each, re-review |
-| Scope creep, or an untouchable file changed | `git reset --hard`, re-run with tightened constraints |
-| Unexplained behaviour change | `git reset --hard`. Do not attempt to salvage. |
-| Phase turned out to be mis-specified | Reset, mark **Blocked** in `ROADMAP.md`, write it up, re-plan the phase doc |
+| Outcome                                     | Action                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| All sections clean                          | Fill in the progress file, commit, merge, **stop for the day**              |
+| Small scoped fixes needed                   | Same conversation, one specific instruction each, re-review                 |
+| Scope creep, or an untouchable file changed | `git reset --hard`, re-run with tightened constraints                       |
+| Unexplained behaviour change                | `git reset --hard`. Do not attempt to salvage.                              |
+| Phase turned out to be mis-specified        | Reset, mark **Blocked** in `ROADMAP.md`, write it up, re-plan the phase doc |

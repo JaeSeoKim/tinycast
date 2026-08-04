@@ -28,15 +28,15 @@ row by one — the offset that appears in eight places today.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Clipboard/ClipboardScreen.swift` | **New.** |
-| `Tinycast/Features/Calculator/CalculatorHistoryScreen.swift` | **New.** |
-| `Tinycast/Features/RootPaletteView.swift` | Two more arms; the `clipFollow` handler moves. |
-| `Tinycast/Features/Clipboard/ClipboardView.swift` | Body + `ClipboardActionsMenu` move. |
-| `Tinycast/Features/Calculator/CalculatorHistoryView.swift` | Body + `CalcHistoryActionsMenu` move. |
-| `Tinycast/Features/Launcher/CalculatorCardView.swift` | `CalcActionsMenu` may move; the card view itself is shared with the launcher — **leave it where it is**. |
-| `Tools/palette-selection-test.swift` | Calc-card-at-index-0 cases. |
+| File                                                         | Change                                                                                                   |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `Tinycast/Features/Clipboard/ClipboardScreen.swift`          | **New.**                                                                                                 |
+| `Tinycast/Features/Calculator/CalculatorHistoryScreen.swift` | **New.**                                                                                                 |
+| `Tinycast/Features/RootPaletteView.swift`                    | Two more arms; the `clipFollow` handler moves.                                                           |
+| `Tinycast/Features/Clipboard/ClipboardView.swift`            | Body + `ClipboardActionsMenu` move.                                                                      |
+| `Tinycast/Features/Calculator/CalculatorHistoryView.swift`   | Body + `CalcHistoryActionsMenu` move.                                                                    |
+| `Tinycast/Features/Launcher/CalculatorCardView.swift`        | `CalcActionsMenu` may move; the card view itself is shared with the launcher — **leave it where it is**. |
+| `Tools/palette-selection-test.swift`                         | Calc-card-at-index-0 cases.                                                                              |
 
 ## Files that must NOT change
 
@@ -102,14 +102,14 @@ row by one — the offset that appears in eight places today.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **The clipboard selection jumps while typing.** The follow key's store-vs-results distinction is exactly this bug. | AC5 + the explicit test |
-| The first load repositions the selection | The nil-`old.id` guard; AC4 |
-| The calc card offset is reintroduced as a variable in the new screen | AC2 — this is the pattern phase 23 depends on |
-| ⌘⌫ deletes the calc card | AC8 |
-| An error card enables the pill or the menu | AC9 |
-| Preview/thumbnail code is "tidied" during the move | Boundary — move unchanged |
+| Risk                                                                                                               | Mitigation                                    |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **The clipboard selection jumps while typing.** The follow key's store-vs-results distinction is exactly this bug. | AC5 + the explicit test                       |
+| The first load repositions the selection                                                                           | The nil-`old.id` guard; AC4                   |
+| The calc card offset is reintroduced as a variable in the new screen                                               | AC2 — this is the pattern phase 23 depends on |
+| ⌘⌫ deletes the calc card                                                                                           | AC8                                           |
+| An error card enables the pill or the menu                                                                         | AC9                                           |
+| Preview/thumbnail code is "tidied" during the move                                                                 | Boundary — move unchanged                     |
 
 ## Rollback strategy
 

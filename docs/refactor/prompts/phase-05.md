@@ -18,7 +18,7 @@ must depend on no other app source:**
 `ClipboardStore`, `QuicklinkStore`, `LauncherRankingStore`, `SnippetRepository`.
 
 - **Channel isolation is non-negotiable**: every path stays keyed by `Bundle.main.bundleIdentifier`, so
-  a Dev build never shares a directory with a stable one. Paths themselves *may* change under
+  a Dev build never shares a directory with a stable one. Paths themselves _may_ change under
   `docs/refactor/POLICY.md` — but there is no reason to change them here, so don't.
 - `AppPaths` creates the directory (`createDirectory(withIntermediateDirectories: true)`) exactly as the
   current call sites do.

@@ -31,12 +31,12 @@ structural rather than manually maintained in eight places.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Launcher/LauncherScreen.swift` | **New.** |
-| `Tinycast/Features/RootPaletteView.swift` | ~1126 → ~350 lines. |
-| `Tinycast/Features/Launcher/LauncherView.swift` | `LauncherList`, `AppRow`, `AppActionsMenu` move or are consumed by the screen. |
-| `Tools/palette-selection-test.swift` | Nine-section + favourites + calc-card cases. |
+| File                                              | Change                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `Tinycast/Features/Launcher/LauncherScreen.swift` | **New.**                                                                       |
+| `Tinycast/Features/RootPaletteView.swift`         | ~1126 → ~350 lines.                                                            |
+| `Tinycast/Features/Launcher/LauncherView.swift`   | `LauncherList`, `AppRow`, `AppActionsMenu` move or are consumed by the screen. |
+| `Tools/palette-selection-test.swift`              | Nine-section + favourites + calc-card cases.                                   |
 
 ## Files that must NOT change
 
@@ -51,7 +51,7 @@ structural rather than manually maintained in eight places.
 - **The section table is the invariant.** `LauncherList.rows` builds nine sections in this exact order,
   and the order must match `AppIndex.publishEntries`'s slice order or the flat index breaks:
   `Favorites, Applications, System Settings, Quicklinks, Snippets, System Actions, Window Management,
-  Custom Commands, Commands`. Copy it verbatim. **Do not** re-derive it, sort it, or make it data-driven
+Custom Commands, Commands`. Copy it verbatim. **Do not** re-derive it, sort it, or make it data-driven
   in this phase.
 - The `favoriteCount` prefix logic stays: with an empty query, favourites are the leading
   `favoriteCount` entries of `results`, and `rest` is everything after — filtered by `kind` into
@@ -65,7 +65,7 @@ structural rather than manually maintained in eight places.
   sync, and `onChange(of: vm.mode)`'s session cleanup.
 - The compact bar's favourite slots (`compactFavoriteSlots`, `CompactFavoritesRow`,
   `CompactFavoriteButton`) belong to the launcher screen conceptually but are rendered in the **header**,
-  which is palette-level. Move the *derivation* into the screen and let the header ask for it; do not
+  which is palette-level. Move the _derivation_ into the screen and let the header ask for it; do not
   duplicate it.
 - `openActions()`'s `if vm.mode == .launcher` guard exists because `appResults` was unmemoized. With
   phase 09 merged, that reason is gone — remove the workaround and its comment. If phase 09 is **not**
@@ -111,14 +111,14 @@ structural rather than manually maintained in eight places.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **The flat-selection index drifts.** The single worst outcome — silent, and it makes ↵ launch the wrong thing. | `palette-selection-test` + the four slow ↑/↓ walks |
-| Section order diverges from `AppIndex.publishEntries` | AC4 screenshot + the boundary forbidding re-derivation |
-| Favourites appear twice, or hidden favourites reappear | AC5 |
-| Release build times out type-checking the section table | Keep the existing explicit annotation; Release build is a gate |
-| Compact favourites duplicated between header and screen | Boundary — derive once |
-| `openActions` workaround removed without phase 09 → per-render cost returns | AC12 |
+| Risk                                                                                                           | Mitigation                                                     |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **The flat-selection index drifts.** The single worst outcome — silent, and it makes ↵ launch the wrong thing. | `palette-selection-test` + the four slow ↑/↓ walks             |
+| Section order diverges from `AppIndex.publishEntries`                                                          | AC4 screenshot + the boundary forbidding re-derivation         |
+| Favourites appear twice, or hidden favourites reappear                                                         | AC5                                                            |
+| Release build times out type-checking the section table                                                        | Keep the existing explicit annotation; Release build is a gate |
+| Compact favourites duplicated between header and screen                                                        | Boundary — derive once                                         |
+| `openActions` workaround removed without phase 09 → per-render cost returns                                    | AC12                                                           |
 
 ## Rollback strategy
 

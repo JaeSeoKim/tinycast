@@ -12,7 +12,7 @@ excluded. **Keep the mirror hand-written.**
 - **Do NOT introduce reflection, `Mirror`, a macro, or code generation.** This will look like an
   improvement and it is the one thing this phase exists to prevent.
 
-  The reason: the *explicit* omission of `snippetsEnabled` — which doubles as keystroke-listening
+  The reason: the _explicit_ omission of `snippetsEnabled` — which doubles as keystroke-listening
   consent — is a **security control**. Any mechanism that auto-includes new properties would silently
   make the next consent flag backup-restorable, and `AGENTS.md` states the rule: consent flags live on
   the owning store, and an import must not grant a permission.
@@ -24,7 +24,7 @@ excluded. **Keep the mirror hand-written.**
   1. compile `AppSettings.swift`'s `Key` enum together with `SettingsBackup.swift` and compare the lists;
   2. if that does not work cleanly, extract **only** the `Key` enum into a Foundation-only
      `SettingsKeys.swift` — a purely additive extraction of 25 string constants — and compile that.
-- **The assertion is symmetric**: every `Key` is covered, *and* every `SettingsData` field maps to a real
+- **The assertion is symmetric**: every `Key` is covered, _and_ every `SettingsData` field maps to a real
   `Key`. A field for a setting that no longer exists is also a defect.
 - **No "backup everything by default" fallback.** Omission must be deliberate and named.
 - Do not modify `gather` or `apply`. This phase adds a guard; it does not rewrite the mirror.

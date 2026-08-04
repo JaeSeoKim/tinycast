@@ -34,13 +34,13 @@ Extract, in this order, verifying each before the next:
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Palette/PaletteCoordinator.swift` | **New.** |
-| `Tinycast/Features/SystemActions/SystemActionCoordinator.swift` | **New.** |
-| `Tinycast/Features/Uninstall/UninstallCoordinator.swift` | **New.** |
-| `Tinycast/Features/CustomCommands/CustomCommandCoordinator.swift` | **New.** |
-| `Tinycast/Core/AppCore.swift` | −370 lines; +4 properties; forwarders retained. |
+| File                                                              | Change                                          |
+| ----------------------------------------------------------------- | ----------------------------------------------- |
+| `Tinycast/Features/Palette/PaletteCoordinator.swift`              | **New.**                                        |
+| `Tinycast/Features/SystemActions/SystemActionCoordinator.swift`   | **New.**                                        |
+| `Tinycast/Features/Uninstall/UninstallCoordinator.swift`          | **New.**                                        |
+| `Tinycast/Features/CustomCommands/CustomCommandCoordinator.swift` | **New.**                                        |
+| `Tinycast/Core/AppCore.swift`                                     | −370 lines; +4 properties; forwarders retained. |
 
 ## Files that must NOT change
 
@@ -55,7 +55,7 @@ Extract, in this order, verifying each before the next:
 ## Implementation boundaries
 
 - **`PaletteWindowController` keeps sole ownership of the palette frame.** `PaletteCoordinator` decides
-  *what mode to show*; the controller decides *where and how big*. `applyCollapsed`, `positionPanel`,
+  _what mode to show_; the controller decides _where and how big_. `applyCollapsed`, `positionPanel`,
   `resolveAnchor` and `sizingOptions = []` do not move and are not touched.
 - **`paletteIsCollapsed` stays the single source of truth** for compact vs expanded, wherever it lives.
   The window controller and the view must never be able to disagree.
@@ -117,14 +117,14 @@ Extract, in this order, verifying each before the next:
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **Frame ownership splits** and the top edge drifts on the compact swap | `PaletteWindowController` on the must-not-change list; AC6 |
-| A confirmation gate is bypassed from the hotkey path | AC8 + the funnel boundary |
-| A second `DialogController` appears and held hotkeys stack dialogs | AC3 + the hold test |
-| Pop-to-root state preservation breaks | AC7 at three settings |
-| Uninstall's step order changes and cleanup runs before the trash completes | Boundary spells the sequence out |
-| A coordinator is created for `runWindowCommand` | Boundary — leave it on `AppCore` |
+| Risk                                                                       | Mitigation                                                 |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Frame ownership splits** and the top edge drifts on the compact swap     | `PaletteWindowController` on the must-not-change list; AC6 |
+| A confirmation gate is bypassed from the hotkey path                       | AC8 + the funnel boundary                                  |
+| A second `DialogController` appears and held hotkeys stack dialogs         | AC3 + the hold test                                        |
+| Pop-to-root state preservation breaks                                      | AC7 at three settings                                      |
+| Uninstall's step order changes and cleanup runs before the trash completes | Boundary spells the sequence out                           |
+| A coordinator is created for `runWindowCommand`                            | Boundary — leave it on `AppCore`                           |
 
 ## Rollback strategy
 

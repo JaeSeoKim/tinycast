@@ -33,26 +33,26 @@ is an honest admission that the cost is real and manual.
 
 ## The nine switch sites
 
-| Location | Currently |
-|---|---|
-| `AppEntry.kindLabel` | exhaustive |
-| `AppEntry.hotKeyAction` | exhaustive |
-| `AppEntry.canRevealInFinder` | expression |
-| `AppEntry.isSymbolIcon` | expression |
-| `AppEntry.symbolIconName` | exhaustive |
-| `AppCore` / coordinator `launch` | exhaustive |
-| `LauncherList.rows` section table | **`filter` per kind, not a switch** |
-| `AppActionsMenu.openTitle` | exhaustive |
-| `LauncherScreen.primaryActionTitle` (was `actionPillLabel`) | **`default:`** |
+| Location                                                    | Currently                           |
+| ----------------------------------------------------------- | ----------------------------------- |
+| `AppEntry.kindLabel`                                        | exhaustive                          |
+| `AppEntry.hotKeyAction`                                     | exhaustive                          |
+| `AppEntry.canRevealInFinder`                                | expression                          |
+| `AppEntry.isSymbolIcon`                                     | expression                          |
+| `AppEntry.symbolIconName`                                   | exhaustive                          |
+| `AppCore` / coordinator `launch`                            | exhaustive                          |
+| `LauncherList.rows` section table                           | **`filter` per kind, not a switch** |
+| `AppActionsMenu.openTitle`                                  | exhaustive                          |
+| `LauncherScreen.primaryActionTitle` (was `actionPillLabel`) | **`default:`**                      |
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Features/Launcher/Model/AppEntry.swift` | Add `KindDescriptor`; fold five members into it. |
-| `Features/Launcher/UI/LauncherScreen.swift` | `default:` → explicit cases. |
-| `Features/Launcher/UI/AppActionsMenu.swift` | Reads the descriptor. |
-| `Features/Launcher/UI/LauncherList.swift` | Section table reads the descriptor's section title. |
+| File                                        | Change                                              |
+| ------------------------------------------- | --------------------------------------------------- |
+| `Features/Launcher/Model/AppEntry.swift`    | Add `KindDescriptor`; fold five members into it.    |
+| `Features/Launcher/UI/LauncherScreen.swift` | `default:` → explicit cases.                        |
+| `Features/Launcher/UI/AppActionsMenu.swift` | Reads the descriptor.                               |
+| `Features/Launcher/UI/LauncherList.swift`   | Section table reads the descriptor's section title. |
 
 ## Files that must NOT change
 
@@ -62,7 +62,7 @@ is an honest admission that the cost is real and manual.
 
 ## Implementation boundaries
 
-- **`AppEntry.Kind`'s cases do not change.** Raw values *may* be renamed under
+- **`AppEntry.Kind`'s cases do not change.** Raw values _may_ be renamed under
   [`POLICY.md`](../POLICY.md), but they are persisted in `VisibilityStore.hiddenKinds`, so a rename must
   move the writer and the reader together. There is no reason to rename them in this phase — leave them.
 - `KindDescriptor` is a **plain struct returned by one `switch`**, held as a `static let` table or
@@ -72,7 +72,7 @@ is an honest admission that the cost is real and manual.
   `symbolIconName` stays a separate switch — it consults three catalogs and a per-entry override, which
   does not belong in a static table.
 - **The section table stays a literal array in `LauncherList.rows`**, in the same order, with the same
-  titles. It may read `sectionTitle` from the descriptor, but the *order* stays hand-written — it must
+  titles. It may read `sectionTitle` from the descriptor, but the _order_ stays hand-written — it must
   mirror `AppIndex.publishEntries`'s slice order and that relationship is clearer stated once than
   derived.
 - The existing explicit type annotation on the section array must stay. It is there because inference
@@ -108,13 +108,13 @@ is an honest admission that the cost is real and manual.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| A label or verb changes while being moved into the table | AC4 — compare all eight kinds by hand |
-| Section order changes | AC5 screenshot |
-| `Kind` raw values change on one side only → hidden categories silently un-hide | AC6 + the relaunch test |
-| The descriptor absorbs `symbolIconName` and the catalogs get flattened into it | Boundary — it stays separate |
-| The section array loses its type annotation → Release type-check timeout | AC7 |
+| Risk                                                                           | Mitigation                            |
+| ------------------------------------------------------------------------------ | ------------------------------------- |
+| A label or verb changes while being moved into the table                       | AC4 — compare all eight kinds by hand |
+| Section order changes                                                          | AC5 screenshot                        |
+| `Kind` raw values change on one side only → hidden categories silently un-hide | AC6 + the relaunch test               |
+| The descriptor absorbs `symbolIconName` and the catalogs get flattened into it | Boundary — it stays separate          |
+| The section array loses its type annotation → Release type-check timeout       | AC7                                   |
 
 ## Rollback strategy
 

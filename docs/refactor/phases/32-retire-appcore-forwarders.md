@@ -29,14 +29,14 @@ Separately, 21 view files reach `AppCore.shared` despite `AppCore` already being
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `App/AppCore.swift` | Delete the ~25 forwarders. |
-| `Palette/RootPaletteView.swift` | Call coordinators; drop `AppCore.shared`. |
-| Every `Features/*/UI/*Screen.swift` | Same. |
+| File                                                  | Change                                                                            |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `App/AppCore.swift`                                   | Delete the ~25 forwarders.                                                        |
+| `Palette/RootPaletteView.swift`                       | Call coordinators; drop `AppCore.shared`.                                         |
+| Every `Features/*/UI/*Screen.swift`                   | Same.                                                                             |
 | `Features/*/Settings/*SettingsView.swift` (~10 files) | `@ObservedObject … = AppCore.shared.settings` → `@Environment(AppSettings.self)`. |
-| `Features/HotKeys/UI/ShortcutRecorder*.swift` | Same. |
-| `Windows/*` where applicable | Same. |
+| `Features/HotKeys/UI/ShortcutRecorder*.swift`         | Same.                                                                             |
+| `Windows/*` where applicable                          | Same.                                                                             |
 
 ## Files that must NOT change
 
@@ -52,9 +52,10 @@ Separately, 21 view files reach `AppCore.shared` despite `AppCore` already being
 - **`AppCore.shared` is still legitimate in exactly three places:**
   1. `AppDelegate` — the one wiring point
   2. `TinycastApp`'s `MenuBarExtra` menu items — no environment available
-  3. `PaletteWindowController.ensurePanel()` — it *builds* the environment
+  3. `PaletteWindowController.ensurePanel()` — it _builds_ the environment
 
   Everywhere else it must go.
+
 - `@Environment` requires the object to be injected. `PaletteWindowController.ensurePanel()` and
   `AppCore.showSettings` are the two injection points. **A missing injection is a runtime crash, not a
   compile error** — enumerate what each view needs and confirm it is injected.
@@ -94,13 +95,13 @@ Separately, 21 view files reach `AppCore.shared` despite `AppCore` already being
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                | Mitigation                                      |
+| ------------------------------------------------------------------- | ----------------------------------------------- |
 | **A missing `@Environment` injection crashes a rarely-opened pane** | AC3 + opening all 14 panes and both aux windows |
-| `armedHover` starts lighting during keyboard nav | AC4 — the stationary-pointer test |
-| A forwarder is deleted while a caller remains | Compiler catches it |
-| The menu-bar items break because they lost their singleton access | Boundary: `TinycastApp` is exempt |
-| `AppCore` regrows because a "convenience" accessor is added | AC2/AC5 |
+| `armedHover` starts lighting during keyboard nav                    | AC4 — the stationary-pointer test               |
+| A forwarder is deleted while a caller remains                       | Compiler catches it                             |
+| The menu-bar items break because they lost their singleton access   | Boundary: `TinycastApp` is exempt               |
+| `AppCore` regrows because a "convenience" accessor is added         | AC2/AC5                                         |
 
 ## Rollback strategy
 

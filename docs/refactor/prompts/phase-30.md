@@ -6,12 +6,12 @@ Read `docs/refactor/phases/30-naming-vocabulary.md` completely.
 
 Five renames, plus write the ten-suffix vocabulary table into `AGENTS.md`.
 
-| Today | Becomes |
-|---|---|
+| Today              | Becomes            |
+| ------------------ | ------------------ |
 | `ClipboardManager` | `ClipboardMonitor` |
-| `HotKeyManager` | `HotKeyBindings` |
-| `CommandRegistry` | `CommandCatalog` |
-| `PaletteViewModel` | `PaletteState` |
+| `HotKeyManager`    | `HotKeyBindings`   |
+| `CommandRegistry`  | `CommandCatalog`   |
+| `PaletteViewModel` | `PaletteState`     |
 
 ## Hard gates
 
@@ -21,10 +21,10 @@ change?" but **"did every producer and consumer change together?"** These four b
 - `ClipboardManager.internalType` — the writer and the poller must agree, or Tinycast re-captures its own
   pastes in a loop
 - `SettingsKey.showInMenuBar` — shared with `TinycastApp`'s `@AppStorage`; rename in both or neither
-- **`CommandID` raw values** — they *are* `AppEntry.id`, which favourites, visibility and ranking key on
+- **`CommandID` raw values** — they _are_ `AppEntry.id`, which favourites, visibility and ranking key on
 - SQLite column names — schema, prepared statements and row decoder must agree
 
-**Renaming a persisted key is permitted but adds nothing here.** This phase renames *types*. Leave keys
+**Renaming a persisted key is permitted but adds nothing here.** This phase renames _types_. Leave keys
 alone unless one badly contradicts its new type name.
 
 **Do not touch Raycast import** (`RaycastFormat`, `RaycastV1Decoder`, `RaycastImportV1/V2`) — another

@@ -6,17 +6,17 @@
 
 ## Overview
 
-Three places in `Core/` reach *up* into `AppCore.shared`. Break each one by injecting what it needs.
+Three places in `Core/` reach _up_ into `AppCore.shared`. Break each one by injecting what it needs.
 
 ## Why this phase exists
 
 The intended direction is `Features → AppCore → stores → pure core`. These three invert it:
 
-| Site | Reaches for | Why it is a problem |
-|---|---|---|
-| `HotKeyManager.displayName` (4 refs) | `appIndex`, `customCommands`, `quicklinks` | You cannot understand `HotKeyManager` without three other stores |
-| `KeyShortcut.collapsedModifierSymbols` | `settings.hyperKey`, `hyperKeyReplacesGlyph` | A pure-ish formatting helper depends on global app state |
-| `SystemActionRunner` async completion | `AppCore.shared.presentSystemActionFailure` | Bends the documented "runner owns effects, `AppCore` owns UI" split |
+| Site                                   | Reaches for                                  | Why it is a problem                                                 |
+| -------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| `HotKeyManager.displayName` (4 refs)   | `appIndex`, `customCommands`, `quicklinks`   | You cannot understand `HotKeyManager` without three other stores    |
+| `KeyShortcut.collapsedModifierSymbols` | `settings.hyperKey`, `hyperKeyReplacesGlyph` | A pure-ish formatting helper depends on global app state            |
+| `SystemActionRunner` async completion  | `AppCore.shared.presentSystemActionFailure`  | Bends the documented "runner owns effects, `AppCore` owns UI" split |
 
 None is a type-level cycle, but each is a cycle in reasoning — and each blocks the file from ever being
 harness-reachable.
@@ -33,13 +33,13 @@ harness-reachable.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/HotKeyManager.swift` | `displayName` uses an injected resolver. |
+| File                                     | Change                                                    |
+| ---------------------------------------- | --------------------------------------------------------- |
+| `Tinycast/Core/HotKeyManager.swift`      | `displayName` uses an injected resolver.                  |
 | `Tinycast/Core/HotKey/KeyShortcut.swift` | `collapsedModifierSymbols(from:hyperKey:replacesGlyph:)`. |
-| `Tinycast/Core/SystemActionRunner.swift` | `onAsyncFailure` callback instead of `AppCore.shared`. |
-| `Tinycast/Core/AppCore.swift` | Wires all three in `start()`. |
-| Call sites of `collapsedModifierSymbols` | Pass the two new arguments. |
+| `Tinycast/Core/SystemActionRunner.swift` | `onAsyncFailure` callback instead of `AppCore.shared`.    |
+| `Tinycast/Core/AppCore.swift`            | Wires all three in `start()`.                             |
+| Call sites of `collapsedModifierSymbols` | Pass the two new arguments.                               |
 
 ## Files that must NOT change
 
@@ -58,7 +58,7 @@ harness-reachable.
   cases it already knows (`.togglePalette`, `.toggleClipboard`, `.toggleEmoji`, `.systemAction`,
   `.windowCommand` — all of which resolve from static catalogs, not from stores).
 - `collapsedModifierSymbols` becomes a pure function of its arguments. **Do not** change what it
-  produces: the ✦ collapse is keyed on *configuration*, not on tap health, so the glyphs never flicker,
+  produces: the ✦ collapse is keyed on _configuration_, not on tap health, so the glyphs never flicker,
   and leftover modifiers keep canonical order after the ✦.
 - `SystemActionRunner`'s callback is set once. The existing `Task { @MainActor in … }` inside the
   `openApplication` completion handler stays — only the destination changes.
@@ -100,13 +100,13 @@ harness-reachable.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                               | Mitigation                                 |
+| ---------------------------------------------------------------------------------- | ------------------------------------------ |
 | The conflict message stops naming user-created items (custom commands, quicklinks) | AC4 + testing each of the six action kinds |
-| ✦ collapse diverges between the three render sites | AC5/AC6 — check all three |
-| A protocol sneaks in "for cleanliness" | AC2 |
-| The failure callback is wired but never set, so a real failure is silent | AC8 — read `start()` |
-| `HotKeyManager` loses its static-catalog fallbacks and shows raw IDs | AC4 |
+| ✦ collapse diverges between the three render sites                                 | AC5/AC6 — check all three                  |
+| A protocol sneaks in "for cleanliness"                                             | AC2                                        |
+| The failure callback is wired but never set, so a real failure is silent           | AC8 — read `start()`                       |
+| `HotKeyManager` loses its static-catalog fallbacks and shows raw IDs               | AC4                                        |
 
 ## Rollback strategy
 

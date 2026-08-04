@@ -30,11 +30,11 @@ already exists twelve files away.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Settings/LauncherItemsCard.swift` | `Image(nsImage: entry.icon)` → `AppIconView(app: entry)` at the same frame size. |
-| `Tinycast/Core/AppIndex.swift` | Delete `AppEntry.icon`. |
-| `Tinycast/Features/Settings/AppPickerPopover.swift` | Only if `AppPresentation` is the other caller and can move to the async path without changing behaviour. **If it cannot, leave it and report why.** |
+| File                                                 | Change                                                                                                                                              |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tinycast/Features/Settings/LauncherItemsCard.swift` | `Image(nsImage: entry.icon)` → `AppIconView(app: entry)` at the same frame size.                                                                    |
+| `Tinycast/Core/AppIndex.swift`                       | Delete `AppEntry.icon`.                                                                                                                             |
+| `Tinycast/Features/Settings/AppPickerPopover.swift`  | Only if `AppPresentation` is the other caller and can move to the async path without changing behaviour. **If it cannot, leave it and report why.** |
 
 ## Files that must NOT change
 
@@ -72,12 +72,12 @@ already exists twelve files away.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| Placeholder flash appears on reopen | AC2 — `AppIconView`'s synchronous cache seed must be preserved; verify by reopening the pane |
-| Icon renders at the wrong size | AC4 — screenshot comparison |
-| `AppEntry.icon` had a caller you missed | AC5 — repo-wide grep |
-| Symbol-icon entries (commands, actions) break | `AppIconView` branches on `isSymbolIcon`; verify the Commands pane specifically |
+| Risk                                          | Mitigation                                                                                   |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Placeholder flash appears on reopen           | AC2 — `AppIconView`'s synchronous cache seed must be preserved; verify by reopening the pane |
+| Icon renders at the wrong size                | AC4 — screenshot comparison                                                                  |
+| `AppEntry.icon` had a caller you missed       | AC5 — repo-wide grep                                                                         |
+| Symbol-icon entries (commands, actions) break | `AppIconView` branches on `isSymbolIcon`; verify the Commands pane specifically              |
 
 ## Rollback strategy
 

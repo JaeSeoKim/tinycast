@@ -11,7 +11,7 @@ Pure file moves out of the 46-file flat `Core/` namespace, plus one extraction (
 ## Hard gates
 
 - **Moves only.** No renames except `Bundle+AppName.swift` → `AppDisplayName.swift`, which is a
-  *filename* change only — the `extension Bundle { var appDisplayName }` inside is untouched. Type
+  _filename_ change only — the `extension Bundle { var appDisplayName }` inside is untouched. Type
   renames are phase 30.
 - **`EdgeDissolve.swift` and `ThinScrollbar.swift` are moved but never opened.** `AGENTS.md` puts their
   contents off-limits. Not even an unused-import cleanup. `git diff -M` must show them at **100 %

@@ -11,8 +11,8 @@ forbids `NSAlert` outright. Route it through `DialogController` like every other
 
 ## Why this phase exists
 
-The invariant is explicit: *"Tinycast presents its own dialogs, never `NSAlert` / `NSSlider` / system
-popovers"*, and it gives the reason — `runModal`'s nested run loop lets a held Carbon hotkey stack
+The invariant is explicit: _"Tinycast presents its own dialogs, never `NSAlert` / `NSSlider` / system
+popovers"_, and it gives the reason — `runModal`'s nested run loop lets a held Carbon hotkey stack
 dialogs, and an Aqua alert clashes with the forced-`.darkAqua` surface.
 
 This particular call site cannot currently stack, because it is only reachable from a Settings click.
@@ -32,10 +32,10 @@ dark-only app.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/AppCore.swift` | `setSnippetsEnabled` becomes `async`, or dispatches into a `Task`; the alert becomes a `confirm(…)`. |
-| `Tinycast/Features/Settings/SnippetsSettingsView.swift` | Only if the call site must wrap the now-async call in a `Task`. |
+| File                                                    | Change                                                                                               |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Tinycast/Core/AppCore.swift`                           | `setSnippetsEnabled` becomes `async`, or dispatches into a `Task`; the alert becomes a `confirm(…)`. |
+| `Tinycast/Features/Settings/SnippetsSettingsView.swift` | Only if the call site must wrap the now-async call in a `Task`.                                      |
 
 ## Files that must NOT change
 
@@ -53,6 +53,7 @@ dark-only app.
 
   The permission prompt must still originate from **this explicit gesture and nowhere else** — never
   from startup, a callback, a watcher or the health check. That is a documented invariant.
+
 - The `NSApp.activate(ignoringOtherApps: true)` that precedes the current alert exists so the alert is
   not buried. `DialogPanel` is a non-activating `.modalPanel` and takes key focus on its own — remove
   the `activate` call **only if** manual verification confirms the dialog appears in front. If in doubt,
@@ -88,13 +89,13 @@ dark-only app.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **Permission requested on cancel** — a real privacy regression | AC5; verification runs it after a `tccutil reset` |
-| Permission requested before consent persists | AC4; ordering is spelled out in the boundaries |
-| Dialog appears behind the Settings window | Manual check; keep `NSApp.activate` if needed |
+| Risk                                                             | Mitigation                                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Permission requested on cancel** — a real privacy regression   | AC5; verification runs it after a `tccutil reset`                                   |
+| Permission requested before consent persists                     | AC4; ordering is spelled out in the boundaries                                      |
+| Dialog appears behind the Settings window                        | Manual check; keep `NSApp.activate` if needed                                       |
 | `setSnippetsEnabled` becoming `async` breaks the SwiftUI binding | The pane's toggle already routes through `AppCore`; wrap in `Task` at the call site |
-| The toggle springs back visually before the dialog resolves | Compare against current behaviour — it already does this and must continue to |
+| The toggle springs back visually before the dialog resolves      | Compare against current behaviour — it already does this and must continue to       |
 
 ## Rollback strategy
 

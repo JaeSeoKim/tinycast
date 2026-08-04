@@ -12,7 +12,7 @@ Migrate the three persisted leaf stores: `VisibilityStore`, `CalculatorHistorySt
 ## Why this phase exists
 
 These three persist to disk and back a visible list, so they exercise the recipe against a store whose
-mutations must both persist *and* invalidate a memo — a combination the pilot did not cover.
+mutations must both persist _and_ invalidate a memo — a combination the pilot did not cover.
 
 None is harness-compiled, none has manual `objectWillChange`, and each has a small, well-understood
 consumer set.
@@ -29,18 +29,18 @@ consumer set.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/VisibilityStore.swift` | `@Observable`. |
-| `Tinycast/Core/CalculatorHistoryStore.swift` | `@Observable`. |
-| `Tinycast/Core/Emoji/FrequentEmojiStore.swift` | `@Observable`. |
-| `Tinycast/Core/PaletteWindowController.swift` | Three injection sites. |
-| `Tinycast/Features/RootPaletteView.swift` | Three `@EnvironmentObject`s. |
-| `Tinycast/Features/Settings/LauncherItemsCard.swift` | `visibility` consumption. |
-| `Tinycast/Features/Settings/WindowManagementSettingsView.swift` | `visibility` consumption. |
-| `Tinycast/Features/Calculator/CalculatorHistoryView.swift` | If it consumes the store. |
-| `Tinycast/Features/Emoji/EmojiGridView.swift` | If it consumes the store. |
-| `Tinycast/Core/AppCore.swift` | Only if a `.environmentObject` call for these appears in `showSettings`. |
+| File                                                            | Change                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `Tinycast/Core/VisibilityStore.swift`                           | `@Observable`.                                                           |
+| `Tinycast/Core/CalculatorHistoryStore.swift`                    | `@Observable`.                                                           |
+| `Tinycast/Core/Emoji/FrequentEmojiStore.swift`                  | `@Observable`.                                                           |
+| `Tinycast/Core/PaletteWindowController.swift`                   | Three injection sites.                                                   |
+| `Tinycast/Features/RootPaletteView.swift`                       | Three `@EnvironmentObject`s.                                             |
+| `Tinycast/Features/Settings/LauncherItemsCard.swift`            | `visibility` consumption.                                                |
+| `Tinycast/Features/Settings/WindowManagementSettingsView.swift` | `visibility` consumption.                                                |
+| `Tinycast/Features/Calculator/CalculatorHistoryView.swift`      | If it consumes the store.                                                |
+| `Tinycast/Features/Emoji/EmojiGridView.swift`                   | If it consumes the store.                                                |
+| `Tinycast/Core/AppCore.swift`                                   | Only if a `.environmentObject` call for these appears in `showSettings`. |
 
 ## Files that must NOT change
 
@@ -92,12 +92,12 @@ consumer set.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                     | Mitigation                                                |
+| ------------------------------------------------------------------------ | --------------------------------------------------------- |
 | **A Settings pane crashes on open** because an injection site was missed | AC2 + "open the Settings window" as the first manual step |
-| A store persists but the view goes stale | AC3–AC6 |
-| `revision` dropped, launcher memo goes stale | AC8 |
-| Emoji frequency sort cache not invalidated | AC6 |
+| A store persists but the view goes stale                                 | AC3–AC6                                                   |
+| `revision` dropped, launcher memo goes stale                             | AC8                                                       |
+| Emoji frequency sort cache not invalidated                               | AC6                                                       |
 
 ## Rollback strategy
 

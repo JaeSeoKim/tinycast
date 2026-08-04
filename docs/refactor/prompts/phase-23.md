@@ -15,7 +15,7 @@ computations.
 - **The section table is the invariant.** Nine sections in this exact order, matching
   `AppIndex.publishEntries`'s slice order or the flat index breaks:
   `Favorites, Applications, System Settings, Quicklinks, Snippets, System Actions, Window Management,
-  Custom Commands, Commands`.
+Custom Commands, Commands`.
   **Copy it verbatim.** Do not re-derive it, sort it, or make it data-driven.
 - **Keep the explicit type annotation on the section array.** Inference times out on it — that is why
   the annotation exists, and Release is the build that proves it.
@@ -28,7 +28,7 @@ computations.
 - **These stay in `RootPaletteView`:** header and search field, footer bar, both menu overlays, ⌘K,
   Escape, Tab, bare-Backspace routing, ⌘, and ⌘W, the compact/expanded frame sync, and
   `onChange(of: vm.mode)`'s session cleanup.
-- The compact favourites strip is rendered in the **header** (palette-level). Move the *derivation* into
+- The compact favourites strip is rendered in the **header** (palette-level). Move the _derivation_ into
   the screen and let the header ask for it — do not duplicate it.
 - Remove `openActions()`'s `if vm.mode == .launcher` workaround and its comment, **only if phase 09 is
   merged**. If not, leave it and say so.

@@ -29,7 +29,7 @@ xcodebuild build -project Tinycast.xcodeproj -scheme Tinycast -configuration Rel
 ```
 
 Then run **all** harnesses from `docs/development.md` — the whole block. A harness that fails to
-*compile* means a signpost landed in a pure file.
+_compile_ means a signpost landed in a pure file.
 
 ## Summarise
 

@@ -36,15 +36,15 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Features/HotKeys/Service/HotKeyBindings.swift` | Own key namespace, e.g. `hotkey.<action>`; drop the legacy prefix. |
-| `Features/HotKeys/Model/HotKeyBinding.swift` | Delete `init(from:)` / `encode(to:)`; synthesised `Codable`. |
-| `Features/HotKeys/Model/KeyShortcut.swift` | Only if its `Codable` was shaped by the legacy record. |
+| File                                            | Change                                                                                                                |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Features/HotKeys/Service/HotKeyBindings.swift` | Own key namespace, e.g. `hotkey.<action>`; drop the legacy prefix.                                                    |
+| `Features/HotKeys/Model/HotKeyBinding.swift`    | Delete `init(from:)` / `encode(to:)`; synthesised `Codable`.                                                          |
+| `Features/HotKeys/Model/KeyShortcut.swift`      | Only if its `Codable` was shaped by the legacy record.                                                                |
 | `Features/Clipboard/Model/ClipboardStore.swift` | Delete the `source_app` and `pinned_at` `ALTER TABLE` migrations and `columnExists`; fold both columns into `schema`. |
-| `Features/Backup/Model/SettingsBackup.swift` | Drop the `version` field's back-compat comment; keep the field. |
-| `AGENTS.md` | Amend the three superseded clauses listed in `POLICY.md`. |
-| `Tools/clipboard-test.swift` | Only if it asserts on the migration path. |
+| `Features/Backup/Model/SettingsBackup.swift`    | Drop the `version` field's back-compat comment; keep the field.                                                       |
+| `AGENTS.md`                                     | Amend the three superseded clauses listed in `POLICY.md`.                                                             |
+| `Tools/clipboard-test.swift`                    | Only if it asserts on the migration path.                                                                             |
 
 ## Files that must NOT change
 
@@ -66,7 +66,7 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 - `ClipboardStore`'s `schema` gains `source_app TEXT` and `pinned_at REAL` as ordinary columns. The
   `items_pinned_at` partial index can move into `schema` alongside them.
 - `ClipboardStore` and `QuicklinkStore` remain harness-compiled and Foundation + SQLite3 only.
-- Do **not** change the SQLite column *names* — the row decoder, the prepared statements and the schema
+- Do **not** change the SQLite column _names_ — the row decoder, the prepared statements and the schema
   all reference them, and renaming buys nothing here (POLICY carve-out 2).
 - Do not touch `HotKeyCenter`, `DoubleTapMonitor` or the double-tap detection. Only persistence changes.
 - `HotKeyBinding` must still round-trip both cases — a `.combo` and a `.doubleTap` — through the
@@ -99,13 +99,13 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| A binding fails to decode because the synthesised `Codable` shape differs from what was written moments earlier in the same session | AC3 + the set-quit-relaunch check |
-| `ClipboardStore`'s schema change breaks a *fresh* database creation | AC4 + the clean-install run; there is no old database to worry about |
-| The backup format changes and export/import stops round-tripping | AC6 — the only compatibility that still matters |
-| Raycast import is caught up in the cleanup | On the must-not-change list; `raycast-test` |
-| A migration is "helpfully" written to move old keys across | Boundary: delete, do not translate |
+| Risk                                                                                                                                | Mitigation                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| A binding fails to decode because the synthesised `Codable` shape differs from what was written moments earlier in the same session | AC3 + the set-quit-relaunch check                                    |
+| `ClipboardStore`'s schema change breaks a _fresh_ database creation                                                                 | AC4 + the clean-install run; there is no old database to worry about |
+| The backup format changes and export/import stops round-tripping                                                                    | AC6 — the only compatibility that still matters                      |
+| Raycast import is caught up in the cleanup                                                                                          | On the must-not-change list; `raycast-test`                          |
+| A migration is "helpfully" written to move old keys across                                                                          | Boundary: delete, do not translate                                   |
 
 ## Rollback strategy
 

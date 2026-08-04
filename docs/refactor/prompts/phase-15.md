@@ -37,6 +37,7 @@ grep -rn "objectWillChange" Tinycast    # must be empty
 Run `hotkey-test`.
 
 **Then run the app.** Two things break here and neither shows in a diff:
+
 1. Bind a shortcut in Settings, open the launcher — the keycap chip must appear on that row.
 2. Start recording — the existing global shortcut must **not** fire while you type.
 

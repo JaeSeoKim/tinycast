@@ -30,8 +30,8 @@ unlabelled `0.08` is an invitation for a future contributor — human or agent �
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
+| File                         | Change                                   |
+| ---------------------------- | ---------------------------------------- |
 | `Tinycast/Core/Paster.swift` | Two constants; three call sites updated. |
 
 ## Files that must NOT change
@@ -70,11 +70,11 @@ unlabelled `0.08` is an invitation for a future contributor — human or agent �
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| A value is transcribed wrong (0.08 → 0.8) | AC2; and the manual paste tests will hang visibly |
-| The two 0.05 sites get merged when they mean different things | Boundary note; reviewer reads both call sites |
-| Someone "improves" the delay while renaming | AC2 and reviewer diff check |
+| Risk                                                          | Mitigation                                        |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| A value is transcribed wrong (0.08 → 0.8)                     | AC2; and the manual paste tests will hang visibly |
+| The two 0.05 sites get merged when they mean different things | Boundary note; reviewer reads both call sites     |
+| Someone "improves" the delay while renaming                   | AC2 and reviewer diff check                       |
 
 ## Rollback strategy
 

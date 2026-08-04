@@ -30,21 +30,21 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/AppIndex.swift` | `@Observable`; drop `import Combine` if the `settings.$searchScopes` sink already moved in phase 16. |
-| `Tinycast/Core/ClipboardStore.swift` | `@Observable`. **Harness-compiled — see boundaries.** |
-| `Tinycast/Core/Quicklinks/QuicklinkStore.swift` | `@Observable`. **Harness-compiled — see boundaries.** |
-| `Tinycast/Core/Snippets/SnippetsStore.swift` | `@Observable`; drop `import Combine`. **Harness-compiled.** |
-| `Tinycast/Core/PaletteWindowController.swift` | Four injection sites. |
-| `Tinycast/Features/RootPaletteView.swift` | Four `@EnvironmentObject`s. |
-| `Tinycast/Features/Clipboard/ClipboardView.swift` | Consumption. |
-| `Tinycast/Features/Quicklinks/QuicklinkListView.swift` | Consumption. |
-| `Tinycast/Features/Settings/QuicklinksSettingsView.swift` | Consumption. |
-| `Tinycast/Features/Settings/SnippetsSettingsView.swift` | Consumption. |
-| `Tinycast/Features/Settings/LauncherItemsCard.swift` | `appIndex` consumption. |
-| `Tinycast/Features/Settings/ClipboardSettingsView.swift` | `appIndex` consumption. |
-| `Tinycast/Core/AppCore.swift` | Injection in `showSettings`. |
+| File                                                      | Change                                                                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Tinycast/Core/AppIndex.swift`                            | `@Observable`; drop `import Combine` if the `settings.$searchScopes` sink already moved in phase 16. |
+| `Tinycast/Core/ClipboardStore.swift`                      | `@Observable`. **Harness-compiled — see boundaries.**                                                |
+| `Tinycast/Core/Quicklinks/QuicklinkStore.swift`           | `@Observable`. **Harness-compiled — see boundaries.**                                                |
+| `Tinycast/Core/Snippets/SnippetsStore.swift`              | `@Observable`; drop `import Combine`. **Harness-compiled.**                                          |
+| `Tinycast/Core/PaletteWindowController.swift`             | Four injection sites.                                                                                |
+| `Tinycast/Features/RootPaletteView.swift`                 | Four `@EnvironmentObject`s.                                                                          |
+| `Tinycast/Features/Clipboard/ClipboardView.swift`         | Consumption.                                                                                         |
+| `Tinycast/Features/Quicklinks/QuicklinkListView.swift`    | Consumption.                                                                                         |
+| `Tinycast/Features/Settings/QuicklinksSettingsView.swift` | Consumption.                                                                                         |
+| `Tinycast/Features/Settings/SnippetsSettingsView.swift`   | Consumption.                                                                                         |
+| `Tinycast/Features/Settings/LauncherItemsCard.swift`      | `appIndex` consumption.                                                                              |
+| `Tinycast/Features/Settings/ClipboardSettingsView.swift`  | `appIndex` consumption.                                                                              |
+| `Tinycast/Core/AppCore.swift`                             | Injection in `showSettings`.                                                                         |
 
 ## Files that must NOT change
 
@@ -87,7 +87,7 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 5. `AppIndex.publishEntries`'s equality guard is present.
 6. Copying text updates the clipboard list within ~1 s while the palette is open on the clipboard screen.
 7. With `_printChanges` in `RootPaletteView.body`: copying text while the palette is on the **emoji**
-   screen produces **no palette re-evaluation**. *(This is the headline result of M2.)*
+   screen produces **no palette re-evaluation**. _(This is the headline result of M2.)_
 8. Quicklink CRUD, snippet reload-on-external-edit, and the app index refresh all still drive the UI.
 
 ## Manual verification checklist
@@ -111,14 +111,14 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A harness stops compiling** and the pure-layer invariant is broken | AC2, run early, with a documented fallback |
-| `isolated deinit` lost → SQLite handles leak or teardown races | AC3 |
-| A cache's `didSet` invalidation is lost → stale search results | AC4 + the 2-char/4-char search check |
-| `publishEntries` equality guard lost → the launcher re-renders on every refresh | AC5 |
-| A store crashes rather than starting empty when its file is absent | The clean-install run |
-| The clipboard list stops live-updating | AC6 |
+| Risk                                                                            | Mitigation                                 |
+| ------------------------------------------------------------------------------- | ------------------------------------------ |
+| **A harness stops compiling** and the pure-layer invariant is broken            | AC2, run early, with a documented fallback |
+| `isolated deinit` lost → SQLite handles leak or teardown races                  | AC3                                        |
+| A cache's `didSet` invalidation is lost → stale search results                  | AC4 + the 2-char/4-char search check       |
+| `publishEntries` equality guard lost → the launcher re-renders on every refresh | AC5                                        |
+| A store crashes rather than starting empty when its file is absent              | The clean-install run                      |
+| The clipboard list stops live-updating                                          | AC6                                        |
 
 ## Rollback strategy
 

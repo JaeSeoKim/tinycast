@@ -34,13 +34,13 @@ straight back.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `AGENTS.md` | The comment budget, replacing the current clause. |
-| `docs/architecture.md` | The layering, and the folder tree as its expression. |
-| `docs/<subsystem>.md` | Receive relocated explanations. |
-| Source files, **one subsystem per commit** | The triage pass. |
-| `docs/refactor/progress/34-*.md` | The final measurement table. |
+| File                                       | Change                                               |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `AGENTS.md`                                | The comment budget, replacing the current clause.    |
+| `docs/architecture.md`                     | The layering, and the folder tree as its expression. |
+| `docs/<subsystem>.md`                      | Receive relocated explanations.                      |
+| Source files, **one subsystem per commit** | The triage pass.                                     |
+| `docs/refactor/progress/34-*.md`           | The final measurement table.                         |
 
 ## Files that must NOT change
 
@@ -49,6 +49,7 @@ straight back.
 
   **Off-limits by `AGENTS.md` — including their comments.** They have been moved twice in this roadmap
   and never opened; do not open them now.
+
 - `*.generated.swift` — regenerate rather than edit, and there is no reason to
 - `docs/architecture-review.md` — the review is a fixed artefact
 
@@ -57,10 +58,11 @@ straight back.
 - **The budget goes in first, in its own commit**, before any source is touched. It is the durable part.
 
   > **Comments — minimal code, not annotated prose**
+  >
   > 1. One line. **Never two consecutive comment lines.** If it needs two, it needs a named function, a
   >    named constant, or a type.
   > 2. **Hard cap: 100 characters, including indentation.** Longer belongs in `docs/<subsystem>.md`.
-  > 3. Comment the *why*, the gotcha, or the invariant. Never restate the code, never narrate a
+  > 3. Comment the _why_, the gotcha, or the invariant. Never restate the code, never narrate a
   >    sequence, never argue a decision at length in-line.
   > 4. `///` on a public type or method is exempt from rule 1, not from rule 2.
   > 5. **Prefer deleting a comment to updating it.**
@@ -74,8 +76,9 @@ straight back.
 
   **Relocation is the default for anything explaining an invariant.** Most of the best long comments
   here — the `WindowLayout` AX-coordinate flip, the `CurrencyRateStore` consent gate, the
-  `SpotlightNames` measurement, the `ClipboardStore` two-branch load query — are *already* written up in
+  `SpotlightNames` measurement, the `ClipboardStore` two-branch load query — are _already_ written up in
   `docs/`, so those are usually a delete plus a reference rather than a rewrite.
+
 - **One subsystem per commit.** A reviewer must be able to read a pure comment diff. Suggested order:
   Calculator, Emoji, Snippets, Quicklinks, Uninstall, WindowManagement, HotKeys, Clipboard, Launcher,
   Palette, Windows, App.
@@ -113,31 +116,31 @@ straight back.
 
 ### Final measurement table
 
-| Metric | Phase 01 baseline | Now | Δ |
-|---|---|---|---|
-| Release binary size | | | must be < 3 MB |
-| Cold launch, median of 3 | | | must be within 10 % |
-| `AppCore.start` | | | |
-| `AppIndex.scan` cold / warm | | | expect a large warm drop (phase 07) |
-| `PaletteWindowController.show` | | | |
-| `UninstallScanner.scan` | | | expect 6–12× (phase 08) |
-| RSS after 10 palette opens | | | must be within 40–80 MB |
-| RSS after 50 clipboard images | | | |
-| `RootPaletteView` line count | 1126 | | target ~350 |
-| `AppCore` line count | 1348 | | target ~250 |
-| Comment lines / total | 1850 / 26379 | | |
-| Stacked blocks | 181 | | target 0 |
-| Comments > 100 chars | 953 | | target 0 |
+| Metric                         | Phase 01 baseline | Now | Δ                                   |
+| ------------------------------ | ----------------- | --- | ----------------------------------- |
+| Release binary size            |                   |     | must be < 3 MB                      |
+| Cold launch, median of 3       |                   |     | must be within 10 %                 |
+| `AppCore.start`                |                   |     |                                     |
+| `AppIndex.scan` cold / warm    |                   |     | expect a large warm drop (phase 07) |
+| `PaletteWindowController.show` |                   |     |                                     |
+| `UninstallScanner.scan`        |                   |     | expect 6–12× (phase 08)             |
+| RSS after 10 palette opens     |                   |     | must be within 40–80 MB             |
+| RSS after 50 clipboard images  |                   |     |                                     |
+| `RootPaletteView` line count   | 1126              |     | target ~350                         |
+| `AppCore` line count           | 1348              |     | target ~250                         |
+| Comment lines / total          | 1850 / 26379      |     |                                     |
+| Stacked blocks                 | 181               |     | target 0                            |
+| Comments > 100 chars           | 953               |     | target 0                            |
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A load-bearing explanation is lost.** The one real risk in this phase. | Triage prefers relocation; "never delete what you do not understand" |
-| A code line is changed inside a comment-only commit | AC5 + per-commit diff inspection |
-| The off-limits files are edited | They are on the must-not-change list for the third time |
-| The budget is written but not enforced, and comments regrow | It is greppable; add the two commands to `checklists/review.md` if not already there |
-| A metric regressed and is quietly omitted from the table | AC7 requires every row filled |
+| Risk                                                                     | Mitigation                                                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| **A load-bearing explanation is lost.** The one real risk in this phase. | Triage prefers relocation; "never delete what you do not understand"                 |
+| A code line is changed inside a comment-only commit                      | AC5 + per-commit diff inspection                                                     |
+| The off-limits files are edited                                          | They are on the must-not-change list for the third time                              |
+| The budget is written but not enforced, and comments regrow              | It is greppable; add the two commands to `checklists/review.md` if not already there |
+| A metric regressed and is quietly omitted from the table                 | AC7 requires every row filled                                                        |
 
 ## Rollback strategy
 
@@ -151,6 +154,7 @@ roadmap. The `AGENTS.md` budget commit should not be reverted — it is the dura
 ## Suggested commit message
 
 For the budget:
+
 ```
 Set a checkable comment budget in AGENTS.md
 
@@ -161,6 +165,7 @@ in the codebase exceed 100 characters against 158 code lines that long.
 ```
 
 Per subsystem:
+
 ```
 Trim comments in <subsystem> to the budget
 
@@ -192,7 +197,7 @@ docs/<subsystem>.md behind a one-line pointer. No code changed.
 
 - **A comment-only commit must contain only comment lines.** `git show` each one. A code change hiding
   in a comment pass is the worst possible place for it, because nobody reads these diffs carefully.
-- For every deleted paragraph, ask: *where did this knowledge go?* If the answer is "nowhere, it was
+- For every deleted paragraph, ask: _where did this knowledge go?_ If the answer is "nowhere, it was
   redundant", check that claim. If it is "docs/x.md", follow the pointer.
 - The final measurement table is the roadmap's report card. Fill in every row, including any that
   regressed — a hidden regression is worse than an admitted one.

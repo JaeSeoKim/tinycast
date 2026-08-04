@@ -42,15 +42,15 @@ because `@Published` emits before the property is written. `@Observable` emits a
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/AppCore.swift` | `@Observable` on both `PaletteViewModel` and `AppCore`; six sinks → tracking; drop `cancellables`. |
-| `Tinycast/Core/AppIndex.swift` | `searchScopes` sink → tracking; drop `cancellables`. |
-| `Tinycast/Core/HotKey/HyperKeyTap.swift` | `hyperKey` sink → tracking; drop `cancellables`. |
-| `Tinycast/Core/PaletteWindowController.swift` | `core` and `palette` injection. |
-| `Tinycast/Features/RootPaletteView.swift` | `core` and `vm` observation. |
-| `Tinycast/Core/PalettePanel.swift` | It holds `weak var paletteViewModel` — see boundaries. |
-| Various `Features/Settings/*` | `@ObservedObject private var core = AppCore.shared` sites. |
+| File                                          | Change                                                                                             |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `Tinycast/Core/AppCore.swift`                 | `@Observable` on both `PaletteViewModel` and `AppCore`; six sinks → tracking; drop `cancellables`. |
+| `Tinycast/Core/AppIndex.swift`                | `searchScopes` sink → tracking; drop `cancellables`.                                               |
+| `Tinycast/Core/HotKey/HyperKeyTap.swift`      | `hyperKey` sink → tracking; drop `cancellables`.                                                   |
+| `Tinycast/Core/PaletteWindowController.swift` | `core` and `palette` injection.                                                                    |
+| `Tinycast/Features/RootPaletteView.swift`     | `core` and `vm` observation.                                                                       |
+| `Tinycast/Core/PalettePanel.swift`            | It holds `weak var paletteViewModel` — see boundaries.                                             |
+| Various `Features/Settings/*`                 | `@ObservedObject private var core = AppCore.shared` sites.                                         |
 
 ## Files that must NOT change
 
@@ -67,7 +67,7 @@ because `@Published` emits before the property is written. `@Observable` emits a
   CGEvent taps, `DispatchSource` handlers, `Timer` blocks and `NotificationCenter` blocks are correct
   and load-bearing. Count them before and after: the expected delta is exactly the eight sink sites.
 - **The reconciliation must still be correct.** Each of the six `AppCore` sinks reconciles a feature's
-  presence. With `@Observable` the callback fires *after* the write, so the deferral `Task` is no longer
+  presence. With `@Observable` the callback fires _after_ the write, so the deferral `Task` is no longer
   needed — **but `withObservationTracking`'s `onChange` fires once and must be re-registered**. Use a
   helper that re-arms, or the tracking silently stops after the first change. This is the single most
   likely bug in this phase.
@@ -111,13 +111,13 @@ because `@Published` emits before the property is written. `@Observable` emits a
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **`withObservationTracking` fires once and stops.** The signature bug of this migration. | AC6/7/8 — *toggle everything twice* |
-| A non-Combine `assumeIsolated` is deleted, breaking a tap or timer bridge | AC5 counts the delta exactly; the must-not-change list names the files |
-| `hoverHighlightArmed` becomes tracked → the palette re-renders on every mouse move | AC2/AC9 |
-| `menuOpen` becomes tracked → menu open/close causes a full re-render and the caret hook misfires | AC2 + the menu check |
-| Feature reconciliation ordering changes and a switch leaves the launcher inconsistent | Toggle-twice checks on all six |
+| Risk                                                                                             | Mitigation                                                             |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **`withObservationTracking` fires once and stops.** The signature bug of this migration.         | AC6/7/8 — _toggle everything twice_                                    |
+| A non-Combine `assumeIsolated` is deleted, breaking a tap or timer bridge                        | AC5 counts the delta exactly; the must-not-change list names the files |
+| `hoverHighlightArmed` becomes tracked → the palette re-renders on every mouse move               | AC2/AC9                                                                |
+| `menuOpen` becomes tracked → menu open/close causes a full re-render and the caret hook misfires | AC2 + the menu check                                                   |
+| Feature reconciliation ordering changes and a switch leaves the launcher inconsistent            | Toggle-twice checks on all six                                         |
 
 ## Rollback strategy
 

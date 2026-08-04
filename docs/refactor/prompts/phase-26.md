@@ -20,7 +20,7 @@ Three places in `Core/` reach up into `AppCore.shared`. Break each by injecting 
   cases that resolve from **static catalogs** rather than stores: `.togglePalette`, `.toggleClipboard`,
   `.toggleEmoji`, `.systemAction`, `.windowCommand`.
 - `collapsedModifierSymbols` becomes a pure function of its arguments. **Do not change what it
-  produces**: the ✦ collapse is keyed on *configuration*, not on tap health, so glyphs never flicker,
+  produces**: the ✦ collapse is keyed on _configuration_, not on tap health, so glyphs never flicker,
   and leftover modifiers keep canonical order after the ✦.
 - `SystemActionRunner`'s callback is set once; the existing `Task { @MainActor in … }` inside the
   `openApplication` completion handler stays — only the destination changes.

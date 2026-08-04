@@ -20,20 +20,20 @@ The architecture review says **what** is wrong and **why**. This playbook says *
 > **Before any phase touching storage, read [`POLICY.md`](POLICY.md).** It sets the migration and
 > compatibility rules and it overrides every other document here.
 
-| Path | Purpose |
-|---|---|
-| `README.md` | This file. How to run the roadmap. |
-| `DAILY.md` | The daily driver — five steps, the exact instruction to give Claude, the four replies you need. |
-| `POLICY.md` | **Authoritative.** Migration and compatibility rules; overrides the phases, the checklists, the review and `AGENTS.md`. |
-| `ROADMAP.md` | Execution order, dependency graph, effort, risk, milestones. |
-| `phases/NN-*.md` | One file per phase. The complete specification of a single unit of work. |
-| `prompts/system-prompt.md` | The standing contract handed to Claude on **every** phase. |
-| `prompts/phase-NN.md` | The per-phase kickoff prompt. Short by design — see below. |
-| `checklists/build.md` | Build verification. Run after every phase. |
-| `checklists/regression.md` | Manual behaviour sweep. Run after every phase. |
-| `checklists/review.md` | How to review Claude's diff before committing. |
-| `checklists/testing.md` | The `Tools/` harnesses and when each is mandatory. |
-| `progress/template.md` | Copy per phase into `progress/NN-<slug>.md`. |
+| Path                       | Purpose                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `README.md`                | This file. How to run the roadmap.                                                                                      |
+| `DAILY.md`                 | The daily driver — five steps, the exact instruction to give Claude, the four replies you need.                         |
+| `POLICY.md`                | **Authoritative.** Migration and compatibility rules; overrides the phases, the checklists, the review and `AGENTS.md`. |
+| `ROADMAP.md`               | Execution order, dependency graph, effort, risk, milestones.                                                            |
+| `phases/NN-*.md`           | One file per phase. The complete specification of a single unit of work.                                                |
+| `prompts/system-prompt.md` | The standing contract handed to Claude on **every** phase.                                                              |
+| `prompts/phase-NN.md`      | The per-phase kickoff prompt. Short by design — see below.                                                              |
+| `checklists/build.md`      | Build verification. Run after every phase.                                                                              |
+| `checklists/regression.md` | Manual behaviour sweep. Run after every phase.                                                                          |
+| `checklists/review.md`     | How to review Claude's diff before committing.                                                                          |
+| `checklists/testing.md`    | The `Tools/` harnesses and when each is mandatory.                                                                      |
+| `progress/template.md`     | Copy per phase into `progress/NN-<slug>.md`.                                                                            |
 
 ### Why the phase prompts are short
 
@@ -49,16 +49,16 @@ place to edit, one place to read.
 Nine milestones' worth of work, sequenced so that **stopping after any completed phase leaves a
 shippable app**. See `ROADMAP.md` for the dependency graph.
 
-| Milestone | Phases | Theme |
-|---|---|---|
-| **M0** | 01 | Baselines — measure before changing anything |
-| **M1** | 02–10 | Zero-risk performance and hygiene wins |
-| **M2** | 11–18 | Observation (`@Observable`) migration |
-| **M3** | 19–23 | Palette decomposition (`PaletteScreen`) |
-| **M4** | 24–26 | `AppCore` decomposition into coordinators |
-| **M5** | 27–29 | Folder restructure |
-| **M6** | 30–33 | Naming, exhaustiveness, harness coverage |
-| **M7** | 34–35 | Comment budget, final measurement, docs, retiring dead compatibility code |
+| Milestone | Phases | Theme                                                                     |
+| --------- | ------ | ------------------------------------------------------------------------- |
+| **M0**    | 01     | Baselines — measure before changing anything                              |
+| **M1**    | 02–10  | Zero-risk performance and hygiene wins                                    |
+| **M2**    | 11–18  | Observation (`@Observable`) migration                                     |
+| **M3**    | 19–23  | Palette decomposition (`PaletteScreen`)                                   |
+| **M4**    | 24–26  | `AppCore` decomposition into coordinators                                 |
+| **M5**    | 27–29  | Folder restructure                                                        |
+| **M6**    | 30–33  | Naming, exhaustiveness, harness coverage                                  |
+| **M7**    | 34–35  | Comment budget, final measurement, docs, retiring dead compatibility code |
 
 ---
 
@@ -81,7 +81,7 @@ Check `ROADMAP.md`: every phase this one depends on must be **merged**, not just
 
 ### 2 · Baseline (you, 2 minutes)
 
-Build and launch the app *before* Claude touches anything. You need to know the app was working when
+Build and launch the app _before_ Claude touches anything. You need to know the app was working when
 you started, otherwise you will spend the phase debugging a pre-existing problem.
 
 ```
@@ -158,7 +158,7 @@ Stop the roadmap — do not start the next phase — if any of these are true:
 1. `git stash` or commit to a scratch branch — **do not throw the work away yet**.
 2. Open the phase doc. Determine which objectives are complete.
 3. Start a fresh conversation with the system prompt + phase prompt, and add:
-   *"Objectives 1–3 are already complete on this branch. Verify them, then complete objective 4 only."*
+   _"Objectives 1–3 are already complete on this branch. Verify them, then complete objective 4 only."_
 4. If more than half the phase remains, prefer `git reset --hard` and split the phase in two — amend the
    phase doc to record the split so the next engineer inherits the smaller unit.
 

@@ -30,26 +30,26 @@ Migrate, in this order, verifying each before starting the next:
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/VolumeState.swift` | `@Observable`. |
-| `Tinycast/Core/Quicklinks/QuicklinkArgumentSession.swift` | `@Observable`. |
-| `Tinycast/Core/HotKey/ShortcutCaptureSession.swift` | `@Observable`. |
-| `Tinycast/Core/Uninstall/UninstallSession.swift` | `@Observable`. |
-| `Tinycast/Features/Dialog/VolumeSlider.swift` | `@ObservedObject` → plain `let`. |
-| `Tinycast/Features/HUD/VolumeHUDView.swift` | Same. |
-| `Tinycast/Features/Quicklinks/QuicklinkArgumentsView.swift` | `@EnvironmentObject` → `@Environment`. |
-| `Tinycast/Features/Uninstall/UninstallView.swift` | Same. |
-| `Tinycast/Features/Settings/ShortcutRecorder.swift` | Consumption updated. |
-| `Tinycast/Features/Settings/ShortcutRecorderPopover.swift` | Consumption updated. |
-| `Tinycast/Features/RootPaletteView.swift` | Two `@EnvironmentObject`s converted. |
-| `Tinycast/Core/PaletteWindowController.swift` | Two injection sites converted. |
-| `Tinycast/Core/Dialog/DialogController.swift` | Only where it constructs `VolumeState`. |
+| File                                                        | Change                                  |
+| ----------------------------------------------------------- | --------------------------------------- |
+| `Tinycast/Core/VolumeState.swift`                           | `@Observable`.                          |
+| `Tinycast/Core/Quicklinks/QuicklinkArgumentSession.swift`   | `@Observable`.                          |
+| `Tinycast/Core/HotKey/ShortcutCaptureSession.swift`         | `@Observable`.                          |
+| `Tinycast/Core/Uninstall/UninstallSession.swift`            | `@Observable`.                          |
+| `Tinycast/Features/Dialog/VolumeSlider.swift`               | `@ObservedObject` → plain `let`.        |
+| `Tinycast/Features/HUD/VolumeHUDView.swift`                 | Same.                                   |
+| `Tinycast/Features/Quicklinks/QuicklinkArgumentsView.swift` | `@EnvironmentObject` → `@Environment`.  |
+| `Tinycast/Features/Uninstall/UninstallView.swift`           | Same.                                   |
+| `Tinycast/Features/Settings/ShortcutRecorder.swift`         | Consumption updated.                    |
+| `Tinycast/Features/Settings/ShortcutRecorderPopover.swift`  | Consumption updated.                    |
+| `Tinycast/Features/RootPaletteView.swift`                   | Two `@EnvironmentObject`s converted.    |
+| `Tinycast/Core/PaletteWindowController.swift`               | Two injection sites converted.          |
+| `Tinycast/Core/Dialog/DialogController.swift`               | Only where it constructs `VolumeState`. |
 
 ## Files that must NOT change
 
 - Any store not in the list of four
-- `Tinycast/Core/HotKeyManager.swift` — it *owns* `ShortcutCaptureSession` but is migrated in phase 15
+- `Tinycast/Core/HotKeyManager.swift` — it _owns_ `ShortcutCaptureSession` but is migrated in phase 15
 - `Tinycast/Core/Uninstall/UninstallScanner.swift` and the five pure uninstall files
 - `Tinycast/Core/VolumeLevel.swift` — harness-compiled, and not observable
 
@@ -95,13 +95,13 @@ Migrate, in this order, verifying each before starting the next:
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| The recorder callout stops updating as modifiers are held | AC6 — this is the most timing-sensitive observation in the app |
-| The volume HUD re-enters instead of animating in place | AC4 — `VolumeHUDController` relies on the view observing shared state |
-| The uninstall summary line goes stale on toggle | AC7 |
-| `VolumeState` gains `@MainActor` and breaks the HUD's cross-controller use | Explicit boundary |
-| The argument prompt loses its per-argument re-render | AC5 |
+| Risk                                                                       | Mitigation                                                            |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| The recorder callout stops updating as modifiers are held                  | AC6 — this is the most timing-sensitive observation in the app        |
+| The volume HUD re-enters instead of animating in place                     | AC4 — `VolumeHUDController` relies on the view observing shared state |
+| The uninstall summary line goes stale on toggle                            | AC7                                                                   |
+| `VolumeState` gains `@MainActor` and breaks the HUD's cross-controller use | Explicit boundary                                                     |
+| The argument prompt loses its per-argument re-render                       | AC5                                                                   |
 
 ## Rollback strategy
 

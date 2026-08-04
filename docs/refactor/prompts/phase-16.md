@@ -15,14 +15,14 @@ observed by the palette, every launcher row, and most Settings panes.
   `hyperKeyIncludesShift`, `hyperKeyReplacesGlyph`, `showFavoritesInCompactMode`, `openOnCursorScreen`,
   `customCommandsShowInLauncher`, `snippetsShowInLauncher`, `windowManagementShowInLauncher`,
   `quicklinksShowInLauncher`, `quicklinkConfirmsBeforeDelete`.
-  That is **not** legacy support. It encodes *"this setting starts **on** for a fresh install"*, because
+  That is **not** legacy support. It encodes _"this setting starts **on** for a fresh install"_, because
   `defaults.bool(forKey:)` returns `false` for an absent key. `docs/refactor/POLICY.md` lets you rename
   these keys; it does **not** let you change what a clean install starts with. Simplifying one silently
   flips that setting off for every new install and nothing in the build or the harnesses will tell you.
   Same for `ClipboardRetention`'s `-1`, `PopToRootTimeout`'s `0`, `windowGap`'s unset-reads-as-zero.
 - **Keep the explicit `didSet` persistence blocks.** Do not convert to computed properties backed by
   `UserDefaults` — that changes read cost on a hot path. A `stored(_:default:)` property wrapper is
-  *optional and discouraged in this phase*; prefer one change at a time.
+  _optional and discouraged in this phase_; prefer one change at a time.
 - `launchAtLogin`'s `didSet` calls `LaunchAtLogin.set` — a side effect, not persistence. Keep it.
 - `SettingsKey.showInMenuBar` stays an `@AppStorage` key shared with `TinycastApp`'s `MenuBarExtra`.
   Do not fold it into `AppSettings`.

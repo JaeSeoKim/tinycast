@@ -24,6 +24,7 @@ Three parts, in this order:
      paragraph of rationale.
 
   **Relocation is the default for anything explaining an invariant.**
+
 - **Never delete a comment you do not understand.** If its meaning is unclear, relocate it verbatim to
   `docs/`. Losing an explanation is worse than an over-long one.
 - **Do not touch code. Not one statement.** If a comment is only necessary because the code is unclear,

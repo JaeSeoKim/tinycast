@@ -15,7 +15,7 @@ phase makes that map the observed state.
 
 ## Why this phase exists
 
-`objectWillChange.send()` has no `@Observable` equivalent — Observation tracks *property access*, so a
+`objectWillChange.send()` has no `@Observable` equivalent — Observation tracks _property access_, so a
 type with no stored state cannot notify anything. This is why phase 06 had to land first, and why this
 type gets its own phase rather than riding along in a wave.
 
@@ -31,13 +31,13 @@ type gets its own phase rather than riding along in a wave.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/HotKeyManager.swift` | `@Observable`; drop `@Published` on `recordingAction`; delete `objectWillChange.send()`. |
-| `Tinycast/Core/PaletteWindowController.swift` | `.environmentObject(core.hotKeys)` → `.environment(…)`. |
-| `Tinycast/Features/Launcher/LauncherView.swift` | `AppRow`'s `@EnvironmentObject private var hotKeys`. |
-| `Tinycast/Features/Settings/ShortcutRecorder.swift` | Consumption. |
-| `Tinycast/Features/Settings/ShortcutRecorderPopover.swift` | Consumption. |
+| File                                                       | Change                                                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `Tinycast/Core/HotKeyManager.swift`                        | `@Observable`; drop `@Published` on `recordingAction`; delete `objectWillChange.send()`. |
+| `Tinycast/Core/PaletteWindowController.swift`              | `.environmentObject(core.hotKeys)` → `.environment(…)`.                                  |
+| `Tinycast/Features/Launcher/LauncherView.swift`            | `AppRow`'s `@EnvironmentObject private var hotKeys`.                                     |
+| `Tinycast/Features/Settings/ShortcutRecorder.swift`        | Consumption.                                                                             |
+| `Tinycast/Features/Settings/ShortcutRecorderPopover.swift` | Consumption.                                                                             |
 
 ## Files that must NOT change
 
@@ -92,12 +92,12 @@ type gets its own phase rather than riding along in a wave.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **Launcher keycaps go stale** — the classic symptom of losing the manual notification | AC3/AC4 |
-| `recordingAction.didSet` is lost, so recording no longer pauses the engines and the shortcut being typed fires the binding it is replacing | AC2 + the "does not fire while recording" check |
-| A `revision` hack is added instead of observing the map | Boundary + review |
-| The bound-ID indexes drift | Covered by phase 06's tests; re-verify by deleting a bound custom command |
+| Risk                                                                                                                                       | Mitigation                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| **Launcher keycaps go stale** — the classic symptom of losing the manual notification                                                      | AC3/AC4                                                                   |
+| `recordingAction.didSet` is lost, so recording no longer pauses the engines and the shortcut being typed fires the binding it is replacing | AC2 + the "does not fire while recording" check                           |
+| A `revision` hack is added instead of observing the map                                                                                    | Boundary + review                                                         |
+| The bound-ID indexes drift                                                                                                                 | Covered by phase 06's tests; re-verify by deleting a bound custom command |
 
 ## Rollback strategy
 

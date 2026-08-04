@@ -21,7 +21,7 @@ Two things, and **no screen migration**:
   will show what is actually needed. Do not pre-solve it.
 - The harness must be **Foundation-only** — it cannot import SwiftUI, so it cannot test a `body`. It
   tests the **row-order contract**: given section counts and an optional leading calculator card, index
-  *n* resolves to the element the view would highlight.
+  _n_ resolves to the element the view would highlight.
 - Model that contract as a small pure type (e.g. `PaletteRowIndex`) in a Foundation-only file, under
   ~40 lines, that both the harness and the future screens can use. **Do not build a general-purpose list
   abstraction.**

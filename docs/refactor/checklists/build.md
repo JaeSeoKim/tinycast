@@ -88,10 +88,10 @@ phases **05, 06, 09, 10, 16, 17, 18, 24, 25**.
 
 ## Failure handling
 
-| Symptom | Action |
-|---|---|
-| Build fails, Claude cannot fix in 2 attempts | `git reset --hard`. Re-run with the error text in the prompt. |
-| New warning introduced | Send it back to the same conversation. Do not accept "harmless". |
-| Type-checker timeout | Almost always a large literal array or a long expression chain. Ask for an explicit type annotation, not a restructure. |
-| Binary grew > 2 % | Something was added. Read `git diff --stat` for new files before anything else. |
-| Startup regressed | Look for work moved *into* an initialiser. Very common when consolidating helpers. |
+| Symptom                                      | Action                                                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Build fails, Claude cannot fix in 2 attempts | `git reset --hard`. Re-run with the error text in the prompt.                                                           |
+| New warning introduced                       | Send it back to the same conversation. Do not accept "harmless".                                                        |
+| Type-checker timeout                         | Almost always a large literal array or a long expression chain. Ask for an explicit type annotation, not a restructure. |
+| Binary grew > 2 %                            | Something was added. Read `git diff --stat` for new files before anything else.                                         |
+| Startup regressed                            | Look for work moved _into_ an initialiser. Very common when consolidating helpers.                                      |

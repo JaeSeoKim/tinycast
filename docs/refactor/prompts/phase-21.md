@@ -13,7 +13,7 @@ navigation, so this is where `PaletteScreen` likely needs one navigation hook.
   `func move(_ delta: Int, axis: PaletteAxis, from: Int) -> Int?` returning nil to mean "use the default
   linear move". Do not build a navigation subsystem.
 - **Do not touch `EmojiGridGeometry.swift`.** It is pure, harness-compiled and already correct. The
-  screen *calls* `up(from:)` / `down(from:)`; it does not reimplement grid maths.
+  screen _calls_ `up(from:)` / `down(from:)`; it does not reimplement grid maths.
 - The emoji flat selection indexes `sections.flatMap(\.entries)`. That mapping is the invariant.
 - **Chords that move into their screens:**
   - quicklinks: ⌘P (pin), ⌘⌫ (delete), ⌘↵ (open with default — **only when `openWithBundleID != nil`**)

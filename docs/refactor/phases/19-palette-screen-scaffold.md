@@ -32,13 +32,13 @@ load-bearing rule in the app and a violation is silent — the highlight is simp
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
+| File                                    | Change                                                |
+| --------------------------------------- | ----------------------------------------------------- |
 | `Tinycast/Features/PaletteScreen.swift` | **New.** The protocol. ~25 lines, no implementations. |
-| `Tools/palette-selection-test.swift` | **New.** The harness. |
-| `docs/development.md` | Add the harness command line. |
-| `AGENTS.md` | Register the harness and its purity requirement. |
-| `docs/refactor/checklists/testing.md` | Add the row to the harness table. |
+| `Tools/palette-selection-test.swift`    | **New.** The harness.                                 |
+| `docs/development.md`                   | Add the harness command line.                         |
+| `AGENTS.md`                             | Register the harness and its purity requirement.      |
+| `docs/refactor/checklists/testing.md`   | Add the row to the harness table.                     |
 
 ## Files that must NOT change
 
@@ -52,7 +52,7 @@ load-bearing rule in the app and a violation is silent — the highlight is simp
   appears in the diff, the phase is wrong.
 - The harness must be **Foundation-only**, like every other harness. It cannot import SwiftUI, so it
   cannot test a `body`. It tests the **row-order contract**: given a set of section counts and an
-  optional leading calculator card, index *n* resolves to the same element the view would highlight.
+  optional leading calculator card, index _n_ resolves to the same element the view would highlight.
 - Model that contract as a small pure type the screens will later use — a `PaletteRowIndex` or similar
   — placed in a Foundation-only file so both the harness and the screens can use it. Keep it under ~40
   lines. **Do not** build a general-purpose list abstraction.
@@ -80,17 +80,17 @@ load-bearing rule in the app and a violation is silent — the highlight is simp
 - [ ] `checklists/regression.md` — Core sweep (should be trivially unchanged)
 - [ ] Run `palette-selection-test` and read its output — confirm it actually asserts something
 - [ ] Deliberately break the pure index type in a scratch edit → the harness **fails**. Revert the break.
-      *(A test that cannot fail is not a test.)*
+      _(A test that cannot fail is not a test.)_
 - [ ] `git diff --stat` shows `RootPaletteView.swift` absent
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| The harness passes vacuously and gives false confidence through all of M3 | The "deliberately break it" step is mandatory |
-| The protocol is over-designed before any screen has adopted it | Five members, no defaults, no erasure |
-| `RootPaletteView` gets "started on" | AC6, and the reviewer checks `--stat` first |
-| The pure index type drifts from what the screens actually need | Phase 20 is the first adopter and may amend it — that is expected and fine |
+| Risk                                                                      | Mitigation                                                                 |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| The harness passes vacuously and gives false confidence through all of M3 | The "deliberately break it" step is mandatory                              |
+| The protocol is over-designed before any screen has adopted it            | Five members, no defaults, no erasure                                      |
+| `RootPaletteView` gets "started on"                                       | AC6, and the reviewer checks `--stat` first                                |
+| The pure index type drifts from what the screens actually need            | Phase 20 is the first adopter and may amend it — that is expected and fine |
 
 ## Rollback strategy
 
@@ -137,5 +137,5 @@ Nothing conforms to the protocol yet.
 - Read the harness assertions properly. A harness that asserts `count == count` passes forever and buys
   nothing, and you will be relying on it for the next four phases.
 - Do the deliberate-break test yourself. It takes 60 seconds and it is the only proof the guard works.
-- Push back on any type erasure, `AnyView` wrapper or associated-type workaround introduced *before* a
+- Push back on any type erasure, `AnyView` wrapper or associated-type workaround introduced _before_ a
   single screen has adopted the protocol. Let phase 20 discover what is needed.

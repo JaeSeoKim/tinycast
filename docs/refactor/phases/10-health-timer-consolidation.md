@@ -33,27 +33,27 @@ The clipboard poller is also the only monitor in the app that does **not** suspe
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/HealthTicker.swift` | **New.** ~45 lines. |
-| `Tinycast/Core/AppCore.swift` | Own the ticker; wire the three subscribers in `start()`. |
-| `Tinycast/Core/HotKey/HyperKeyTap.swift` | Remove its timer; expose `healthCheck()` to the ticker. |
-| `Tinycast/Core/HotKey/DoubleTapMonitor.swift` | Same. |
-| `Tinycast/Core/Snippets/SnippetKeywordListener.swift` | Same. |
-| `Tinycast/Core/ClipboardManager.swift` | Tolerance + session suspend/resume. |
+| File                                                  | Change                                                   |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| `Tinycast/Core/HealthTicker.swift`                    | **New.** ~45 lines.                                      |
+| `Tinycast/Core/AppCore.swift`                         | Own the ticker; wire the three subscribers in `start()`. |
+| `Tinycast/Core/HotKey/HyperKeyTap.swift`              | Remove its timer; expose `healthCheck()` to the ticker.  |
+| `Tinycast/Core/HotKey/DoubleTapMonitor.swift`         | Same.                                                    |
+| `Tinycast/Core/Snippets/SnippetKeywordListener.swift` | Same.                                                    |
+| `Tinycast/Core/ClipboardManager.swift`                | Tolerance + session suspend/resume.                      |
 
 ## Files that must NOT change
 
 - `Tinycast/Core/Snippets/SnippetKeywordPolicy.swift` — harness-compiled; the lifecycle **policy** is
-  pure and stays untouched. Only the listener's *timer* moves.
+  pure and stays untouched. Only the listener's _timer_ moves.
 - `Tinycast/Core/HotKey/DoubleTapDetector.swift`, `DoubleTapModifier.swift` — harness-compiled
 - `Tinycast/Core/ClipboardStore.swift` — harness-compiled
 - `Tinycast/Core/Paster.swift`
 
 ## Implementation boundaries
 
-- **Each subscriber keeps its own `healthCheck()` logic verbatim.** The ticker only decides *when* to
-  call; it never decides *what* to check. Do not unify the three bodies — they check different taps with
+- **Each subscriber keeps its own `healthCheck()` logic verbatim.** The ticker only decides _when_ to
+  call; it never decides _what_ to check. Do not unify the three bodies — they check different taps with
   different failure modes.
 - The ticker's timer must **not** run when the subscriber list is empty. The whole point is that a user
   who binds no double-tap, configures no Hyper key and never enables snippets pays nothing.
@@ -98,13 +98,13 @@ The clipboard poller is also the only monitor in the app that does **not** suspe
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A tap stops self-healing.** The health checks are what make permission-granting take effect without a relaunch. | The revoke/re-grant test for all three taps |
-| Ticker keeps running forever, defeating the purpose | AC2/AC3 |
-| Retain cycle keeps a torn-down monitor alive | AC7; check the subscription mechanism in review |
-| Clipboard poller misses a copy after resume | AC6 and the fast-user-switch test |
-| Suspending the poller loses a copy made while suspended | Accept — that is what the two tap monitors already do, and another session's clipboard is not ours to record |
+| Risk                                                                                                              | Mitigation                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **A tap stops self-healing.** The health checks are what make permission-granting take effect without a relaunch. | The revoke/re-grant test for all three taps                                                                  |
+| Ticker keeps running forever, defeating the purpose                                                               | AC2/AC3                                                                                                      |
+| Retain cycle keeps a torn-down monitor alive                                                                      | AC7; check the subscription mechanism in review                                                              |
+| Clipboard poller misses a copy after resume                                                                       | AC6 and the fast-user-switch test                                                                            |
+| Suspending the poller loses a copy made while suspended                                                           | Accept — that is what the two tap monitors already do, and another session's clipboard is not ours to record |
 
 ## Rollback strategy
 
@@ -152,7 +152,7 @@ easy to not notice.
 - **The revoke/re-grant test is the real acceptance test.** Everything else can look right while the
   self-healing is quietly dead, and a user would only discover it by relaunching the app.
 - Confirm subscription is weak. A strong list means `SnippetKeywordListener` never deallocates after
-  `stop()`, which is a leak *and* leaves a torn-down listener being ticked.
+  `stop()`, which is a leak _and_ leaves a torn-down listener being ticked.
 - Check that `SnippetKeywordListener.stop()` unsubscribes. It currently calls `stopHealthTimer()`; the
   replacement must do the equivalent.
 - Reject any attempt to merge the three `healthCheck()` bodies into a shared implementation. They look

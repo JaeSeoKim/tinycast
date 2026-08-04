@@ -31,33 +31,33 @@ XcodeGen derives sources from `sources: - path: Tinycast`, so moves are free at 
 
 **→ `Tinycast/DesignSystem/`**
 
-| From | To |
-|---|---|
-| `Core/Theme.swift` | `DesignSystem/Theme.swift` |
-| `Core/Tooltip.swift` | `DesignSystem/Tooltip.swift` |
-| `Core/SymbolImage.swift` | `DesignSystem/SymbolImage.swift` |
-| `Core/VisualEffectView.swift` | `DesignSystem/VisualEffectView.swift` |
-| `Features/PopoverMenu.swift` | `DesignSystem/PopoverMenu.swift` |
-| `Features/Settings/SettingsComponents.swift` | `DesignSystem/SettingsComponents.swift` |
-| `Core/EdgeDissolve.swift` | `DesignSystem/Scrolling/EdgeDissolve.swift` |
-| `Core/ThinScrollbar.swift` | `DesignSystem/Scrolling/ThinScrollbar.swift` |
-| `Core/ScrollIntent.swift` | `DesignSystem/Scrolling/ScrollIntent.swift` |
-| `Core/OverlayScroller.swift` | `DesignSystem/Scrolling/OverlayScroller.swift` |
-| `Core/RightClick.swift` | `DesignSystem/Interaction/RightClick.swift` |
-| `Core/PanelTransition.swift` | `DesignSystem/Interaction/PanelTransition.swift` |
+| From                                         | To                                               |
+| -------------------------------------------- | ------------------------------------------------ |
+| `Core/Theme.swift`                           | `DesignSystem/Theme.swift`                       |
+| `Core/Tooltip.swift`                         | `DesignSystem/Tooltip.swift`                     |
+| `Core/SymbolImage.swift`                     | `DesignSystem/SymbolImage.swift`                 |
+| `Core/VisualEffectView.swift`                | `DesignSystem/VisualEffectView.swift`            |
+| `Features/PopoverMenu.swift`                 | `DesignSystem/PopoverMenu.swift`                 |
+| `Features/Settings/SettingsComponents.swift` | `DesignSystem/SettingsComponents.swift`          |
+| `Core/EdgeDissolve.swift`                    | `DesignSystem/Scrolling/EdgeDissolve.swift`      |
+| `Core/ThinScrollbar.swift`                   | `DesignSystem/Scrolling/ThinScrollbar.swift`     |
+| `Core/ScrollIntent.swift`                    | `DesignSystem/Scrolling/ScrollIntent.swift`      |
+| `Core/OverlayScroller.swift`                 | `DesignSystem/Scrolling/OverlayScroller.swift`   |
+| `Core/RightClick.swift`                      | `DesignSystem/Interaction/RightClick.swift`      |
+| `Core/PanelTransition.swift`                 | `DesignSystem/Interaction/PanelTransition.swift` |
 
 **→ `Tinycast/Platform/`**
 
-| From | To |
-|---|---|
-| `Core/Permissions.swift` | `Platform/Permissions.swift` |
-| `Core/LaunchAtLogin.swift` | `Platform/LaunchAtLogin.swift` |
-| `Core/CursorScreen.swift` | `Platform/CursorScreen.swift` |
-| `Core/Bundle+AppName.swift` | `Platform/AppDisplayName.swift` *(rename — see boundaries)* |
-| `Core/NotificationToken.swift` | `Platform/NotificationToken.swift` |
-| `Core/AppPaths.swift` | `Platform/AppPaths.swift` |
-| `Core/ImageThumbnail.swift` | `Platform/Images/ImageThumbnail.swift` |
-| `IconCache` (extracted from `Core/AppIndex.swift`) | `Platform/Images/IconCache.swift` |
+| From                                               | To                                                          |
+| -------------------------------------------------- | ----------------------------------------------------------- |
+| `Core/Permissions.swift`                           | `Platform/Permissions.swift`                                |
+| `Core/LaunchAtLogin.swift`                         | `Platform/LaunchAtLogin.swift`                              |
+| `Core/CursorScreen.swift`                          | `Platform/CursorScreen.swift`                               |
+| `Core/Bundle+AppName.swift`                        | `Platform/AppDisplayName.swift` _(rename — see boundaries)_ |
+| `Core/NotificationToken.swift`                     | `Platform/NotificationToken.swift`                          |
+| `Core/AppPaths.swift`                              | `Platform/AppPaths.swift`                                   |
+| `Core/ImageThumbnail.swift`                        | `Platform/Images/ImageThumbnail.swift`                      |
+| `IconCache` (extracted from `Core/AppIndex.swift`) | `Platform/Images/IconCache.swift`                           |
 
 ## Files that must NOT change (contents)
 
@@ -71,7 +71,7 @@ XcodeGen derives sources from `sources: - path: Tinycast`, so moves are free at 
 - **Moves only.** No renames except `Bundle+AppName.swift` → `AppDisplayName.swift`, which is a filename
   change only — the `extension Bundle { var appDisplayName }` inside is untouched. (Type renames are
   phase 30.)
-- `IconCache` is *extracted* from `AppIndex.swift`, not rewritten. Cut the enum, paste it, add whatever
+- `IconCache` is _extracted_ from `AppIndex.swift`, not rewritten. Cut the enum, paste it, add whatever
   imports it needs. `AppEntry.icon` was already deleted in phase 02, so the only remaining coupling is
   `AppIconView` and `PopoverMenuIcon.file`.
 - Two harness command lines reference moved files and must be updated in the **same commit**:
@@ -79,6 +79,7 @@ XcodeGen derives sources from `sources: - path: Tinycast`, so moves are free at 
   - any harness referencing `NotificationToken.swift` (`snippets-test`) → `Platform/NotificationToken.swift`
 
   Update them in `docs/development.md` **and** `AGENTS.md`.
+
 - Run `xcodegen generate` and commit the regenerated `.xcodeproj`.
 - Do not create an umbrella header, a module map, or any `@_exported import`.
 - Do not reorganise `Features/` in this phase — that is 29.
@@ -108,13 +109,13 @@ XcodeGen derives sources from `sources: - path: Tinycast`, so moves are free at 
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| A harness command line is missed → red suite | AC4/AC5, run all 18 |
-| `EdgeDissolve` / `ThinScrollbar` get an "unused import" cleanup | AC3 — 100 % similarity required |
-| `IconCache` extraction changes cache behaviour | `git diff` the extracted enum against the original hunk |
-| The `.xcodeproj` is not regenerated and CI/local builds diverge | AC6 + running `xcodegen` twice |
-| A `fileprivate` becomes inaccessible after the move | Compiler catches it; do not "fix" by widening access beyond what is needed |
+| Risk                                                            | Mitigation                                                                 |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| A harness command line is missed → red suite                    | AC4/AC5, run all 18                                                        |
+| `EdgeDissolve` / `ThinScrollbar` get an "unused import" cleanup | AC3 — 100 % similarity required                                            |
+| `IconCache` extraction changes cache behaviour                  | `git diff` the extracted enum against the original hunk                    |
+| The `.xcodeproj` is not regenerated and CI/local builds diverge | AC6 + running `xcodegen` twice                                             |
+| A `fileprivate` becomes inaccessible after the move             | Compiler catches it; do not "fix" by widening access beyond what is needed |
 
 ## Rollback strategy
 

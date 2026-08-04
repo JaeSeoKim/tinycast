@@ -12,7 +12,7 @@ record the numbers they produce. Nothing else changes.
 ## Why this phase exists
 
 Every later phase promises a measurable effect — "80 fewer plist parses per palette open", "6–12× faster
-uninstall scan", "fewer body evaluations". Without a baseline captured *before* any of them land, those
+uninstall scan", "fewer body evaluations". Without a baseline captured _before_ any of them land, those
 claims are unfalsifiable and the roadmap degrades into hoping.
 
 Signposts are effectively free at runtime when no Instruments session is attached, so these stay in the
@@ -35,13 +35,13 @@ Roadmap W0 (§5) · §6 Performance table, which every entry says to measure
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/Signposts.swift` | **New.** One `OSSignposter`, one interval helper. ~20 lines. |
-| `Tinycast/Core/AppIndex.swift` | Wrap `scan` and `rank`. |
-| `Tinycast/Core/PaletteWindowController.swift` | Wrap `show`. |
-| `Tinycast/Core/Uninstall/UninstallScanner.swift` | Wrap `scan`. |
-| `Tinycast/Core/AppCore.swift` | Wrap `start`. |
+| File                                             | Change                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `Tinycast/Core/Signposts.swift`                  | **New.** One `OSSignposter`, one interval helper. ~20 lines. |
+| `Tinycast/Core/AppIndex.swift`                   | Wrap `scan` and `rank`.                                      |
+| `Tinycast/Core/PaletteWindowController.swift`    | Wrap `show`.                                                 |
+| `Tinycast/Core/Uninstall/UninstallScanner.swift` | Wrap `scan`.                                                 |
+| `Tinycast/Core/AppCore.swift`                    | Wrap `start`.                                                |
 
 ## Files that must NOT change
 
@@ -85,25 +85,25 @@ Roadmap W0 (§5) · §6 Performance table, which every entry says to measure
 
 Record all of this in the progress file — later phases compare against it.
 
-| Metric | How |
-|---|---|
-| Release binary size | `stat -f%z` on the built executable |
-| Cold launch, median of 3 | Quit fully, relaunch, time to menu-bar icon |
-| `AppCore.start` duration | Instruments |
-| `AppIndex.scan` cold / warm | Instruments, first open vs. tenth |
-| `PaletteWindowController.show` | Instruments |
-| `UninstallScanner.scan` | Instruments, on an app with a large support folder |
-| RSS after 10 palette opens | Activity Monitor |
-| RSS after browsing 50 clipboard images | Activity Monitor |
-| Comment density | The four `grep` figures from review H-1 |
+| Metric                                 | How                                                |
+| -------------------------------------- | -------------------------------------------------- |
+| Release binary size                    | `stat -f%z` on the built executable                |
+| Cold launch, median of 3               | Quit fully, relaunch, time to menu-bar icon        |
+| `AppCore.start` duration               | Instruments                                        |
+| `AppIndex.scan` cold / warm            | Instruments, first open vs. tenth                  |
+| `PaletteWindowController.show`         | Instruments                                        |
+| `UninstallScanner.scan`                | Instruments, on an app with a large support folder |
+| RSS after 10 palette opens             | Activity Monitor                                   |
+| RSS after browsing 50 clipboard images | Activity Monitor                                   |
+| Comment density                        | The four `grep` figures from review H-1            |
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| `import os` added to a harness-compiled file breaks the test suite | Full harness run is a gate |
-| A manually-ended interval leaks on an early return | Acceptance criterion 2 requires `defer` or `withIntervalSignpost` |
-| Signposts in a hot loop add overhead | Only five call sites, all coarse-grained; none inside a per-entry loop |
+| Risk                                                               | Mitigation                                                             |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `import os` added to a harness-compiled file breaks the test suite | Full harness run is a gate                                             |
+| A manually-ended interval leaks on an early return                 | Acceptance criterion 2 requires `defer` or `withIntervalSignpost`      |
+| Signposts in a hot loop add overhead                               | Only five call sites, all coarse-grained; none inside a per-entry loop |
 
 ## Rollback strategy
 

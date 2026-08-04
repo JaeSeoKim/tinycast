@@ -20,7 +20,7 @@ Then amend `AGENTS.md`'s three superseded clauses.
   answer now.
 - **The net line count must be negative.** If it is not, something was rewritten rather than removed.
 - **Do not touch Raycast import** — `RaycastFormat`, `RaycastV1Decoder`, `RaycastImportV1`,
-  `RaycastImportV2`, `Tools/raycast-test.swift`. That is *another application's* format, not Tinycast's
+  `RaycastImportV2`, `Tools/raycast-test.swift`. That is _another application's_ format, not Tinycast's
   legacy. It looks like compatibility code and it is not.
 - **Do not touch the snippet Markdown serializer.** User-authored interchange format.
 - `HotKeyAction.defaultsKey` stays the single place that computes a key. The new namespace must be
@@ -29,7 +29,7 @@ Then amend `AGENTS.md`'s three superseded clauses.
 - **Do not rename SQLite columns.** Fold `source_app` and `pinned_at` into `schema` under their existing
   names — the row decoder and the prepared statements reference them and renaming buys nothing.
 - Simplifying `HotKeyBinding.Codable` **changes the settings-backup file format**. That is allowed. The
-  only requirement is export → import round-trips *within this build*.
+  only requirement is export → import round-trips _within this build_.
 - Do not touch `HotKeyCenter`, `DoubleTapMonitor`, or double-tap detection. Persistence only.
 
 ## Verify before you summarise

@@ -32,13 +32,13 @@ meaning; the problem is that some are synonyms for each other and no rule is wri
 
 ## Renames
 
-| Today | Becomes | Why |
-|---|---|---|
-| `ClipboardManager` | `ClipboardMonitor` | It polls an external stream — that is what `Monitor` means |
-| `HotKeyManager` | `HotKeyBindings` | It persists and publishes bindings; `HotKeyCenter` is already the Carbon layer |
-| `CommandRegistry` | `CommandCatalog` | Matches `SystemActionCatalog`, `WindowCommandCatalog` |
-| `PaletteViewModel` | `PaletteState` | It is shared app state read by the window controller and the panel, not a per-view VM |
-| `Bundle+AppName.swift` | already `AppDisplayName.swift` (phase 27) | Concept-named, like `CursorScreen.swift` |
+| Today                  | Becomes                                   | Why                                                                                   |
+| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| `ClipboardManager`     | `ClipboardMonitor`                        | It polls an external stream — that is what `Monitor` means                            |
+| `HotKeyManager`        | `HotKeyBindings`                          | It persists and publishes bindings; `HotKeyCenter` is already the Carbon layer        |
+| `CommandRegistry`      | `CommandCatalog`                          | Matches `SystemActionCatalog`, `WindowCommandCatalog`                                 |
+| `PaletteViewModel`     | `PaletteState`                            | It is shared app state read by the window controller and the panel, not a per-view VM |
+| `Bundle+AppName.swift` | already `AppDisplayName.swift` (phase 27) | Concept-named, like `CursorScreen.swift`                                              |
 
 ## Expected files to modify
 
@@ -55,15 +55,15 @@ Every file referencing a renamed type — roughly 20 — plus `AGENTS.md`.
 
 - **Renames only.** Do not move a file, change a signature, or "tidy" anything while renaming.
 - **Persisted identifiers may be renamed** — but every producer and consumer must move together, or the
-  app breaks *within this build*. The four that bite (POLICY carve-out 2):
+  app breaks _within this build_. The four that bite (POLICY carve-out 2):
   - `ClipboardManager.internalType` — the writer and the poller must agree, or Tinycast re-captures its
     own pastes in a loop.
   - `SettingsKey.showInMenuBar` — shared with `TinycastApp`'s `@AppStorage`. Rename in both or neither.
-  - `CommandID` raw values — they *are* `AppEntry.id`, which favourites, visibility and learned ranking
+  - `CommandID` raw values — they _are_ `AppEntry.id`, which favourites, visibility and learned ranking
     key on. Rename them and those records are orphaned; that is acceptable under the policy, but the
     orphaning must be total rather than partial.
   - SQLite column names — schema, prepared statements and row decoder must agree.
-- **Renaming a persisted key is permitted but adds nothing here.** This phase renames *types*. Rename a
+- **Renaming a persisted key is permitted but adds nothing here.** This phase renames _types_. Rename a
   key only where leaving it would contradict the new type name badly enough to confuse a reader.
 - The renamed file name must match its renamed type.
 - Do **not** rename `AppLauncher` or `QuicklinkLauncher`. "Launcher" is clearer than "Runner" for
@@ -100,13 +100,13 @@ Every file referencing a renamed type — roughly 20 — plus `AGENTS.md`.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A persisted key is renamed on one side only** — the writer moves, the reader does not. Now the real risk, since renaming itself is allowed. | AC3 + the changed-literal grep, read line by line |
-| The pasteboard marker changes in the writer but not the poller → Tinycast re-captures its own pastes in a loop | The paste-then-check test |
-| `SettingsKey.showInMenuBar` moves in `AppSettings` but not in `TinycastApp`'s `@AppStorage` → the menu-bar toggle silently stops working | Toggle it and watch the icon |
-| A rename lands in a `Tools/` harness assertion string | All 18 harnesses |
-| A Raycast field name is renamed → import breaks against a real export | `RaycastImport*` on the must-not-change list; `raycast-test` |
+| Risk                                                                                                                                          | Mitigation                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **A persisted key is renamed on one side only** — the writer moves, the reader does not. Now the real risk, since renaming itself is allowed. | AC3 + the changed-literal grep, read line by line            |
+| The pasteboard marker changes in the writer but not the poller → Tinycast re-captures its own pastes in a loop                                | The paste-then-check test                                    |
+| `SettingsKey.showInMenuBar` moves in `AppSettings` but not in `TinycastApp`'s `@AppStorage` → the menu-bar toggle silently stops working      | Toggle it and watch the icon                                 |
+| A rename lands in a `Tools/` harness assertion string                                                                                         | All 18 harnesses                                             |
+| A Raycast field name is renamed → import breaks against a real export                                                                         | `RaycastImport*` on the must-not-change list; `raycast-test` |
 
 ## Rollback strategy
 
@@ -151,8 +151,8 @@ consumer moved with it.
 ## Notes for reviewers
 
 - **Search the diff for string literals**: `git diff -U0 | grep '^[-+].*"'`. Renaming a persisted string
-  is now allowed, so the question is no longer *"did anything change?"* but *"did everything that
-  references it change together?"* Account for every line the grep returns.
+  is now allowed, so the question is no longer _"did anything change?"_ but _"did everything that
+  references it change together?"_ Account for every line the grep returns.
 - The four consistency traps are `internalType`, `showInMenuBar`, `CommandID` raw values and the SQLite
   column names. Check each one's producers **and** consumers.
 - Confirm `RaycastImport*` is absent from the diff — that is an external format, not Tinycast's legacy.

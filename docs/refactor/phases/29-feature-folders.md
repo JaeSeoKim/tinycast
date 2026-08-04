@@ -29,21 +29,21 @@ removed the shared-file slices; this one co-locates what remains.
 
 ## Target layout
 
-| Feature | Model (pure) | Service (effects) | UI | Settings |
-|---|---|---|---|---|
-| **Launcher** | `AppEntry`, `SearchRelevance`, `SearchScopes`, `LauncherRankingStore` | `AppIndex`, `AppLauncher`, `SpotlightNames`, `SettingsPaneScanner`, `FavoritesStore`, `VisibilityStore`, `RunningAppsMonitor` | `LauncherScreen`, `LauncherList`, `AppRow`, `AppIconView`, `AppActionsMenu` | `ApplicationsSettingsView`, `SystemSettingsSettingsView`, `LauncherItemsCard`, `SearchScopesCard` |
-| **Clipboard** | `ClipboardStore` | `ClipboardManager`, `Paster` | `ClipboardScreen` + views | `ClipboardSettingsView`, `AppPickerPopover` |
-| **Calculator** | `Calculator/*`, `CurrencyData.generated` | `CurrencyRateStore`, `CalculatorHistoryStore` | `CalculatorHistoryScreen`, `CalculatorCardView` | — |
-| **Emoji** | `EmojiCatalog`, `EmojiGridGeometry`, `EmojiData.generated` | `EmojiIndex`, `FrequentEmojiStore` | `EmojiScreen` | `EmojiSettingsView` |
-| **Quicklinks** | `Quicklink`, `QuicklinkDestination`, `QuicklinkStore`, `QuicklinkArchive` | `QuicklinkLauncher`, `QuicklinkArgumentSession` | screens + `QuicklinkCoordinator` | `QuicklinksSettingsView`, `QuicklinkEditorSheet` |
-| **Snippets** | `Snippets/*` pure | `SnippetTextInjector`, `SnippetKeywordListener` | `SnippetArgumentsPrompt` + coordinator | `SnippetsSettingsView` |
-| **WindowManagement** | `WindowCommand`, `WindowLayout`, `WindowActionMemory` | `WindowMover` | — | `WindowManagementSettingsView` |
-| **Uninstall** | 5 pure files | `UninstallScanner`, `UninstallRunner`, `UninstallSession` | `UninstallScreen` + coordinator | — |
-| **SystemActions** | `SystemAction`, `VolumeLevel` | `SystemActionRunner`, `VolumeState` | coordinator | `SystemActionsSettingsView` |
-| **CustomCommands** | `CustomCommand` | `ShellCommandRunner` | coordinator | `CommandsSettingsView`, `CustomCommandEditorSheet` |
-| **HotKeys** | `KeyShortcut`, `HotKeyBinding`, `DoubleTapModifier`, `DoubleTapDetector` | `HotKeyCenter`, `HotKeyManager`, `DoubleTapMonitor`, `HyperKeyTap`, `ShortcutCaptureSession` | `ShortcutRecorder`, `ShortcutRecorderPopover`, `CalloutShape`, `CalloutPlacement` | — |
-| **Backup** | `SettingsBackup`, `Raycast*` | `BackupActions`, `Scrypt`, `Gunzip` | — | `BackupSettingsView`, `RaycastImportSelection` |
-| **Onboarding** | `OnboardingState` | — | `OnboardingView` | — |
+| Feature              | Model (pure)                                                              | Service (effects)                                                                                                             | UI                                                                                | Settings                                                                                          |
+| -------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Launcher**         | `AppEntry`, `SearchRelevance`, `SearchScopes`, `LauncherRankingStore`     | `AppIndex`, `AppLauncher`, `SpotlightNames`, `SettingsPaneScanner`, `FavoritesStore`, `VisibilityStore`, `RunningAppsMonitor` | `LauncherScreen`, `LauncherList`, `AppRow`, `AppIconView`, `AppActionsMenu`       | `ApplicationsSettingsView`, `SystemSettingsSettingsView`, `LauncherItemsCard`, `SearchScopesCard` |
+| **Clipboard**        | `ClipboardStore`                                                          | `ClipboardManager`, `Paster`                                                                                                  | `ClipboardScreen` + views                                                         | `ClipboardSettingsView`, `AppPickerPopover`                                                       |
+| **Calculator**       | `Calculator/*`, `CurrencyData.generated`                                  | `CurrencyRateStore`, `CalculatorHistoryStore`                                                                                 | `CalculatorHistoryScreen`, `CalculatorCardView`                                   | —                                                                                                 |
+| **Emoji**            | `EmojiCatalog`, `EmojiGridGeometry`, `EmojiData.generated`                | `EmojiIndex`, `FrequentEmojiStore`                                                                                            | `EmojiScreen`                                                                     | `EmojiSettingsView`                                                                               |
+| **Quicklinks**       | `Quicklink`, `QuicklinkDestination`, `QuicklinkStore`, `QuicklinkArchive` | `QuicklinkLauncher`, `QuicklinkArgumentSession`                                                                               | screens + `QuicklinkCoordinator`                                                  | `QuicklinksSettingsView`, `QuicklinkEditorSheet`                                                  |
+| **Snippets**         | `Snippets/*` pure                                                         | `SnippetTextInjector`, `SnippetKeywordListener`                                                                               | `SnippetArgumentsPrompt` + coordinator                                            | `SnippetsSettingsView`                                                                            |
+| **WindowManagement** | `WindowCommand`, `WindowLayout`, `WindowActionMemory`                     | `WindowMover`                                                                                                                 | —                                                                                 | `WindowManagementSettingsView`                                                                    |
+| **Uninstall**        | 5 pure files                                                              | `UninstallScanner`, `UninstallRunner`, `UninstallSession`                                                                     | `UninstallScreen` + coordinator                                                   | —                                                                                                 |
+| **SystemActions**    | `SystemAction`, `VolumeLevel`                                             | `SystemActionRunner`, `VolumeState`                                                                                           | coordinator                                                                       | `SystemActionsSettingsView`                                                                       |
+| **CustomCommands**   | `CustomCommand`                                                           | `ShellCommandRunner`                                                                                                          | coordinator                                                                       | `CommandsSettingsView`, `CustomCommandEditorSheet`                                                |
+| **HotKeys**          | `KeyShortcut`, `HotKeyBinding`, `DoubleTapModifier`, `DoubleTapDetector`  | `HotKeyCenter`, `HotKeyManager`, `DoubleTapMonitor`, `HyperKeyTap`, `ShortcutCaptureSession`                                  | `ShortcutRecorder`, `ShortcutRecorderPopover`, `CalloutShape`, `CalloutPlacement` | —                                                                                                 |
+| **Backup**           | `SettingsBackup`, `Raycast*`                                              | `BackupActions`, `Scrypt`, `Gunzip`                                                                                           | —                                                                                 | `BackupSettingsView`, `RaycastImportSelection`                                                    |
+| **Onboarding**       | `OnboardingState`                                                         | —                                                                                                                             | `OnboardingView`                                                                  | —                                                                                                 |
 
 Also: `Core/CommandRegistry.swift` → `Features/Launcher/Model/`; `Core/HealthTicker.swift` and
 `Core/Memo.swift` → `Platform/`.
@@ -95,13 +95,13 @@ Also: `Core/CommandRegistry.swift` → `Features/Launcher/Model/`; `Core/HealthT
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A harness command line is missed** → red suite, possibly not noticed until a later phase | AC3; copy-paste the block fresh from `docs/development.md` |
-| `AGENTS.md` invariants point at dead paths → the contract silently rots | AC4; read the whole section |
-| A single giant commit makes a partial revert impossible | Boundary: one feature per commit |
-| Access-control breakage after a move | Compiler catches it; do not widen beyond `internal` |
-| A file lands in the wrong layer (an effect file under `Model/`) | Reviewer checks imports: a `Model/` file importing AppKit is misplaced |
+| Risk                                                                                       | Mitigation                                                             |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **A harness command line is missed** → red suite, possibly not noticed until a later phase | AC3; copy-paste the block fresh from `docs/development.md`             |
+| `AGENTS.md` invariants point at dead paths → the contract silently rots                    | AC4; read the whole section                                            |
+| A single giant commit makes a partial revert impossible                                    | Boundary: one feature per commit                                       |
+| Access-control breakage after a move                                                       | Compiler catches it; do not widen beyond `internal`                    |
+| A file lands in the wrong layer (an effect file under `Model/`)                            | Reviewer checks imports: a `Model/` file importing AppKit is misplaced |
 
 ## Rollback strategy
 

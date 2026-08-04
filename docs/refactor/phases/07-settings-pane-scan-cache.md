@@ -31,10 +31,10 @@ that changes only on an OS update.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
+| File                                      | Change                                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `Tinycast/Core/SettingsPaneScanner.swift` | `scan()` gains a `cache:` parameter and returns `([AppEntry], Cache)`, mirroring `SpotlightNames.Cache`'s shape. |
-| `Tinycast/Core/AppIndex.swift` | Hold the pane cache alongside `alternateNameCache`; pass it into `scan` and store what comes back. |
+| `Tinycast/Core/AppIndex.swift`            | Hold the pane cache alongside `alternateNameCache`; pass it into `scan` and store what comes back.               |
 
 ## Files that must NOT change
 
@@ -84,13 +84,13 @@ that changes only on an OS update.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| A pane installed mid-session is missed | Directory mtime changes when a pane is installed; and this is impossible in practice outside an OS update |
-| Pane display names change (localization lookup skipped) | AC2 screenshot comparison |
-| Static mutable state introduces a data race under Swift 6 | AC4; prefer the value-threaded form |
-| Cache retained forever, growing memory | ~40 small `AppEntry` values, bounded by the directory; note the size in the progress file |
-| Ordering changes because the cache returns an unsorted array | AC2 |
+| Risk                                                         | Mitigation                                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| A pane installed mid-session is missed                       | Directory mtime changes when a pane is installed; and this is impossible in practice outside an OS update |
+| Pane display names change (localization lookup skipped)      | AC2 screenshot comparison                                                                                 |
+| Static mutable state introduces a data race under Swift 6    | AC4; prefer the value-threaded form                                                                       |
+| Cache retained forever, growing memory                       | ~40 small `AppEntry` values, bounded by the directory; note the size in the progress file                 |
+| Ordering changes because the cache returns an unsorted array | AC2                                                                                                       |
 
 ## Rollback strategy
 
@@ -134,7 +134,7 @@ Phase 01 (the `AppIndex.scan` signpost is how you verify this).
 - Read `SpotlightNames.Cache` first, then read the new code. If it does not look like a sibling of it,
   push back — matching an existing idiom is worth more here than any cleverness.
 - Check the `init(reusing:)` semantics were copied thoughtfully: `SpotlightNames.Cache` deliberately
-  carries forward *only* entries this pass asked about, so uninstalled apps fall out. Panes do not need
+  carries forward _only_ entries this pass asked about, so uninstalled apps fall out. Panes do not need
   that (the directory listing is the whole set) but the reviewer should confirm the difference was
   considered rather than overlooked.
 - Verify the empty-directory case: if `contentsOfDirectory` fails, the current code returns `[]`. Make

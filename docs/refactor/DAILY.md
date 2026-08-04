@@ -14,7 +14,7 @@ Open `ROADMAP.md`, look at the status table, take the lowest number that is `Not
 dependencies are all `Complete`**. Do not skip ahead — the dependency column is not advisory.
 
 If the phase touches storage, skim [`POLICY.md`](POLICY.md) first. Short version: no migrations, no
-legacy support, local data is disposable — but do **not** change what a *fresh install* starts with.
+legacy support, local data is disposable — but do **not** change what a _fresh install_ starts with.
 
 ### 2 · Branch
 
@@ -41,12 +41,12 @@ Change the two numbers. That is the whole instruction. Everything else is alread
 
 ### 4 · Verify — do not skip, do not reorder
 
-| Order | Checklist | Time |
-|---|---|---|
-| 1 | `checklists/build.md` | ~3 min |
-| 2 | `checklists/testing.md` | ~2 min |
-| 3 | `checklists/regression.md` — Core sweep + the sections the phase names | ~5–15 min |
-| 4 | `checklists/review.md` | ~10 min |
+| Order | Checklist                                                              | Time      |
+| ----- | ---------------------------------------------------------------------- | --------- |
+| 1     | `checklists/build.md`                                                  | ~3 min    |
+| 2     | `checklists/testing.md`                                                | ~2 min    |
+| 3     | `checklists/regression.md` — Core sweep + the sections the phase names | ~5–15 min |
+| 4     | `checklists/review.md`                                                 | ~10 min   |
 
 Start review with `git diff --stat`. If a file appears that the phase's **Files that must NOT change**
 list forbids, stop and revert. That check takes ten seconds and catches the worst outcome.
@@ -69,16 +69,20 @@ now.
 ## The four replies you will actually need
 
 **Plan looks wrong / too broad**
+
 > That is wider than the phase document. Re-read the Implementation boundaries section and give me a
 > narrower plan.
 
 **Build failed twice**
+
 > `git reset --hard`, then start over with this error as context: `<paste>`
 
 **Scope creep in the diff**
+
 > `<file>` is on this phase's "must not change" list. Revert it and redo the phase without touching it.
 
 **You do not understand a hunk**
+
 > Explain what `<file>:<lines>` changes about runtime behaviour, and why it was necessary for this phase.
 
 If the explanation does not satisfy you, revert that hunk. "I couldn't follow it but it looked fine" is
@@ -112,6 +116,7 @@ Fix or revert first. Do not carry a known problem into the next phase.
 
 **Claude ran out of context mid-phase** — don't discard the work. Commit to a scratch branch, then start
 fresh:
+
 > Objectives 1–3 are already complete on this branch. Verify them, then complete objective 4 only.
 
 If more than half remains, `git reset --hard` and split the phase in two. Amend the phase doc so the next

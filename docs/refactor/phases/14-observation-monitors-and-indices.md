@@ -12,7 +12,7 @@ driven by something outside the app.
 ## Why this phase exists
 
 These three are fed by a workspace notification, an async catalog load, and a network fetch
-respectively. They are the first migrations where the *producer* is not a user gesture, which makes them
+respectively. They are the first migrations where the _producer_ is not a user gesture, which makes them
 the right place to confirm the recipe holds when updates arrive off the main flow.
 
 `CurrencyRateStore` additionally carries a consent gate that must survive intact.
@@ -29,16 +29,16 @@ the right place to confirm the recipe holds when updates arrive off the main flo
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/RunningApps.swift` | `@Observable`. |
-| `Tinycast/Core/Emoji/EmojiIndex.swift` | `@Observable`. |
-| `Tinycast/Core/CurrencyRateStore.swift` | `@Observable`; drop `import Combine` if unused. |
-| `Tinycast/Core/PaletteWindowController.swift` | Three injection sites. |
-| `Tinycast/Features/RootPaletteView.swift` | Two `@EnvironmentObject`s (`emojiIndex`, `currencyRates`). |
-| `Tinycast/Features/Launcher/LauncherView.swift` | `@EnvironmentObject private var runningApps`. |
-| `Tinycast/Features/Emoji/EmojiGridView.swift` | If it consumes `emojiIndex`. |
-| `Tinycast/Features/Settings/MiscellaneousSettingsView.swift` | `@ObservedObject … currencyRates` → plain `let`. |
+| File                                                         | Change                                                     |
+| ------------------------------------------------------------ | ---------------------------------------------------------- |
+| `Tinycast/Core/RunningApps.swift`                            | `@Observable`.                                             |
+| `Tinycast/Core/Emoji/EmojiIndex.swift`                       | `@Observable`.                                             |
+| `Tinycast/Core/CurrencyRateStore.swift`                      | `@Observable`; drop `import Combine` if unused.            |
+| `Tinycast/Core/PaletteWindowController.swift`                | Three injection sites.                                     |
+| `Tinycast/Features/RootPaletteView.swift`                    | Two `@EnvironmentObject`s (`emojiIndex`, `currencyRates`). |
+| `Tinycast/Features/Launcher/LauncherView.swift`              | `@EnvironmentObject private var runningApps`.              |
+| `Tinycast/Features/Emoji/EmojiGridView.swift`                | If it consumes `emojiIndex`.                               |
+| `Tinycast/Features/Settings/MiscellaneousSettingsView.swift` | `@ObservedObject … currencyRates` → plain `let`.           |
 
 ## Files that must NOT change
 
@@ -57,6 +57,7 @@ the right place to confirm the recipe holds when updates arrive off the main flo
 
   The consent flag stays on this store, **not** in `AppSettings`. The `URLSession` stays `.ephemeral`
   with `urlCache = nil`. `setEnabled(false)` still deletes the cached file.
+
 - `RunningAppsMonitor.refresh()` keeps its `guard next != runningBundleIDs` early return. Under
   `@Observable`, assigning an equal value still notifies observers — so removing that guard would
   re-render every launcher row on every helper-process launch.
@@ -97,13 +98,13 @@ the right place to confirm the recipe holds when updates arrive off the main flo
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A consent guard is dropped and the app fetches without permission.** A privacy regression, the most serious kind here. | AC2 + the network-off verification |
-| The cached rates file is not deleted on opt-out | Explicit filesystem check |
-| `RunningAppsMonitor` gets added to `RootPaletteView` "for consistency" | AC4 + the `_printChanges` check |
-| The equality guard is removed, causing a re-render storm | AC3 |
-| Emoji catalog load becomes eager, hurting startup | Boundary; check `AppCore.start` timing |
+| Risk                                                                                                                     | Mitigation                             |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| **A consent guard is dropped and the app fetches without permission.** A privacy regression, the most serious kind here. | AC2 + the network-off verification     |
+| The cached rates file is not deleted on opt-out                                                                          | Explicit filesystem check              |
+| `RunningAppsMonitor` gets added to `RootPaletteView` "for consistency"                                                   | AC4 + the `_printChanges` check        |
+| The equality guard is removed, causing a re-render storm                                                                 | AC3                                    |
+| Emoji catalog load becomes eager, hurting startup                                                                        | Boundary; check `AppCore.start` timing |
 
 ## Rollback strategy
 

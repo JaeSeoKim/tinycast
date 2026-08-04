@@ -16,7 +16,7 @@ enforces by prose, then collapse the per-kind metadata into one `KindDescriptor`
 - **`symbolIconName` stays a separate switch.** It consults three catalogs and a per-entry override; it
   does not belong in a static table.
 - **The section table stays a literal array in `LauncherList.rows`**, in the same order, with the same
-  titles. It may read `sectionTitle` from the descriptor, but the *order* stays hand-written — it must
+  titles. It may read `sectionTitle` from the descriptor, but the _order_ stays hand-written — it must
   mirror `AppIndex.publishEntries`'s slice order, and that relationship is clearer stated once than
   derived.
 - **Keep the explicit type annotation on the section array.** Inference times out on it; Release is the

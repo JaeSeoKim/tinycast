@@ -39,16 +39,16 @@ modes skip the walk deliberately.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Core/Memo.swift` | **New.** |
-| `Tinycast/Core/AppIndex.swift` | `matchCache` → `Memo`; add `orderedResults`. |
-| `Tinycast/Core/CalculatorHistoryStore.swift` | `searchCache` → `Memo`. |
-| `Tinycast/Core/Emoji/EmojiIndex.swift` | `searchCache` → `Memo`. |
-| `Tinycast/Core/Emoji/FrequentEmojiStore.swift` | `sortedGlyphs` → `Memo`. |
-| `Tinycast/Core/VisibilityStore.swift` | Add `revision`. |
-| `Tinycast/Core/FavoritesStore.swift` | Add `revision`. |
-| `Tinycast/Features/RootPaletteView.swift` | Four call sites read `orderedResults`. |
+| File                                           | Change                                       |
+| ---------------------------------------------- | -------------------------------------------- |
+| `Tinycast/Core/Memo.swift`                     | **New.**                                     |
+| `Tinycast/Core/AppIndex.swift`                 | `matchCache` → `Memo`; add `orderedResults`. |
+| `Tinycast/Core/CalculatorHistoryStore.swift`   | `searchCache` → `Memo`.                      |
+| `Tinycast/Core/Emoji/EmojiIndex.swift`         | `searchCache` → `Memo`.                      |
+| `Tinycast/Core/Emoji/FrequentEmojiStore.swift` | `sortedGlyphs` → `Memo`.                     |
+| `Tinycast/Core/VisibilityStore.swift`          | Add `revision`.                              |
+| `Tinycast/Core/FavoritesStore.swift`           | Add `revision`.                              |
+| `Tinycast/Features/RootPaletteView.swift`      | Four call sites read `orderedResults`.       |
 
 ## Files that must NOT change
 
@@ -63,7 +63,7 @@ modes skip the walk deliberately.
 
 - `Memo` is a `struct` with one optional `(key, value)` slot and one `mutating func value(for:build:)`.
   **No LRU, no size limit, no expiry, no generics beyond `Key: Equatable` and `Value`.**
-- Adopting `Memo` must not change *what* is cached or *when* it is invalidated — only how. Each
+- Adopting `Memo` must not change _what_ is cached or _when_ it is invalidated — only how. Each
   adoption's key must encode exactly the dependencies its old invalidation covered. Where the old code
   cleared a cache in `persist()`, the new key must include whatever `persist()` changed.
 - `revision` on `VisibilityStore` and `FavoritesStore` uses `&+=` and increments on **every** mutation
@@ -105,13 +105,13 @@ modes skip the walk deliberately.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A stale memo shows the wrong list** — e.g. a favourite added but not shown | AC5, and the specific favourite/hide checks above |
-| A `revision` counter misses a mutation path | Enumerate every mutating method on both stores in review |
-| The chain is subtly reordered and hidden favourites reappear | AC4; the review's note that visibility filtering stays *downstream* of `matches` is why |
-| `ClipboardStore` gets "helpfully" included | AC3, and `clipboard-test` |
-| Memo grows into a general cache | AC1's line budget |
+| Risk                                                                         | Mitigation                                                                              |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **A stale memo shows the wrong list** — e.g. a favourite added but not shown | AC5, and the specific favourite/hide checks above                                       |
+| A `revision` counter misses a mutation path                                  | Enumerate every mutating method on both stores in review                                |
+| The chain is subtly reordered and hidden favourites reappear                 | AC4; the review's note that visibility filtering stays _downstream_ of `matches` is why |
+| `ClipboardStore` gets "helpfully" included                                   | AC3, and `clipboard-test`                                                               |
+| Memo grows into a general cache                                              | AC1's line budget                                                                       |
 
 ## Rollback strategy
 
@@ -154,8 +154,8 @@ where the care goes.
 
 ## Notes for reviewers
 
-- For each of the four adoptions, ask: *what invalidated the old cache, and is every one of those things
-  in the new key?* `FrequentEmojiStore.sortedGlyphs` is cleared in `record()`; `CalculatorHistoryStore`
+- For each of the four adoptions, ask: _what invalidated the old cache, and is every one of those things
+  in the new key?_ `FrequentEmojiStore.sortedGlyphs` is cleared in `record()`; `CalculatorHistoryStore`
   clears in `persist()`. Both need a mutation counter in the key, not just the query.
 - `revision` must increment in `FavoritesStore.replace`, `.remove` and `.toggle`; in
   `VisibilityStore.replace`, `.setItemVisible`, `.removeItemKeys` and `.setKindVisible`. Count them in

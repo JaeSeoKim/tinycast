@@ -20,7 +20,7 @@ launch, up to ~70 per keystroke while recording. Load bindings into an in-memory
 - **Populate the whole map in `start()`.** Do not make it lazy per key — there must be no cache-miss
   path to reason about.
 - `setBinding` must update the map, `UserDefaults`, **and** the relevant bound-ID index.
-- `prune(key:live:action:)` must still delete orphaned defaults keys *and* leave the in-memory map
+- `prune(key:live:action:)` must still delete orphaned defaults keys _and_ leave the in-memory map
   reflecting the pruned state. Mind the ordering relative to population.
 - **Do not** add `@Observable` and **do not** remove `objectWillChange.send()`. That is phase 15.
 - Do not modify `HotKeyBinding.swift`, `KeyShortcut.swift`, `HotKeyCenter.swift`,

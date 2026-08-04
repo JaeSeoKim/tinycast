@@ -12,9 +12,10 @@ scaffolding, then replace the 21 view-side `AppCore.shared` reaches with `@Envir
 - **`AppCore.shared` remains legitimate in exactly three places:**
   1. `AppDelegate` — the one wiring point
   2. `TinycastApp`'s `MenuBarExtra` menu items — no environment is available in a `Scene`'s menu content
-  3. `PaletteWindowController.ensurePanel()` — it *builds* the environment
+  3. `PaletteWindowController.ensurePanel()` — it _builds_ the environment
 
   Everywhere else it must go. Do not "fix" these three.
+
 - **A missing `@Environment` injection is a runtime crash, not a compile error.** Enumerate what each
   view needs and confirm it is injected at one of the two injection points
   (`PaletteWindowController.ensurePanel()` and `AppCore.showSettings`).

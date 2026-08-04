@@ -29,11 +29,11 @@ by any harness today because `AppCore` imports AppKit and SwiftUI.
 
 ## Expected files to modify
 
-| File | Change |
-|---|---|
-| `Tinycast/Features/Quicklinks/QuicklinkCoordinator.swift` | **New.** ~200 lines moved. |
-| `Tinycast/Features/Snippets/SnippetExpansionCoordinator.swift` | **New.** ~170 lines moved. |
-| `Tinycast/Core/AppCore.swift` | −345 lines of body, +2 properties, + forwarders. |
+| File                                                           | Change                                           |
+| -------------------------------------------------------------- | ------------------------------------------------ |
+| `Tinycast/Features/Quicklinks/QuicklinkCoordinator.swift`      | **New.** ~200 lines moved.                       |
+| `Tinycast/Features/Snippets/SnippetExpansionCoordinator.swift` | **New.** ~170 lines moved.                       |
+| `Tinycast/Core/AppCore.swift`                                  | −345 lines of body, +2 properties, + forwarders. |
 
 ## Files that must NOT change
 
@@ -101,13 +101,13 @@ by any harness today because `AppCore` imports AppKit and SwiftUI.
 
 ## Regression risks
 
-| Risk | Mitigation |
-|---|---|
-| **A funnel is bypassed** — e.g. the shortcut path no longer checks the feature switch | AC6 + the "feature off, press shortcut" test |
-| The snippet gating order flips and the interactive path prompts before checking the target | Boundary spells out the order; AC5 |
-| `pendingQuicklinkForcesDefaultApp` is left behind and ⌘K "Open with Default" stops working across a prompt | Test that exact combination |
-| A coordinator acquires its own `DialogController`, so a held hotkey can stack dialogs | Boundary + `grep -c "DialogController()"` must stay 1 |
-| Reference cleanup on delete is partially moved | AC7 |
+| Risk                                                                                                       | Mitigation                                            |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **A funnel is bypassed** — e.g. the shortcut path no longer checks the feature switch                      | AC6 + the "feature off, press shortcut" test          |
+| The snippet gating order flips and the interactive path prompts before checking the target                 | Boundary spells out the order; AC5                    |
+| `pendingQuicklinkForcesDefaultApp` is left behind and ⌘K "Open with Default" stops working across a prompt | Test that exact combination                           |
+| A coordinator acquires its own `DialogController`, so a held hotkey can stack dialogs                      | Boundary + `grep -c "DialogController()"` must stay 1 |
+| Reference cleanup on delete is partially moved                                                             | AC7                                                   |
 
 ## Rollback strategy
 
