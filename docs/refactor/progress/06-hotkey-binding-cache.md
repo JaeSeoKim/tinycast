@@ -4,16 +4,16 @@
 
 ## Status
 
-| Field                         | Value                                |
-| ----------------------------- | ------------------------------------ |
-| **Status**                    | Complete                             |
-| **Started**                   | 2026-08-05                           |
-| **Completed**                 | 2026-08-05                           |
-| **Operator**                  | abue-ammar                           |
-| **Branch**                    | `refactor/06-hotkey-binding-cache`   |
-| **Commit**                    | single commit on the branch          |
-| **Claude conversations used** | 1                                    |
-| **Actual effort**             | ~0.5h vs. estimate of M              |
+| Field                         | Value                              |
+| ----------------------------- | ---------------------------------- |
+| **Status**                    | Complete                           |
+| **Started**                   | 2026-08-05                         |
+| **Completed**                 | 2026-08-05                         |
+| **Operator**                  | abue-ammar                         |
+| **Branch**                    | `refactor/06-hotkey-binding-cache` |
+| **Commit**                    | single commit on the branch        |
+| **Claude conversations used** | 1                                  |
+| **Actual effort**             | ~0.5h vs. estimate of M            |
 
 ---
 
@@ -26,13 +26,13 @@
 
 ### Where the three moving parts live
 
-| Part               | Location                       | Detail                                                                                   |
-| ------------------ | ------------------------------ | ---------------------------------------------------------------------------------------- |
-| Populated          | `HotKeyManager.swift:50`       | One pass over `candidateActions` calling `storedBinding(for:)`                            |
-| Written through    | `HotKeyManager.swift:94–102`   | Map and `UserDefaults` assigned in the **same branch**, so a failed encode cannot split them |
-| Cache invalidated  | `HotKeyManager.swift:123`      | After the four-arm index switch, **before** `syncDoubleTaps()` so the rebuild sees the new set |
+| Part              | Location                     | Detail                                                                                         |
+| ----------------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| Populated         | `HotKeyManager.swift:50`     | One pass over `candidateActions` calling `storedBinding(for:)`                                 |
+| Written through   | `HotKeyManager.swift:94–102` | Map and `UserDefaults` assigned in the **same branch**, so a failed encode cannot split them   |
+| Cache invalidated | `HotKeyManager.swift:123`    | After the four-arm index switch, **before** `syncDoubleTaps()` so the rebuild sees the new set |
 
-**`prune` ordering.** Both `prune` calls run *before* the population loop. `prune` deletes the orphaned
+**`prune` ordering.** Both `prune` calls run _before_ the population loop. `prune` deletes the orphaned
 defaults keys and rewrites the index; `candidateActions` is first computed — and first cached — only
 after that, so the map is built from the already-pruned index and a dropped record never enters memory
 for the session. `prune` needs no cache invalidation of its own because nothing has read
@@ -70,18 +70,18 @@ for the session. `prune` needs no cache invalidation of its own because nothing 
 
 ## Verification
 
-| Checklist                  | Result | Notes                                                                     |
-| -------------------------- | ------ | ------------------------------------------------------------------------- |
+| Checklist                  | Result | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `checklists/build.md`      | PASS   | §1 `xcodegen generate` clean, **no** `.xcodeproj` churn (correct — no files added). §2 Debug `BUILD SUCCEEDED`, zero compiler warnings, zero new against a pre-phase baseline captured on this branch, no Swift 6 concurrency diagnostics, no isolation escapes added. §3 Release not required (no generic/`@inlinable`/engine code, not M1's last phase) but run anyway — `BUILD SUCCEEDED`, zero type-checker timeouts. §4 below. §5 launch and §6 startup timing run by the operator |
-| `checklists/testing.md`    | PASS   | `hotkey-test` — 34 passed, 0 failed, exit 0. By the harness → source map **no** harness is strictly mandatory: `hotkey-test` compiles `DoubleTapModifier.swift` + `DoubleTapDetector.swift`, not `HotKeyManager.swift`. It ran because the phase document names it as a gate. Phase 06 is not a milestone boundary, so the full suite was not required. Purity invariant intact — one non-pure file changed, no import added anywhere in the diff |
-| `checklists/regression.md` | PASS   | Core sweep + **Hotkeys** in full + **Clean install** (phase 06 is listed in both), run by the operator against a wiped Dev channel, who reported everything passing |
-| `checklists/review.md`     | PASS   | §1–8 mechanically clean. 1 file, +16/−4 against an expected +55/−25 — under, not over. No file from the must-NOT-change list appears |
+| `checklists/testing.md`    | PASS   | `hotkey-test` — 34 passed, 0 failed, exit 0. By the harness → source map **no** harness is strictly mandatory: `hotkey-test` compiles `DoubleTapModifier.swift` + `DoubleTapDetector.swift`, not `HotKeyManager.swift`. It ran because the phase document names it as a gate. Phase 06 is not a milestone boundary, so the full suite was not required. Purity invariant intact — one non-pure file changed, no import added anywhere in the diff                                       |
+| `checklists/regression.md` | PASS   | Core sweep + **Hotkeys** in full + **Clean install** (phase 06 is listed in both), run by the operator against a wiped Dev channel, who reported everything passing                                                                                                                                                                                                                                                                                                                     |
+| `checklists/review.md`     | PASS   | §1–8 mechanically clean. 1 file, +16/−4 against an expected +55/−25 — under, not over. No file from the must-NOT-change list appears                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Measurements
 
-| Metric                     | Before    | After     | Δ                                        |
-| -------------------------- | --------- | --------- | ---------------------------------------- |
-| Binary size (Release)      | 3,473,464 | 3,489,992 | **+16,528 B (+0.476 %)**                 |
+| Metric                     | Before    | After     | Δ                                         |
+| -------------------------- | --------- | --------- | ----------------------------------------- |
+| Binary size (Release)      | 3,473,464 | 3,489,992 | **+16,528 B (+0.476 %)**                  |
 | Clean install verified?    | —         | yes       | operator-verified against a wiped channel |
 | Cold launch, median of 3   | —         | —         | operator-run; no phase-01 baseline exists |
 | RSS after 10 palette opens | —         | —         | n-a, see below                            |
@@ -94,7 +94,7 @@ zero bytes. It is under `build.md` §4's 2 % ceiling, but it is the largest sing
 `Dictionary<HotKeyAction, HotKeyBinding>` metadata and witness tables — a generic instantiation the
 binary did not previously carry. It is the direct price of the phase's objective.
 
-> The 3,489,992-byte binary is over `build.md` §4's 3 MB budget, and was already over it at the phase-01
+> The 3,489,992-byte binary is over `build.md` §4's 3 MB upto 4MB budget, and was already over it at the phase-01
 > baseline of 3,473,448. Pre-existing, recorded the same way in `progress/03` and `progress/04`.
 
 **On memory.** This phase adds a cache, which `checklists/review.md` §4 otherwise forbids — authorised
@@ -140,7 +140,7 @@ None.
   checkable by grep. Not a new abstraction — the same code under a name.
 - **One behaviour narrowing, entailed by the phase's own instruction.** The map covers exactly
   `candidateActions`, which the phase requires ("populate the whole map in `start()`… do not make the
-  cache lazy-per-key"). So an *orphaned* defaults key — an app or settings pane whose bundle ID is no
+  cache lazy-per-key"). So an _orphaned_ defaults key — an app or settings pane whose bundle ID is no
   longer in `boundBundleIDs` / `boundPaneBundleIDs` — now reads as unbound, where `binding(for:)`
   previously surfaced it. The old code already ignored such orphans in `start()`'s register loop and in
   `syncDoubleTaps`, so reads now agree with registration rather than contradicting it. Unreachable in
@@ -152,12 +152,12 @@ None.
 
 ## Follow-up work
 
-| Observation                                                                                                                                                          | Where                              | Suggested phase          |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------ |
-| `setBinding`'s index arms key off `binding != nil` rather than the write that actually landed, so a failed encode marks the index bound while both stores are unbound | `Core/HotKeyManager.swift:107–120` | none — pre-existing, unreachable |
-| `boundBundleIDs` and `boundPaneBundleIDs` have no `prune` counterpart the way the two UUID indexes do, so an uninstalled app's index entry lingers indefinitely       | `Core/HotKeyManager.swift:63–71`   | new phase, if ever       |
-| `HotKeyManager` still calls `objectWillChange.send()` by hand; it now has real stored state to observe, which is the prerequisite this phase existed to create        | `Core/HotKeyManager.swift:92`      | **phase 15** (as planned) |
-| Retiring the legacy `KeyboardShortcuts_<name>` key and the JSON-string encoding — deliberately not smuggled in here                                                   | `Core/HotKey/KeyShortcut.swift:161` | **phase 35** (as planned) |
+| Observation                                                                                                                                                           | Where                               | Suggested phase                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------- |
+| `setBinding`'s index arms key off `binding != nil` rather than the write that actually landed, so a failed encode marks the index bound while both stores are unbound | `Core/HotKeyManager.swift:107–120`  | none — pre-existing, unreachable |
+| `boundBundleIDs` and `boundPaneBundleIDs` have no `prune` counterpart the way the two UUID indexes do, so an uninstalled app's index entry lingers indefinitely       | `Core/HotKeyManager.swift:63–71`    | new phase, if ever               |
+| `HotKeyManager` still calls `objectWillChange.send()` by hand; it now has real stored state to observe, which is the prerequisite this phase existed to create        | `Core/HotKeyManager.swift:92`       | **phase 15** (as planned)        |
+| Retiring the legacy `KeyboardShortcuts_<name>` key and the JSON-string encoding — deliberately not smuggled in here                                                   | `Core/HotKey/KeyShortcut.swift:161` | **phase 35** (as planned)        |
 
 ---
 
