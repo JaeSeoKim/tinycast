@@ -165,5 +165,11 @@ accidental. Three are known and listed here so they are recorded rather than dis
    **Retained** — but for a different reason. Optionality supports **partial** files and Raycast
    imports, not old Tinycast versions.
 
-`AGENTS.md` should be amended to match, ideally as part of phase 35. Until it is, **this document
-wins**, and a phase that trips over one of the three clauses above should proceed and note it.
+`AGENTS.md` now carries a banner at the top pointing here and stating that structural rules are being
+changed by the refactor — so the correction arrives in the first thing an agent reads, rather than
+depending on the operator pasting the standing prompt.
+
+The three clauses above are still **superseded but not yet deleted**. Phase 35 deletes them, amends the
+surrounding text, and **removes the banner** — the refactor is over at that point and the banner would
+become a lie. Until then, this document wins and a phase that trips over one of them should proceed and
+note it.

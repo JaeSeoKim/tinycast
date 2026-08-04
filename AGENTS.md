@@ -1,3 +1,21 @@
+> ## ⚠ An approved architecture refactor is in progress
+>
+> Some **structural** rules in this file — file layout, type ownership, which type does what — are being
+> changed by it. That is deliberate, and a phase contradicting one of them is **not** an error.
+>
+> **If you are executing a phase from [`docs/refactor/`](docs/refactor/), the phase document overrides
+> the architectural guidance here.** Read
+> [`docs/refactor/prompts/system-prompt.md`](docs/refactor/prompts/system-prompt.md) for the full
+> precedence ladder, and [`docs/refactor/POLICY.md`](docs/refactor/POLICY.md) for the migration and
+> compatibility rules.
+>
+> **Behavioral invariants below always hold** — UI, keyboard behaviour, accessibility, permission and
+> consent flows, Swift 6 data-race safety, and the explicitly off-limits files. A phase that contradicts
+> one of *those* is wrong: stop and say so.
+>
+> **If you are not working from a `docs/refactor/` phase**, ignore this box entirely and follow this
+> file as written.
+
 ## Project
 
 Tinycast is a native macOS menu-bar launcher (a minimal Raycast): fuzzy app launcher, global +

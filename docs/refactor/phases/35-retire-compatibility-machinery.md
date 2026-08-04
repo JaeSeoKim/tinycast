@@ -32,7 +32,8 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 1. Retire the legacy `KeyboardShortcuts_<name>` UserDefaults key namespace.
 2. Simplify `HotKeyBinding`'s hand-written `Codable` conformance to the synthesised one.
 3. Delete `ClipboardStore`'s two schema-migration `ALTER TABLE` guards.
-4. Amend `AGENTS.md` so the contract matches reality.
+4. Amend `AGENTS.md` so the contract matches reality — including **removing the refactor banner** at
+   the top of it. The refactor is over; a banner announcing one in progress would be false.
 
 ## Expected files to modify
 
@@ -43,7 +44,7 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 | `Features/HotKeys/Model/KeyShortcut.swift`      | Only if its `Codable` was shaped by the legacy record.                                                                |
 | `Features/Clipboard/Model/ClipboardStore.swift` | Delete the `source_app` and `pinned_at` `ALTER TABLE` migrations and `columnExists`; fold both columns into `schema`. |
 | `Features/Backup/Model/SettingsBackup.swift`    | Drop the `version` field's back-compat comment; keep the field.                                                       |
-| `AGENTS.md`                                     | Amend the three superseded clauses listed in `POLICY.md`.                                                             |
+| `AGENTS.md`                                     | Amend the three superseded clauses; remove the refactor banner.                                                             |
 | `Tools/clipboard-test.swift`                    | Only if it asserts on the migration path.                                                                             |
 
 ## Files that must NOT change
@@ -80,8 +81,8 @@ Supersedes the compatibility clauses in **§2.4 hotkeys**, the `HotKeyBinding` n
 4. `ClipboardStore` has no `ALTER TABLE` and no `columnExists`; `schema` declares all seven columns.
 5. `clipboard-test`, `quicklink-test` and `hotkey-test` pass, with any harness edits authorised here.
 6. A settings backup exported by this build imports into this build with every binding restored.
-7. `AGENTS.md`'s three superseded clauses are amended and `POLICY.md`'s "Conflicts" section is updated to
-   say so.
+7. `AGENTS.md`'s three superseded clauses are amended, **the refactor banner at the top is removed**,
+   and `POLICY.md`'s "Conflicts" section is updated to say so.
 8. Net line count is **negative**.
 
 ## Manual verification checklist
@@ -125,7 +126,8 @@ Under docs/refactor/POLICY.md there are no existing users, so the code
 that existed only to keep old data readable is dead: the legacy
 KeyboardShortcuts_ key namespace, HotKeyBinding's hand-written Codable
 seam, and ClipboardStore's two ALTER TABLE migrations. Deleted rather
-than translated — no migration path. AGENTS.md amended to match.
+than translated — no migration path. AGENTS.md amended to match and
+its refactor-in-progress banner removed.
 Raycast import is untouched: that is another app's format, not our legacy.
 ```
 
@@ -136,7 +138,7 @@ Raycast import is untouched: that is another app's format, not our legacy.
 ## Definition of Done
 
 - All acceptance criteria met
-- `AGENTS.md` amended and `POLICY.md`'s conflicts section closed out
+- `AGENTS.md` amended, refactor banner removed, `POLICY.md`'s conflicts section closed out
 - Clean install + backup round-trip both verified
 - Merged
 
@@ -156,5 +158,6 @@ Raycast import is untouched: that is another app's format, not our legacy.
 - Confirm `Raycast*` and the snippet Markdown serializer are absent from the diff. They look like legacy
   code and are not — they read formats Tinycast does not own.
 - The backup round-trip is the one compatibility check that survives. Do it: export, wipe, import.
-- Read the amended `AGENTS.md` clauses. The contract has to end this roadmap accurate, or the next
-  contributor inherits a document that lies.
+- Read the amended `AGENTS.md` clauses **and confirm the refactor banner is gone**. The contract has to
+  end this roadmap accurate, or the next contributor inherits a document that lies twice — once about the
+  hotkey format, once about a refactor that finished months ago.

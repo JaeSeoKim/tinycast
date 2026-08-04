@@ -11,7 +11,8 @@ Delete the three pieces of code that exist only to keep old Tinycast data readab
 2. `HotKeyBinding`'s hand-written `Codable` conformance (use the synthesised one).
 3. `ClipboardStore`'s two `ALTER TABLE` schema migrations and `columnExists`.
 
-Then amend `AGENTS.md`'s three superseded clauses.
+Then amend `AGENTS.md`'s three superseded clauses **and delete the refactor banner at the top of it** —
+the refactor is finished at this point and the banner would be false.
 
 ## Hard gates
 
