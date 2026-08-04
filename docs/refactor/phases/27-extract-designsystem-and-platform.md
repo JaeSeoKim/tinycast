@@ -98,7 +98,7 @@ XcodeGen derives sources from `sources: - path: Tinycast`, so moves are free at 
 
 - [ ] `checklists/build.md` including the **Release build**
 - [ ] `checklists/testing.md` — **all 18 harnesses**, with the updated command lines
-- [ ] `checklists/regression.md` — Core sweep + **Data safety**
+- [ ] `checklists/regression.md` — Core sweep + **Clean install**
 - [ ] `git diff -M --stat` reviewed for similarity percentages
 - [ ] Screenshot the palette (expanded, with results) before and after → pixel-identical
 - [ ] Screenshot a Settings pane before and after → pixel-identical

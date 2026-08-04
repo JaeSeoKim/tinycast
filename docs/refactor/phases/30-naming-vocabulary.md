@@ -2,6 +2,10 @@
 
 **Milestone:** M6 · **Effort:** M · **Risk:** Low · **Context:** Med
 
+> **Compatibility policy applies.** See [`../POLICY.md`](../POLICY.md). Persisted keys and raw values may
+> be renamed along with their types. Carve-out 2 — internal consistency within one build — is what
+> matters here now.
+
 ---
 
 ## Overview
@@ -43,19 +47,24 @@ Every file referencing a renamed type — roughly 20 — plus `AGENTS.md`.
 ## Files that must NOT change
 
 - No behaviour anywhere. This phase is `git grep` and rename.
-- Any **persisted string**: `UserDefaults` keys, SQLite table and column names, JSON `CodingKeys`,
-  file names on disk, `NSPasteboard` type identifiers, `Notification.Name` raw values.
+- **Raycast import** — `RaycastFormat`, `RaycastV1Decoder`, `RaycastImportV1`, `RaycastImportV2` and
+  their field names. That is another application's format, not Tinycast's legacy (POLICY carve-out 3).
 - `Tools/*.swift` assertions — only the type names they reference, if any.
 
 ## Implementation boundaries
 
 - **Renames only.** Do not move a file, change a signature, or "tidy" anything while renaming.
-- **Persisted identifiers are frozen.** In particular:
-  - `ClipboardManager.internalType` is `"com.tinycast.internal"` — the *string* does not change.
-  - `HotKeyManager`'s defaults keys (`boundAppBundleIDs`, `boundPaneBundleIDs`,
-    `boundCustomCommandIDs`, `boundQuicklinkIDs`, `KeyboardShortcuts_<name>`) do not change.
-  - `CommandID`'s raw values (`"command:clipboard-history"`, …) do not change — they are `AppEntry` ids.
-  - `Notification.Name.tinycastSelectSettingsTab`'s raw value does not change.
+- **Persisted identifiers may be renamed** — but every producer and consumer must move together, or the
+  app breaks *within this build*. The four that bite (POLICY carve-out 2):
+  - `ClipboardManager.internalType` — the writer and the poller must agree, or Tinycast re-captures its
+    own pastes in a loop.
+  - `SettingsKey.showInMenuBar` — shared with `TinycastApp`'s `@AppStorage`. Rename in both or neither.
+  - `CommandID` raw values — they *are* `AppEntry.id`, which favourites, visibility and learned ranking
+    key on. Rename them and those records are orphaned; that is acceptable under the policy, but the
+    orphaning must be total rather than partial.
+  - SQLite column names — schema, prepared statements and row decoder must agree.
+- **Renaming a persisted key is permitted but adds nothing here.** This phase renames *types*. Rename a
+  key only where leaving it would contradict the new type name badly enough to confuse a reader.
 - The renamed file name must match its renamed type.
 - Do **not** rename `AppLauncher` or `QuicklinkLauncher`. "Launcher" is clearer than "Runner" for
   opening things; document them in `AGENTS.md` as a reserved synonym for `NSWorkspace.open` wrappers.
@@ -69,39 +78,40 @@ Every file referencing a renamed type — roughly 20 — plus `AGENTS.md`.
 1. All five renames applied consistently; no old name remains
    (`git grep -n "ClipboardManager\|HotKeyManager\|CommandRegistry\|PaletteViewModel"` → empty).
 2. Every file's name matches its primary type.
-3. **No persisted string changed** — verified by a `defaults export` diff and by opening an existing
-   clipboard database.
+3. **Every changed string literal is accounted for**: if a persisted key was renamed, every producer and
+   consumer moved with it. Verified by the changed-literal grep, not by assumption.
 4. `AGENTS.md` contains the ten-suffix table plus the three documented exceptions
    (`Launcher`, `Repository`, and the domain terms).
 5. All 18 harnesses pass.
-6. Zero behaviour change.
+6. Zero behaviour change on a clean install.
 
 ## Manual verification checklist
 
 - [ ] `checklists/build.md`
 - [ ] `checklists/testing.md` — all 18
-- [ ] `checklists/regression.md` — Core sweep + **Clipboard** + **Hotkeys** + **Data safety**
-- [ ] `defaults export com.tinycast.app.dev` before and after → **no diff**
-- [ ] Existing clipboard history still loads (SQLite schema untouched)
-- [ ] Existing hotkey bindings still fire
-- [ ] Copy something → it is captured (the pasteboard marker string is unchanged)
-- [ ] Paste from Tinycast → it is **not** re-captured (the marker still works)
-- [ ] Settings ▸ a pane switch from the palette still works (the notification name is unchanged)
-- [ ] Export a settings backup → diff against one from before → identical
+- [ ] `checklists/regression.md` — Core sweep + **Clipboard** + **Hotkeys** + **Clean install**
+- [ ] **Wipe the Dev channel, launch, and use the app properly for five minutes**
+- [ ] Copy something → it is captured
+- [ ] Paste from Tinycast → it is **not** re-captured (the pasteboard marker still agrees with itself)
+- [ ] Set a hotkey, quit, relaunch → it still fires
+- [ ] Favourite an app and hide another; quit and relaunch → both stuck
+- [ ] Settings ▸ a pane switch from the palette still works
+- [ ] Export a settings backup, wipe, import → everything comes back
 
 ## Regression risks
 
 | Risk | Mitigation |
 |---|---|
-| **A persisted key gets renamed along with its type** — the classic rename bug. Every user loses their hotkeys. | AC3, the `defaults export` diff, and the explicit frozen-identifier list |
-| The pasteboard marker string changes → Tinycast re-captures its own pastes in an infinite loop | The paste-then-check test |
-| `CommandID` raw values change → every built-in command's `AppEntry` id changes → favourites, hidden items and rankings for them are orphaned | Explicit boundary; check the enum in the diff |
+| **A persisted key is renamed on one side only** — the writer moves, the reader does not. Now the real risk, since renaming itself is allowed. | AC3 + the changed-literal grep, read line by line |
+| The pasteboard marker changes in the writer but not the poller → Tinycast re-captures its own pastes in a loop | The paste-then-check test |
+| `SettingsKey.showInMenuBar` moves in `AppSettings` but not in `TinycastApp`'s `@AppStorage` → the menu-bar toggle silently stops working | Toggle it and watch the icon |
 | A rename lands in a `Tools/` harness assertion string | All 18 harnesses |
+| A Raycast field name is renamed → import breaks against a real export | `RaycastImport*` on the must-not-change list; `raycast-test` |
 
 ## Rollback strategy
 
-`git revert <sha>`. Safe **provided AC3 held**. If a persisted key did change and shipped, a revert
-orphans the new key — verify AC3 before merging, not after.
+`git revert <sha>`. **No data risk** — local data is disposable under [`POLICY.md`](../POLICY.md). Wipe
+the Dev channel after reverting if anything looks stale.
 
 ## Expected commit size
 
@@ -115,8 +125,8 @@ Apply the naming vocabulary
 ClipboardManager → ClipboardMonitor, HotKeyManager → HotKeyBindings,
 CommandRegistry → CommandCatalog, PaletteViewModel → PaletteState. The
 ten-suffix table goes into AGENTS.md along with the three documented
-exceptions. No persisted string changes: defaults keys, SQLite columns,
-CommandID raw values and the pasteboard marker are all untouched.
+exceptions. Where a persisted key moved with its type, every producer and
+consumer moved with it.
 ```
 
 ## Dependencies
@@ -126,13 +136,13 @@ CommandID raw values and the pasteboard marker are all untouched.
 ## Definition of Done
 
 - All acceptance criteria met
-- `defaults export` diff clean
+- Changed-literal grep reviewed line by line
 - Vocabulary table in `AGENTS.md`
 - Merged
 
 ## Estimated difficulty
 
-**Low–Medium.** IDE-driven, with one sharp edge.
+**Low.** IDE-driven. The compatibility sharp edge this phase used to carry is gone.
 
 ## Estimated Claude context usage
 
@@ -140,11 +150,11 @@ CommandID raw values and the pasteboard marker are all untouched.
 
 ## Notes for reviewers
 
-- **Search the diff for string literals.** Any changed string literal in a rename-only phase is a bug
-  until proven otherwise. `git diff -U0 | grep '^[-+].*"'` is a fast first pass.
-- The `defaults export` diff is mandatory, not optional. A renamed defaults key is silent, permanent
-  data loss for every user who upgrades.
-- Check `CommandID`'s raw values specifically — they double as `AppEntry.id`, so changing one orphans
-  that command's favourite, visibility and ranking records.
+- **Search the diff for string literals**: `git diff -U0 | grep '^[-+].*"'`. Renaming a persisted string
+  is now allowed, so the question is no longer *"did anything change?"* but *"did everything that
+  references it change together?"* Account for every line the grep returns.
+- The four consistency traps are `internalType`, `showInMenuBar`, `CommandID` raw values and the SQLite
+  column names. Check each one's producers **and** consumers.
+- Confirm `RaycastImport*` is absent from the diff — that is an external format, not Tinycast's legacy.
 - Confirm the `AGENTS.md` table lists the exceptions with reasons. A vocabulary with undocumented
   exceptions is a vocabulary nobody follows.

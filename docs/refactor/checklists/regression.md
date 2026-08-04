@@ -129,19 +129,33 @@ Budget: ~5 minutes for Core, ~3 minutes per scoped section.
 
 ---
 
-## Data safety — phases 05, 17, 27–29
+## Clean install — phases 05, 06, 16, 17, 27–30, 35
 
-Run once before and once after any phase that touches storage paths or store initialisers.
+Per [`../POLICY.md`](../POLICY.md) there are no existing users and local data is disposable, so this is
+no longer a data-preservation check. It is a **fresh-install** check, and it is now the primary storage
+test — because the realistic failure is a store that crashes on an absent file rather than starting
+empty.
 
-- [ ] Clipboard history still present after the phase (not silently re-rooted to a new directory)
-- [ ] Quicklink library still present
-- [ ] Snippets still present
-- [ ] Learned ranking, favourites and hidden items still present
-- [ ] Nothing new appeared under `~/Library/Application Support/` or `~/Library/Caches/` outside
-      `com.tinycast.app.dev/`
+Wipe the Dev channel first:
 
-> A silently relocated store looks exactly like "the feature is empty now". This is the single most
-> damaging failure mode in M1 and M5 — check it, do not assume it.
+```bash
+rm -rf ~/Library/Caches/com.tinycast.app.dev
+rm -rf "$HOME/Library/Application Support/com.tinycast.app.dev"
+defaults delete com.tinycast.app.dev 2>/dev/null || true
+```
+
+- [ ] App launches with every store directory absent — no crash, no hang
+- [ ] Onboarding runs (the marker file is genuinely gone)
+- [ ] Palette opens; the launcher lists apps
+- [ ] Clipboard history is empty and records the next copy
+- [ ] Quicklinks, snippets and calculator history are all empty and all accept a first entry
+- [ ] **Every setting shows its intended default.** Walk the panes — this is what catches a broken
+      absence-vs-`false` conversion (see `POLICY.md` carve-out 1)
+- [ ] Quit and relaunch → everything created above persisted
+- [ ] Channel isolation intact: nothing was written outside `com.tinycast.app.dev/`
+
+> Channel isolation is the one storage guarantee the policy does **not** relax. A Dev build writing into
+> the stable app's directory is still a defect.
 
 ---
 

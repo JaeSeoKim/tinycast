@@ -1,7 +1,8 @@
 # Refactor Roadmap
 
-Execution order, dependencies, effort and risk for all 34 phases.
+Execution order, dependencies, effort and risk for all 35 phases.
 Source of rationale: [`docs/architecture-review.md`](../architecture-review.md).
+**Compatibility rules: [`POLICY.md`](POLICY.md) — it overrides anything below.**
 
 **Legend**
 Effort: **S** ≤ 2 h · **M** 2–4 h · **L** 4–8 h (operator time including review, not Claude time)
@@ -22,7 +23,7 @@ Context: expected share of one Claude conversation — **Low** < 25 % · **Med**
 | **M4** | AppCore split | 24–26 | `AppCore` 1348 → ~250 lines. Kills the merge-conflict bottleneck. |
 | **M5** | Structure | 27–29 | Feature-first tree. Navigability. |
 | **M6** | Consistency | 30–33 | One naming vocabulary, compiler-enforced exhaustiveness, harness coverage. |
-| **M7** | Close out | 34 | Comment budget, final measurement, docs updated. |
+| **M7** | Close out | 34–35 | Comment budget, final measurement, docs, and deleting the now-dead compatibility machinery. |
 
 **Stop points.** Every phase is a valid stopping point. The natural ones are the milestone boundaries:
 after **10**, after **18**, after **23**, after **26**, after **29**. Each of those leaves a coherent,
@@ -38,8 +39,8 @@ shippable, self-consistent codebase.
 | 02 | Async icons in the Settings launcher list | H-3 | 01 | S | Low | Low |
 | 03 | Named paste-timing constants | L-7 | 01 | S | Low | Low |
 | 04 | Retire the last `NSAlert` | K-6 | 01 | S | Med | Low |
-| 05 | `AppPaths` — one channel-directory helper | M-5 | 01 | S | Med | Low |
-| 06 | HotKey binding cache | M-4 | 01 | M | Med | Med |
+| 05 | `AppPaths` — one channel-directory helper | M-5 | 01 | S | Low | Low |
+| 06 | HotKey binding cache | M-4 | 01 | M | Low | Med |
 | 07 | Settings-pane scan cache | H-2 | 01 | M | Low | Med |
 | 08 | Parallel uninstall scan | H-4 | 01 | M | Med | Med |
 | 09 | `Memo` primitive and launcher result memoization | M-7, M-3 | 01 | M | Med | Med |
@@ -49,7 +50,7 @@ shippable, self-consistent codebase.
 | 13 | Observation wave A — leaf stores | C-3 | 11 | M | Low | Med |
 | 14 | Observation wave A — monitors and indices | C-3 | 11 | M | Med | Med |
 | 15 | Observation — `HotKeyManager` | C-3, M-4 | 06, 11 | M | Med | Med |
-| 16 | Observation — `AppSettings` | C-3 | 11 | L | High | Med |
+| 16 | Observation — `AppSettings` | C-3 | 11 | L | Med | Med |
 | 17 | Observation — `AppIndex` and the persisted stores | C-3 | 09, 11 | L | High | High |
 | 18 | Observation — palette, `AppCore`, retire the Combine sinks | C-3, K-1 | 16, 17 | L | High | High |
 | 19 | `PaletteScreen` scaffold and the selection harness | C-2 | 18 | M | Low | Med |
@@ -68,6 +69,7 @@ shippable, self-consistent codebase.
 | 32 | Retire `AppCore` forwarders, adopt `@Environment` | §2.3 | 25, 29 | M | Med | Med |
 | 33 | `SettingsBackup` completeness harness | M-6 | 16 | M | Low | Med |
 | 34 | Comment budget, comment pass, final measurement | H-1, W8 | 33 | L | Low | High |
+| 35 | Retire the compatibility machinery | POLICY | 29, 30, 34 | M | Low | Med |
 
 ---
 
@@ -108,6 +110,8 @@ shippable, self-consistent codebase.
                                         backup harness
                                               │
                                              34 ─── comments + final measurement
+                                              │
+                                             35 ─── retire the dead compatibility code
 ```
 
 **Reading it.** Phases 02–11 fan out from 01 and are mutually independent — run them in any order, or in
@@ -134,15 +138,16 @@ If two engineers are working:
 | Phase | The specific risk | Mitigation |
 |---|---|---|
 | 04 | The snippets consent dialog is also the Accessibility permission gate. Changing its presentation could change *when* the permission is requested. | Phase doc pins the exact ordering: consent → `settings.snippetsEnabled = true` → `Permissions.ensureAccessibility()`. Manual verification requires a fresh TCC state. |
-| 05 | A wrong default path silently moves a user's clipboard DB, quicklink library or snippets. | Phase forbids changing any computed path. Verification diffs the resolved paths before/after by logging them once. |
+| 05 | Channel isolation breaks and a Dev build writes into the stable app's directory. (Path *changes* are now fine — data is disposable.) | Every path stays keyed by `Bundle.main.bundleIdentifier`; clean-install verification. |
 | 08 | Parallel scan could reorder the uninstall list or race the `seen` dedup set. | Index-ordered writeback is a hard acceptance criterion; dedup must run after the gather. Verify list order against a pre-change screenshot. |
-| 16 | `AppSettings` has ~25 `didSet` blocks writing UserDefaults. A missed one silently stops persisting a setting. | Acceptance criterion enumerates every key; verification quits and relaunches to confirm persistence. |
+| 16 | A missed `didSet` silently stops persisting a setting. Worse: the eight absence-vs-`false` checks *look* like dead legacy code under the new policy and are not — they encode fresh-install defaults. | AC enumerates every key; verification wipes the channel and walks all 14 panes to confirm defaults, then relaunches to confirm persistence. |
 | 17 | `ClipboardStore` and `QuicklinkStore` are harness-compiled; `@Observable` must not break that. | `Tools/clipboard-test.swift` and `Tools/quicklink-test.swift` are mandatory gates. |
 | 18 | Deleting the Combine sinks changes *when* feature-presence reconciliation runs (`@Published` fires before the write; `@Observable` after). | Phase doc requires removing the deferral `Task {}` wrappers in the same change, and verification toggles every feature switch. |
 | 23 | The launcher screen owns the flat-selection invariant, favourites pinning, section ordering and the calc card offset. Highest-risk phase in the plan. | Phase 19 lands `Tools/palette-selection-test.swift` first. Phase 23 cannot start until that harness is green and covers the launcher. |
 | 25 | `PaletteCoordinator` moves pop-to-root and compact-mode logic, which interact with window sizing. | Verification includes the compact↔expanded swap and the pop-to-root timeout at every setting value. |
 | 29 | Moving 13 feature folders breaks the `Tools/` harness command lines. | Every move PR updates `docs/development.md` and `AGENTS.md` in the same commit; `checklists/testing.md` runs all 17 harnesses. |
 | 34 | A comment pass can delete a load-bearing explanation. | Triage rule is delete/compress/**relocate** — relocation to `docs/` is the default for anything explaining an invariant. |
+| 35 | Raycast import or the snippet Markdown format is deleted as "legacy". It is neither — those are formats Tinycast does not own. | Both on the must-not-change list; `raycast-test` and `snippets-test` are gates. |
 
 ---
 
@@ -157,8 +162,8 @@ If two engineers are working:
 | M4 | 3 | ~16 h |
 | M5 | 3 | ~14 h |
 | M6 | 4 | ~14 h |
-| M7 | 1 | ~6 h |
-| **Total** | **34** | **~120 h** |
+| M7 | 2 | ~10 h |
+| **Total** | **35** | **~124 h** |
 
 Operator time, including review and manual verification. Claude's own working time is not the
 constraint — your review capacity is. Budget one to two phases per working day, no more.
@@ -205,3 +210,4 @@ Update this table as phases land. `Blocked` requires a note in the phase's progr
 | 32 | Not started | | | |
 | 33 | Not started | | | |
 | 34 | Not started | | | |
+| 35 | Not started | | | |

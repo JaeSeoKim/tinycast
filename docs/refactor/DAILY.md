@@ -13,6 +13,9 @@ One page. Keep it open. Full detail is in `README.md`; this is the loop.
 Open `ROADMAP.md`, look at the status table, take the lowest number that is `Not started` **and whose
 dependencies are all `Complete`**. Do not skip ahead — the dependency column is not advisory.
 
+If the phase touches storage, skim [`POLICY.md`](POLICY.md) first. Short version: no migrations, no
+legacy support, local data is disposable — but do **not** change what a *fresh install* starts with.
+
 ### 2 · Branch
 
 ```bash
@@ -90,6 +93,7 @@ how a silent regression ships.
 - **Do not start M3, M4 or M5 with under an hour free.** Those chain, and stopping mid-phase costs more
   than not starting.
 - Natural stopping points where the codebase is fully coherent: after **10**, **18**, **23**, **26**, **29**.
+- Wiping the Dev channel is now normal and supported. Commands are in `POLICY.md`.
 
 ---
 

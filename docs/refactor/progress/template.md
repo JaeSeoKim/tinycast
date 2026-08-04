@@ -52,6 +52,7 @@ Only for phases that claim a performance or size effect.
 | Metric | Before | After | Δ |
 |---|---|---|---|
 | Binary size (Release) | | | |
+| Clean install verified? | — | yes / no / n-a | |
 | Cold launch, median of 3 | | | |
 | RSS after 10 palette opens | | | |
 | Phase-specific signpost | | | |
@@ -101,10 +102,10 @@ Out-of-scope issues Claude reported, or that you noticed during review. Do **not
 Fill this in **before** you need it.
 
 - **Revert command:** `git revert <sha>`
-- **Is a plain revert sufficient?** Yes / No — if no, explain what else must be undone (a UserDefaults
-  key written, a file created on disk, a migration performed)
+- **Is a plain revert sufficient?** Yes / No — if no, explain what else must be undone
 - **Dependent phases that must also be reverted:** <from `ROADMAP.md`, or "none">
-- **Data risk on revert:** none / <describe — e.g. a store that has already written to a new path>
+- **Data risk on revert:** none — local data is disposable under `POLICY.md`. If the revert leaves stale
+  data behind, wipe the Dev channel and relaunch.
 
 ---
 

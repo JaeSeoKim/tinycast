@@ -13,19 +13,22 @@ Five renames, plus write the ten-suffix vocabulary table into `AGENTS.md`.
 | `CommandRegistry` | `CommandCatalog` |
 | `PaletteViewModel` | `PaletteState` |
 
-## Hard gates — one sharp edge, and it is severe
+## Hard gates
 
-**Persisted identifiers are frozen. Renaming one is silent, permanent data loss for every user.**
-Specifically, these strings do **not** change:
+Per `docs/refactor/POLICY.md` you **may** rename persisted identifiers. The risk is no longer "did it
+change?" but **"did every producer and consumer change together?"** These four bite:
 
-- `ClipboardManager.internalType` = `"com.tinycast.internal"` — change it and Tinycast re-captures its
-  own pastes in a loop
-- `boundAppBundleIDs`, `boundPaneBundleIDs`, `boundCustomCommandIDs`, `boundQuicklinkIDs`, and the
-  `KeyboardShortcuts_<name>` key format
-- **every `CommandID` raw value** (`"command:clipboard-history"`, …) — they double as `AppEntry.id`, so
-  changing one orphans that command's favourite, visibility and ranking records
-- `Notification.Name.tinycastSelectSettingsTab`'s raw value
-- every SQLite table and column name, every `CodingKey`, every on-disk file name
+- `ClipboardManager.internalType` — the writer and the poller must agree, or Tinycast re-captures its own
+  pastes in a loop
+- `SettingsKey.showInMenuBar` — shared with `TinycastApp`'s `@AppStorage`; rename in both or neither
+- **`CommandID` raw values** — they *are* `AppEntry.id`, which favourites, visibility and ranking key on
+- SQLite column names — schema, prepared statements and row decoder must agree
+
+**Renaming a persisted key is permitted but adds nothing here.** This phase renames *types*. Leave keys
+alone unless one badly contradicts its new type name.
+
+**Do not touch Raycast import** (`RaycastFormat`, `RaycastV1Decoder`, `RaycastImportV1/V2`) — another
+application's format, not Tinycast's legacy.
 
 Also:
 
@@ -44,11 +47,13 @@ git grep -n "ClipboardManager\|HotKeyManager\|CommandRegistry\|PaletteViewModel"
 git diff -U0 | grep '^[-+].*"'    # inspect EVERY changed string literal
 ```
 
-**Any changed string literal in a rename-only phase is a bug until proven otherwise.**
+Account for **every** line that grep returns — each needs its counterpart moved too.
 
-Run all 18 harnesses.
+Run all 18 harnesses. Then wipe the Dev channel, launch, and use the app for five minutes: copy, paste,
+set a hotkey, favourite an app, quit, relaunch.
 
 ## Summarise
 
-Use the system-prompt format. **Paste the output of the changed-string-literal grep** and account for
-every line in it. Confirm the `AGENTS.md` table includes the documented exceptions with reasons.
+Use the system-prompt format. **Paste the output of the changed-string-literal grep** and, for each line,
+name the producer and consumer that moved together. Confirm `RaycastImport*` is absent from the diff, and
+that the `AGENTS.md` table includes the documented exceptions with reasons.

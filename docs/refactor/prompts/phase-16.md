@@ -9,12 +9,17 @@ observed by the palette, every launcher row, and most Settings panes.
 
 ## Hard gates
 
-- **Every UserDefaults key, default value and absence check is frozen.** In particular the eight
-  properties using `defaults.object(forKey:) == nil || defaults.bool(…)` must keep that exact logic:
+- **The eight absence-vs-`false` checks must survive — and this is where the new compatibility policy is
+  most likely to mislead you.** These properties use
+  `defaults.object(forKey:) == nil || defaults.bool(…)`:
   `hyperKeyIncludesShift`, `hyperKeyReplacesGlyph`, `showFavoritesInCompactMode`, `openOnCursorScreen`,
   `customCommandsShowInLauncher`, `snippetsShowInLauncher`, `windowManagementShowInLauncher`,
   `quicklinksShowInLauncher`, `quicklinkConfirmsBeforeDelete`.
-  **Getting one wrong flips a default for every existing user and nothing will tell you.**
+  That is **not** legacy support. It encodes *"this setting starts **on** for a fresh install"*, because
+  `defaults.bool(forKey:)` returns `false` for an absent key. `docs/refactor/POLICY.md` lets you rename
+  these keys; it does **not** let you change what a clean install starts with. Simplifying one silently
+  flips that setting off for every new install and nothing in the build or the harnesses will tell you.
+  Same for `ClipboardRetention`'s `-1`, `PopToRootTimeout`'s `0`, `windowGap`'s unset-reads-as-zero.
 - **Keep the explicit `didSet` persistence blocks.** Do not convert to computed properties backed by
   `UserDefaults` — that changes read cost on a hot path. A `stored(_:default:)` property wrapper is
   *optional and discouraged in this phase*; prefer one change at a time.
@@ -41,6 +46,9 @@ Run `callout-test`, `scopes-test`, `volume-test`.
 
 **Then run the app, walk all 14 Settings panes, toggle every control, quit, relaunch, and confirm every
 change stuck.** A dead binding looks completely normal until you toggle it.
+
+**Then wipe the Dev channel and relaunch**, and walk the panes again confirming every default is what it
+should be. That is the only check that catches a broken absence-vs-false conversion.
 
 ## Summarise
 

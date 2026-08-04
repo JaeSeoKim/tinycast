@@ -2,6 +2,9 @@
 
 **Milestone:** M6 · **Effort:** M · **Risk:** Med · **Context:** Med
 
+> **Compatibility policy applies.** See [`../POLICY.md`](../POLICY.md). `Kind` raw values may be renamed; carve-out 2
+> (every producer and consumer moves together) is what applies.
+
 ---
 
 ## Overview
@@ -59,8 +62,9 @@ is an honest admission that the cost is real and manual.
 
 ## Implementation boundaries
 
-- **`AppEntry.Kind`'s cases and raw values do not change.** The raw values are persisted in
-  `VisibilityStore.hiddenKinds`.
+- **`AppEntry.Kind`'s cases do not change.** Raw values *may* be renamed under
+  [`POLICY.md`](../POLICY.md), but they are persisted in `VisibilityStore.hiddenKinds`, so a rename must
+  move the writer and the reader together. There is no reason to rename them in this phase — leave them.
 - `KindDescriptor` is a **plain struct returned by one `switch`**, held as a `static let` table or
   computed per access — whichever is simpler. It is not a protocol, not a registry, not generic.
 - Its members are exactly the five things currently derived per kind:
@@ -85,7 +89,7 @@ is an honest admission that the cost is real and manual.
 3. `KindDescriptor` exists with exactly the five listed members.
 4. Every kind's label, section title and open verb is character-identical to before.
 5. The launcher's section order is unchanged.
-6. `VisibilityStore.hiddenKinds` still round-trips (raw values unchanged).
+6. `VisibilityStore.hiddenKinds` still round-trips within this build.
 7. Release build succeeds — the section-array annotation still holds.
 
 ## Manual verification checklist
@@ -108,13 +112,13 @@ is an honest admission that the cost is real and manual.
 |---|---|
 | A label or verb changes while being moved into the table | AC4 — compare all eight kinds by hand |
 | Section order changes | AC5 screenshot |
-| `Kind` raw values change → hidden categories are silently un-hidden | AC6 + the relaunch test |
+| `Kind` raw values change on one side only → hidden categories silently un-hide | AC6 + the relaunch test |
 | The descriptor absorbs `symbolIconName` and the catalogs get flattened into it | Boundary — it stays separate |
 | The section array loses its type annotation → Release type-check timeout | AC7 |
 
 ## Rollback strategy
 
-`git revert <sha>`. No persisted format changes, provided AC6 held.
+`git revert <sha>`. No data risk under [`POLICY.md`](../POLICY.md).
 
 ## Expected commit size
 

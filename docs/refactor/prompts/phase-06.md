@@ -10,10 +10,11 @@ launch, up to ~70 per keystroke while recording. Load bindings into an in-memory
 
 ## Hard gates
 
-- **The persisted format is frozen.** A `.combo` still encodes as the bare
-  `{"carbonKeyCode":N,"carbonModifiers":N}` JSON *string* under `KeyboardShortcuts_<name>`, and decoding
-  still tries that shape first. Break this and every existing user binding and every old backup dies.
-- The four bound-ID index keys keep their names, contents and sort order:
+- **Do not change the persisted format in this phase.** `docs/refactor/POLICY.md` no longer freezes it
+  for compatibility — but this phase caches reads, it does not redesign storage. Retiring the legacy
+  `KeyboardShortcuts_<name>` key and the JSON-string encoding is **phase 35**, with its own diff and its
+  own verification. Do not smuggle it in here.
+- The four bound-ID index keys keep their names and semantics for the same reason:
   `boundAppBundleIDs`, `boundPaneBundleIDs`, `boundCustomCommandIDs`, `boundQuicklinkIDs`.
 - `binding(for:)` keeps its exact signature and return type.
 - **Populate the whole map in `start()`.** Do not make it lazy per key — there must be no cache-miss
@@ -32,8 +33,8 @@ xcodegen generate
 xcodebuild build -project Tinycast.xcodeproj -scheme Tinycast -configuration Debug CODE_SIGNING_ALLOWED=NO
 ```
 
-Run the hotkey harness. Then, if you can, capture `defaults export com.tinycast.app.dev` before and
-after a binding change and confirm only the expected key differs, in the legacy string format.
+Run the hotkey harness. Then wipe the Dev channel, launch, set three shortcuts, quit, relaunch, and
+confirm all three still fire.
 
 ## Summarise
 

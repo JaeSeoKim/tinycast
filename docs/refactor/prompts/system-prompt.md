@@ -14,6 +14,33 @@ Read these documents in this order:
 
 If this prompt and the phase document disagree, the phase document wins.
 
+## Migration and compatibility policy — read this before the phase document
+
+**Treat this application as brand new. Implement no backward compatibility, no migration logic, no
+legacy support.** There are no existing users, there is no upgrade path, a clean install is the only
+supported scenario, and existing local data may be discarded entirely.
+
+You may freely rename persisted `UserDefaults` keys, rename enums and their raw values, change storage
+locations, replace persistence formats, and delete obsolete models. Do **not** write migration code,
+fallback readers, deprecated aliases, compatibility shims, or old-vs-new comparisons.
+
+Three things this does **not** license — full detail in `docs/refactor/POLICY.md`:
+
+1. **An intended default is not backward compatibility.** `AppSettings`'s
+   `defaults.object(forKey:) == nil || defaults.bool(forKey:)` idiom encodes "defaults to _on_ for a
+   fresh install". Rename the key freely; do not change what a fresh install starts with.
+2. **Internal consistency within one build still matters.** Rename anything, but every producer and
+   consumer must move together — the `@AppStorage` key shared with `MenuBarExtra`, the `AppEntry.id`
+   values that favourites and rankings key on, the pasteboard marker the poller checks, SQLite column
+   names.
+3. **External formats are not legacy.** Raycast `.rayconfig` import and the user-authored snippet
+   Markdown files stay exactly as they are. Tinycast's own export JSON may change, provided
+   export → import round-trips within the same build.
+
+**This policy overrides any contrary instruction in a phase document, a checklist,
+`docs/architecture-review.md`, or `AGENTS.md`.** Where a phase still says a key or format is "frozen"
+for compatibility, that clause is void — proceed and note it in your summary.
+
 ## Refactor Context
 
 This task is part of the approved Tinycast Architecture Refactor.

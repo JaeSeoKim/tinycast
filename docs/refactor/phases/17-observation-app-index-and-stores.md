@@ -2,6 +2,9 @@
 
 **Milestone:** M2 · **Effort:** L · **Risk:** High · **Context:** High
 
+> **Compatibility policy applies.** See [`../POLICY.md`](../POLICY.md). Verification is a **clean install**, not a
+> data-preservation check.
+
 ---
 
 ## Overview
@@ -93,7 +96,7 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 - [ ] `checklists/testing.md` — **all 17 harnesses**, `clipboard-test` / `quicklink-test` /
       `snippets-test` are the critical three
 - [ ] `checklists/regression.md` — Core sweep + **Clipboard** + **Quicklinks** + **Snippets** +
-      **Launcher & icons** + **Data safety**
+      **Launcher & icons** + **Clean install**
 - [ ] **The headline check:** open the palette on the emoji screen, add `_printChanges`, copy text
       elsewhere → **no re-evaluation logged**. Record this in the progress file.
 - [ ] Copy text → the clipboard list updates; pin it → it moves to Pinned and the highlight follows
@@ -103,7 +106,8 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 - [ ] Edit a snippet file in Finder → the app reloads it within ~150 ms
 - [ ] Toggle a feature switch → the launcher section appears/disappears
 - [ ] Install or delete an app → reopen the palette → the index reflects it
-- [ ] Quit and relaunch → clipboard history, quicklinks and snippets are all intact
+- [ ] Wipe the Dev channel → launch → every store initialises empty without crashing
+- [ ] Add a clip, a quicklink and a snippet, quit, relaunch → all three persisted
 
 ## Regression risks
 
@@ -113,12 +117,12 @@ entire palette body regardless of mode. Migrating them is where the invalidation
 | `isolated deinit` lost → SQLite handles leak or teardown races | AC3 |
 | A cache's `didSet` invalidation is lost → stale search results | AC4 + the 2-char/4-char search check |
 | `publishEntries` equality guard lost → the launcher re-renders on every refresh | AC5 |
-| **Data loss** if a store's init path changed | Data safety checklist section |
+| A store crashes rather than starting empty when its file is absent | The clean-install run |
 | The clipboard list stops live-updating | AC6 |
 
 ## Rollback strategy
 
-`git revert <sha>`. No file formats change; all four stores read the same data either side.
+`git revert <sha>`. **No data risk** — local data is disposable under [`POLICY.md`](../POLICY.md).
 
 This is the largest single-phase revert in M2 — if it goes wrong, revert rather than fix forward, and
 consider splitting it into four one-store phases.
@@ -148,7 +152,7 @@ Phase 11, phase 09 (`Memo` in `AppIndex`), phase 16 (`AppSettings`, since `AppIn
 - All acceptance criteria met
 - The `_printChanges` headline result recorded in the progress file
 - All 17 harnesses green
-- Data safety section verified
+- Clean-install run verified
 - Merged
 
 ## Estimated difficulty

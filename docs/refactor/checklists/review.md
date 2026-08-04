@@ -40,6 +40,8 @@ arranged?*
 - [ ] No `?`/`!`/`??` changed in a way that alters nil handling
 - [ ] Every moved function is byte-identical to its original apart from indentation
 - [ ] Every user-visible string is character-identical, including punctuation and curly quotes
+- [ ] **No fresh-install default changed.** Renaming a persisted key is fine; changing what a clean
+      install starts with is not (`POLICY.md` carve-out 1)
 
 **Any "yes" needs an explanation in Claude's summary.** If it is not in the summary, ask. Silent
 behaviour changes are what this checklist exists to catch.
@@ -85,12 +87,26 @@ git diff -U0 | grep -A1 '^+\s*//' | grep -c '^+\s*//'   # rough stacking signal
 
 ---
 
-## 6 · Dead code
+## 6 · Dead code and migration code
 
 - [ ] Nothing orphaned by the change was left behind: no unused function, property, type or import
 - [ ] No compatibility shim, deprecated alias, or forwarding wrapper the phase did not ask for
 - [ ] No commented-out old implementation
 - [ ] No `TODO`, `FIXME` or `HACK` added
+
+Per [`../POLICY.md`](../POLICY.md), **migration code is a defect, not a courtesy**:
+
+- [ ] No fallback reader for an old key, path, schema or serialized format
+- [ ] No one-time migration or "upgrade from previous version" routine
+- [ ] No old-vs-new comparison written to preserve existing data
+- [ ] No key or value kept solely because it used to be written that way
+
+If a persisted identifier **was** renamed, the question is not whether it changed but whether every
+producer and consumer changed with it:
+
+- [ ] `git diff -U0 | grep '^[-+].*"'` — every changed string literal accounted for
+- [ ] Writer and reader of any renamed key both moved (`internalType`, `showInMenuBar`, `CommandID` raw
+      values, SQLite columns — see `POLICY.md` carve-out 2)
 
 Confirm by searching for the old symbol name across the repo — the compiler will not always tell you.
 
@@ -107,7 +123,7 @@ Spot-check the ones this phase's blast radius could reach:
 - [ ] Pure-layer files gained no AppKit/SwiftUI import (see `checklists/testing.md`)
 - [ ] Uninstall still uses `trashItem`; `removeItem` appears nowhere in that feature
 - [ ] Consent flags still live on their owning store, not in `AppSettings`
-- [ ] Hotkey persistence still uses the legacy `KeyboardShortcuts_<name>` keys
+- [ ] External formats untouched: Raycast import and the snippet Markdown files (`POLICY.md` carve-out 3)
 - [ ] Dialogs still go through `DialogController`; no `NSAlert` reintroduced
 - [ ] `EdgeDissolve.swift` and `ThinScrollbar.swift` contents untouched
 

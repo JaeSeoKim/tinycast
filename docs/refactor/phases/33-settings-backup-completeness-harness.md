@@ -2,6 +2,9 @@
 
 **Milestone:** M6 · **Effort:** M · **Risk:** Low · **Context:** Med
 
+> **Compatibility policy applies.** See [`../POLICY.md`](../POLICY.md). **This phase is unaffected.** The `snippetsEnabled`
+> exclusion is a *security* control, not a compatibility one.
+
 ---
 
 ## Overview

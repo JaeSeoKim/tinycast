@@ -16,11 +16,15 @@ The architecture review says **what** is wrong and **why**. This playbook says *
 
 > **Just want to get going?** [`DAILY.md`](DAILY.md) is the one-page loop. Read this file once, then work
 > from that.
+>
+> **Before any phase touching storage, read [`POLICY.md`](POLICY.md).** It sets the migration and
+> compatibility rules and it overrides every other document here.
 
 | Path | Purpose |
 |---|---|
 | `README.md` | This file. How to run the roadmap. |
 | `DAILY.md` | The daily driver — five steps, the exact instruction to give Claude, the four replies you need. |
+| `POLICY.md` | **Authoritative.** Migration and compatibility rules; overrides the phases, the checklists, the review and `AGENTS.md`. |
 | `ROADMAP.md` | Execution order, dependency graph, effort, risk, milestones. |
 | `phases/NN-*.md` | One file per phase. The complete specification of a single unit of work. |
 | `prompts/system-prompt.md` | The standing contract handed to Claude on **every** phase. |
@@ -40,7 +44,7 @@ place to edit, one place to read.
 
 ---
 
-## The 34 phases at a glance
+## The 35 phases at a glance
 
 Nine milestones' worth of work, sequenced so that **stopping after any completed phase leaves a
 shippable app**. See `ROADMAP.md` for the dependency graph.
@@ -54,7 +58,7 @@ shippable app**. See `ROADMAP.md` for the dependency graph.
 | **M4** | 24–26 | `AppCore` decomposition into coordinators |
 | **M5** | 27–29 | Folder restructure |
 | **M6** | 30–33 | Naming, exhaustiveness, harness coverage |
-| **M7** | 34 | Comment budget, final measurement, docs |
+| **M7** | 34–35 | Comment budget, final measurement, docs, retiring dead compatibility code |
 
 ---
 
@@ -220,6 +224,10 @@ These come from `AGENTS.md` and hold in every phase without being restated:
   compiles them.
 - Uninstall moves to the Trash and never deletes; `removeItem` must never appear in that feature.
 - Every networked feature ships off and is consent-gated.
-- Hotkeys persist under the legacy `KeyboardShortcuts_<name>` UserDefaults keys.
+- Consent flags live on their owning store, never in `AppSettings`.
 
 If a phase appears to require breaking one of these, **the phase is wrong**. Stop and re-plan.
+
+**Superseded by [`POLICY.md`](POLICY.md):** `AGENTS.md`'s clauses about the legacy
+`KeyboardShortcuts_<name>` keys and `HotKeyBinding`'s `Codable` compatibility seam no longer apply —
+there are no existing users to stay compatible with. Phase 35 removes them and amends `AGENTS.md`.

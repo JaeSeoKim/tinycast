@@ -2,6 +2,9 @@
 
 **Milestone:** M2 · **Effort:** M · **Risk:** Med · **Context:** Med
 
+> **Compatibility policy applies.** See [`../POLICY.md`](../POLICY.md). The persisted format is not a constraint here; it is
+> phase 35's to change.
+
 ---
 
 ## Overview
@@ -38,7 +41,7 @@ type gets its own phase rather than riding along in a wave.
 
 ## Files that must NOT change
 
-- `Tinycast/Core/HotKey/HotKeyBinding.swift` — the `Codable` compatibility seam
+- `Tinycast/Core/HotKey/HotKeyBinding.swift` — phase 35 changes it, not this phase
 - `Tinycast/Core/HotKey/HotKeyCenter.swift`
 - `Tinycast/Core/HotKey/DoubleTapMonitor.swift`, `DoubleTapDetector.swift`, `DoubleTapModifier.swift`
 - `Tinycast/Core/HotKey/KeyShortcut.swift`
@@ -54,7 +57,8 @@ type gets its own phase rather than riding along in a wave.
   properties; this is not a case for `withObservationTracking`.
 - `capture` (a `ShortcutCaptureSession`, migrated in phase 12) stays a `let`. Views observe it directly.
 - `doubleTapMonitor` stays a `let` and is not observed by `HotKeyManager`.
-- Persistence, key names and the bound-ID indexes are untouched — phase 06 already settled them.
+- Persistence, key names and the bound-ID indexes are untouched here — phase 06 settled them and
+  phase 35 reshapes them.
 - Do not change `conflictOwner`, `candidateActions` or `displayName`. The `AppCore.shared` reach inside
   `displayName` is a known inversion, fixed in **phase 26**, not here.
 
@@ -66,7 +70,7 @@ type gets its own phase rather than riding along in a wave.
    open on another display or reopened.
 4. Clearing a binding removes the keycap.
 5. The recorder's own display updates as the binding changes.
-6. No persisted format change; a binding set before this phase still fires after it.
+6. Bindings survive a quit and relaunch within this build.
 7. `SettingsBackup.gather` output is unchanged.
 
 ## Manual verification checklist
@@ -84,7 +88,7 @@ type gets its own phase rather than riding along in a wave.
 - [ ] Bind a double-tap → it fires
 - [ ] Change the Hyper Key ✦ display setting → launcher keycaps re-render
 - [ ] Quit and relaunch → every binding still fires
-- [ ] Export a settings backup → diff against one from before the phase
+- [ ] Export a settings backup, wipe the Dev channel, import → every binding returns
 
 ## Regression risks
 
@@ -97,7 +101,8 @@ type gets its own phase rather than riding along in a wave.
 
 ## Rollback strategy
 
-`git revert <sha>`. Safe — `UserDefaults` remains the source of truth and its format is unchanged.
+`git revert <sha>`. Safe — `UserDefaults` remains the source of truth. No data risk under
+[`POLICY.md`](../POLICY.md).
 
 **Note:** if phase 06 is also reverted, revert this first. `ROADMAP.md` records the dependency.
 

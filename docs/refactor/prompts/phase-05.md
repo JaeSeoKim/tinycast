@@ -17,9 +17,9 @@ adopt it in the **four** non-harness-compiled types.
 must depend on no other app source:**
 `ClipboardStore`, `QuicklinkStore`, `LauncherRankingStore`, `SnippetRepository`.
 
-- **Every resolved path must stay byte-identical** — same folder name, same file name, same
-  `?? "com.tinycast.app"` fallback. A wrong path is invisible in review and silently loses the user's
-  clipboard history.
+- **Channel isolation is non-negotiable**: every path stays keyed by `Bundle.main.bundleIdentifier`, so
+  a Dev build never shares a directory with a stable one. Paths themselves *may* change under
+  `docs/refactor/POLICY.md` — but there is no reason to change them here, so don't.
 - `AppPaths` creates the directory (`createDirectory(withIntermediateDirectories: true)`) exactly as the
   current call sites do.
 - `AppPaths` is Foundation-only and depends on no other app type.
@@ -35,9 +35,18 @@ xcodebuild build -project Tinycast.xcodeproj -scheme Tinycast -configuration Deb
 git diff --name-only    # must NOT list ClipboardStore, QuicklinkStore, LauncherRankingStore, SnippetRepository
 ```
 
+Then wipe the Dev channel and launch — under `POLICY.md` a **clean install** is the storage test now:
+
+```
+rm -rf ~/Library/Caches/com.tinycast.app.dev
+rm -rf "$HOME/Library/Application Support/com.tinycast.app.dev"
+```
+
+Every store must initialise from nothing without crashing.
+
 Run **all** harnesses from `docs/development.md`, unmodified.
 
 ## Summarise
 
-Use the system-prompt format. **List every resolved path before and after, explicitly**, so the reviewer
-can confirm they are identical without launching the app.
+Use the system-prompt format. **List every resolved path**, so the reviewer can confirm each is keyed by
+the bundle identifier without launching the app. Confirm the clean-install run.
