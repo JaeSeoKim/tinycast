@@ -17,17 +17,17 @@ where new features are added have become shared bottlenecks.
 
 ### Scores
 
-| Axis                  | Score        | One-line justification                                                                                                                   |
-| --------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Architecture**      | **7.5 / 10** | Coherent single-owner core and a genuinely good (but unnamed and undocumented-as-such) pure/effect split; undermined by two god objects. |
-| **Maintainability**   | **7.0 / 10** | Exceptional comment discipline and a written invariants contract; hurt by feature code scattered across three directory trees.           |
-| **Performance**       | **8.5 / 10** | Memoized search, off-main IO, byte-bounded caches, measured decisions. Four concrete hot spots remain.                                   |
-| **Scalability**       | **5.5 / 10** | **The weakest axis.** Adding one feature currently edits 10–14 files across 3 trees. This does not survive to 50 features.               |
-| **Memory efficiency** | **9.0 / 10** | Best-in-class: cost-bounded `NSCache`, preview purge on hide, capped stores, bounded in-memory windows.                                  |
-| **Concurrency**       | **9.0 / 10** | Swift 6 complete mode, correct `assumeIsolated` at every C boundary, `isolated deinit` for C resources, disciplined `Task.detached`.     |
-| **Code organization** | **6.0 / 10** | `Core/` is a 46-file flat dumping ground; ~20 competing type-name suffixes.                                                              |
-| **Technical debt**    | **7.5 / 10** | Low _rot_; the debt is structural (concentration), not decay.                                                                            |
-| **Overall**           | **7.6 / 10** |                                                                                                                                          |
+| Axis                  | Score        | One-line justification                                                                                                                     |
+| --------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Architecture**      | **7.5 / 10** | Coherent single-owner core and a genuinely good (but unnamed and undocumented-as-such) pure/effect split; undermined by two god objects.   |
+| **Maintainability**   | **6.5 / 10** | A written invariants contract and valuable comment _content_; hurt by feature code split across three trees and by comment _volume_ (H-1). |
+| **Performance**       | **8.5 / 10** | Memoized search, off-main IO, byte-bounded caches, measured decisions. Four concrete hot spots remain.                                     |
+| **Scalability**       | **5.5 / 10** | **The weakest axis.** Adding one feature currently edits 10–14 files across 3 trees. This does not survive to 50 features.                 |
+| **Memory efficiency** | **9.0 / 10** | Best-in-class: cost-bounded `NSCache`, preview purge on hide, capped stores, bounded in-memory windows.                                    |
+| **Concurrency**       | **9.0 / 10** | Swift 6 complete mode, correct `assumeIsolated` at every C boundary, `isolated deinit` for C resources, disciplined `Task.detached`.       |
+| **Code organization** | **5.5 / 10** | `Core/` is a 46-file flat dumping ground; ~20 competing type-name suffixes; 181 stacked comment blocks against a rule forbidding them.     |
+| **Technical debt**    | **7.5 / 10** | Low _rot_; the debt is structural (concentration), not decay.                                                                              |
+| **Overall**           | **7.4 / 10** |                                                                                                                                            |
 
 ### Biggest strengths (do not lose these in any refactor)
 
@@ -44,9 +44,11 @@ where new features are added have become shared bottlenecks.
    deliberately excluded from `SettingsBackup` so an import cannot grant network access. The same rigour
    applies to snippets (Accessibility requested only from the enabling gesture) and uninstall (FDA
    _detected_, never _requested_; `trashItem` only, `removeItem` never).
-3. **Comment quality.** Comments state _why_, name the gotcha, and cite the measurement
+3. **Comment _content_ is excellent** — comments state _why_, name the gotcha, and cite the measurement
    (`SpotlightNames.Cache`: "76 ms cold, 0.2 ms after"; `IconCache.artworkExtent`: "folders paint 98% of
-   the width and documents 69%"). This is the single most valuable asset for onboarding contributors.
+   the width and documents 69%"). The knowledge captured here is the most valuable asset for onboarding
+   contributors. **The volume and formatting of that content is a separate problem — see H-1.** The fix
+   is to relocate the good long explanations into `docs/`, not to lose them.
 4. **Memory hygiene.** `NSCache` sized by _decoded byte cost_ rather than object count, previews purged
    on window hide, a 1000-row in-memory clipboard window with pinned rows exempted, capped ranking /
    history / frequency stores.
@@ -70,8 +72,13 @@ where new features are added have become shared bottlenecks.
    `Features/Quicklinks/`, 2 in `Features/Settings/`, ~185 lines of `AppCore`, a slice method in
    `AppIndex`, 5 properties in `AppSettings`, 5 fields in `SettingsBackup`, 4 cases in `CommandRegistry`,
    an index in `HotKeyManager`, a `PaletteMode` case, and 5 code paths in `RootPaletteView`.
-5. **CI does not compile the app.** The `Tools/` harnesses cover the pure core beautifully — but that is
-   ~15% of the source. The other ~24,000 lines (all SwiftUI/AppKit) have **no compile gate on PRs**.
+5. **Comment volume has inverted the signal-to-noise ratio.** 1,850 comment lines against 26,379 lines of
+   non-generated source (**7.0%**), but the distribution is the problem, not the total: **181 stacked
+   comment blocks** (a direct violation of the project's own "single-line, no stacked blocks" rule) and
+   **953 comment lines over 100 characters — 51% of every comment in the codebase**, against only 158
+   _code_ lines that long. The longest single comment line is **588 characters**. Files like
+   `CurrencyRateStore` (27.7% comments) and `WindowActionMemory` (21.5%) read as prose with code
+   interleaved. See H-1.
 
 ---
 
@@ -406,50 +413,64 @@ path, ~50–150 KB less resident Combine machinery, ~30 fewer `assumeIsolated` h
 
 ---
 
-#### H-1 · CI does not compile the application
+#### H-1 · Comment volume has overtaken the code it explains
 
-**What.** `.github/workflows/ci.yml` runs the 17 `Tools/` harnesses and nothing else — a deliberate,
-documented trade ("the full Debug build costs minutes"). But the harnesses reach ~4,300 lines of pure
-core. **~24,000 lines of SwiftUI and AppKit have no compile gate on a pull request.**
+**What.** Measured across all non-generated Swift in `Tinycast/`:
 
-**Why it matters.** For a solo author with an IDE open this is invisible. For "multiple contributors" —
-the stated goal — a PR that renames a `Theme` token, changes a `PopoverMenuItem` initialiser, or breaks
-`RootPaletteView`'s type-checker budget goes green and lands broken. It also silently makes every
-refactor in this document riskier than it needs to be, which is precisely backwards.
+| Metric                                                 | Value                         |
+| ------------------------------------------------------ | ----------------------------- |
+| Comment lines / total lines                            | **1,850 / 26,379 = 7.0%**     |
+| **Stacked comment blocks** (2+ consecutive `//` lines) | **181**                       |
+| Comment lines > 100 chars                              | **953 — 51% of all comments** |
+| Comment lines > 120 chars                              | **572**                       |
+| _Code_ lines > 100 chars, for contrast                 | **158**                       |
+| Longest single comment line                            | **588 characters**            |
 
-**Recommended fix.** Add a second, parallel job. It does not slow the existing gate.
+Worst offenders by density: `CurrencyRateStore` 27.7% · `Theme` 23.9% · `WindowActionMemory` 21.5% ·
+`QuicklinkDestination` 19.7% · `WindowMover` 17.7% · `CalcCurrency` 16.4% · `WindowLayout` 14.6%.
 
-```yaml
-build:
-  runs-on: macos-26
-  steps:
-    - uses: actions/checkout@v7
-    - name: Select Xcode 26 # same step as `test`
-      run: …
-    - run: brew install xcodegen && xcodegen generate
-    - uses: actions/cache@v4
-      with:
-        path: ~/Library/Developer/Xcode/DerivedData
-        key: dd-${{ runner.os }}-${{ hashFiles('project.yml', 'Tinycast/**/*.swift') }}
-        restore-keys: dd-${{ runner.os }}-
-    - run: |
-        xcodebuild build -project Tinycast.xcodeproj -scheme Tinycast \
-          -configuration Debug CODE_SIGNING_ALLOWED=NO | xcbeautify
-```
+**Why it matters.**
 
-Also worth adding, given it is one line and guards a headline constraint:
+- `AGENTS.md` already states the rule: _"Comments are single-line — no stacked / multi-line blocks. Only
+  comment the non-obvious."_ **181 stacked blocks violate the first half outright.** The second half is
+  violated more insidiously: the single-line rule is satisfied in letter and defeated in spirit by
+  writing one 300-, 400-, 588-character line instead of a paragraph. A comment 3.6× more likely to be
+  overlong than the code beside it is not annotating the code — it is competing with it.
+- This is specifically an **agent-authored-code failure mode, and it compounds.** An assistant asked to
+  change one function reads the surrounding prose, matches its register, and emits more of it. Each pass
+  ratchets the ratio up. Left unchecked, comment lines grow faster than code lines.
+- It actively harms review. A 40-line diff carrying 12 lines of justification prose forces the reviewer
+  to verify the prose as well as the code — and stale prose is worse than none, because it is trusted.
+- It inflates every file past its natural size, which is part of why `AppCore` reads as 1,348 lines and
+  `RootPaletteView` as 1,126.
 
-```yaml
-- name: Binary size budget
-  run: |
-    SIZE=$(find ~/Library/Developer/Xcode/DerivedData -name Tinycast\ Dev -type f \
-           -perm -111 | head -1 | xargs stat -f%z)
-    echo "binary: $SIZE bytes"; [ "$SIZE" -lt 3145728 ] || { echo "::error::>3 MB"; exit 1; }
-```
+**Recommended fix.** Turn the rule from a style preference into a hard, checkable budget, stated in terms
+an agent cannot satisfy by reformatting. Replace the `AGENTS.md` comment clause with:
 
-**Expected impact.** Cold ~4 min, warm ~60–90 s, running in parallel with the existing job so wall time
-is unchanged for the author. Converts the largest untested surface in the repo into a merge gate, and
-makes every subsequent phase of this roadmap safe to land.
+> **Comments — minimal code, not annotated prose**
+>
+> - One line. **Never two consecutive comment lines.** If it needs two, it needs a named function, a
+>   named constant, or a type — not a paragraph.
+> - **Hard cap: 100 characters, including indentation.** Longer means the explanation belongs in
+>   `docs/<subsystem>.md`, referenced by name.
+> - Comment the _why_, the gotcha, or the invariant. Never restate the code, never narrate the sequence,
+>   never argue a decision at length in-line.
+> - A `///` doc comment on a public type or method is exempt from the consecutive-line rule, not from
+>   the character cap.
+> - **Prefer deleting a comment to updating it.** If the code can be made obvious instead, do that.
+> - Do not add a comment to explain a change you just made. The diff is not the audience.
+
+Then one mechanical pass (roadmap W7.6): for each of the 181 stacked blocks and 572 over-120-char lines,
+triage — _(a)_ delete if it restates the code, _(b)_ compress to one clause if it names a real gotcha,
+_(c)_ move to the relevant `docs/*.md` and leave a one-line pointer if it is genuinely a paragraph of
+rationale. Most of the best long comments here — the `WindowLayout` AX-coordinate flip, the
+`CurrencyRateStore` consent gate, the `SpotlightNames` measurement — are **already** written up in
+`docs/`, so (c) is usually a delete plus a reference rather than a rewrite.
+
+**Expected impact.** Roughly 700–900 lines removed with zero behaviour change; several files drop below
+the sizes that made them look like god objects in the first place. The durable win is the greppable
+budget, not the cleanup: without a character cap and a no-stacking rule that a tool can check, the next
+agent pass re-inflates everything this pass removes.
 
 ---
 
@@ -534,43 +555,78 @@ changed. This is the single best effort-to-benefit item in the document.
 
 ---
 
-#### H-4 · Uninstall directory sizing walks every candidate serially
+#### H-4 · The uninstall scan runs entirely serially — both phases
 
-**What.** `UninstallScanner.scan()` builds candidates in a serial loop, and for each directory candidate
-calls `directorySize(of:budget:)`, which runs a full `FileManager.enumerator` recursive walk with a
-250,000-entry budget (the comment notes "roughly a second at 250k").
+**What.** `UninstallScanner.scan()` is serial end to end. It walks `UninstallSearchRoot.all` one root at
+a time (`contentsOfDirectory` + rule match + `lstat` per hit), then walks the `bin` directories, and for
+every directory candidate it produces it calls `directorySize(of:budget:)` — a full
+`FileManager.enumerator` recursive walk with a 250,000-entry budget (the code notes "roughly a second at
+250k"). Every one of those walks happens back to back on a single thread.
 
 **Why it matters.** A well-established app leaves 10–25 leftover directories (`Application Support`,
 `Caches`, `Containers`, `Group Containers`, `Saved Application State`, `Logs`, `WebKit`, …). Sizing them
-one after another is the longest-running operation in Tinycast, and it is purely I/O-bound work being
-done at a concurrency of one while the user watches a "Looking for leftover files…" placeholder.
+one after another is by far the longest-running operation in Tinycast — and it is I/O-bound work running
+at a concurrency of one while the user sits watching a "Looking for leftover files…" placeholder. This
+is the single worst latency-to-available-parallelism ratio in the app: the work is embarrassingly
+parallel, the machine has 8–16 idle cores, and the user is blocked on it.
 
-**Recommended fix.** The candidates are independent and `MeasuredSize` is `Sendable`; a `TaskGroup` over
-the sizing pass is a natural fit and the codebase currently uses no structured concurrency anywhere:
+**Recommended fix.** Go **fully parallel and uncapped**. A scan is a short, user-initiated burst — the
+user is staring at a placeholder — so trading a spike of CPU and RAM for wall-clock latency is exactly
+the right trade here, and it is the one place in Tinycast where that trade is correct. Parallelise
+**both** phases:
 
 ```swift
-// Phase 1 (serial, cheap): build candidates with size unresolved.
-// Phase 2 (parallel, I/O-bound): fill in sizes.
-let sized = await withTaskGroup(of: (Int, MeasuredSize).self) { group in
-    for (index, candidate) in candidates.enumerated() where candidate.needsWalk {
+// Phase 1 — root enumeration, in parallel. Each root is an independent directory listing + rule match.
+let perRoot = await withTaskGroup(of: (Int, [UninstallCandidate]).self) { group in
+    for (index, root) in roots.enumerated() {
         group.addTask(priority: .userInitiated) {
-            (index, directorySize(of: candidate.path, budget: budget))
+            try? Task.checkCancellation()
+            return (index, candidates(in: root, identity: identity, environment: environment))
         }
     }
-    var result = candidates
-    for await (index, size) in group { result[index].size = size }
-    return result
+    var buckets = [[UninstallCandidate]](repeating: [], count: roots.count)
+    for await (index, found) in group { buckets[index] = found }
+    return buckets.flatMap { $0 }          // root order preserved by index, not by completion
+}
+
+// Phase 2 — directory sizing, in parallel. The expensive half: one full recursive walk per candidate.
+var candidates = deduplicated(bundleCandidate + perRoot + binSymlinks)
+await withTaskGroup(of: (Int, MeasuredSize).self) { group in
+    for (index, candidate) in candidates.enumerated() where candidate.needsWalk {
+        group.addTask(priority: .userInitiated) {
+            try? Task.checkCancellation()
+            return (index, directorySize(of: candidate.path, budget: budget))
+        }
+    }
+    for await (index, size) in group { candidates[index].size = size }  // writeback by index
 }
 ```
 
-Keep `Task.checkCancellation()` inside each child so leaving the screen still releases the scan promptly
-(`UninstallSession.cancel()` already cancels the parent).
+**Display order is preserved exactly, by construction.** This is the load-bearing detail: nothing sorts
+by completion. Phase 1 writes each root's results into a pre-sized bucket at the root's own index, so
+`UninstallSearchRoot.all` order survives; phase 2 only mutates the `size` field of a row already in
+place. The final ordering line stays byte-for-byte as it is today:
 
-**Expected impact.** Wall-clock scan time for a heavyweight app improves roughly with min(cores,
-candidates) — typically **4–8×** on Apple silicon. No change to the plan, the ordering, the locking
-rules, or the pure layer, so `Tools/uninstall-test.swift` is untouched. Peak memory rises by one
-enumerator per concurrent task (a few KB each). Risk: low; consider capping the group width at
-`ProcessInfo.activeProcessorCount` if disk contention on a spinning external volume proves worse.
+```swift
+let leftovers = candidates.filter { $0.evidence != .bundle }.sorted { $0.path < $1.path }
+return UninstallPlan(
+    target: target, candidates: candidates.filter { $0.evidence == .bundle } + leftovers, …)
+```
+
+So the bundle still pins to the top and leftovers still sort by path — the list the user sees, and the
+order `UninstallSelection` and `UninstallRunner` walk, are identical to today. Deduplication (`seen`)
+must move _after_ the parallel gather so it stays deterministic; dedupe the flattened, index-ordered
+array rather than racing on a shared `Set`.
+
+`try? Task.checkCancellation()` in each child keeps `UninstallSession.cancel()` responsive — leaving the
+screen still releases the whole scan promptly, since cancelling the parent cancels every child.
+
+**Expected impact.** Wall-clock scan time drops by roughly `min(cores, candidates)` — on Apple silicon
+(8–16 cores) that is typically **6–12×** for a heavyweight app, turning a multi-second wait into a
+sub-second one. Peak RAM rises by one `FileManager.enumerator` per concurrent walk (a few KB each, so
+tens of KB total — irrelevant against the 40–80 MB budget, and it is transient). Peak CPU saturates
+briefly and by design. No change to `UninstallPlan`, `UninstallRules`, `UninstallProtection` or
+`UninstallSelection`, so the pure layer and `Tools/uninstall-test.swift` are untouched.
 
 ---
 
@@ -775,7 +831,7 @@ enum AppPaths {
 
 **Impact.** −40 lines, one place to audit the channel invariant. Note the constraint: `ClipboardStore`
 and `QuicklinkStore` must stay compilable standalone by their harnesses, so either add `AppPaths.swift`
-to those two harness command lines (and update `AGENTS.md` + `docs/development.md` + `ci.yml` in the same
+to those two harness command lines (and update `AGENTS.md` + `docs/development.md` in the same
 commit) or keep their `directory:` injection as the harness path and let `AppPaths` supply only the
 default. **Prefer the latter — it requires no invariant change at all.**
 
@@ -937,6 +993,24 @@ meaning; the problem is that some are synonyms and there is no written rule.
 4. A pure-layer file states its purity in a one-line doc comment naming the harness that compiles it —
    this already happens in ~10 files and should be universal.
 
+### 4.1b Comment rules (see H-1)
+
+Naming conventions only pay off if the code is readable at a glance, and today the comments are what
+obscures it. These belong in `AGENTS.md` alongside the naming table:
+
+1. **One line. Never two consecutive comment lines.** Needing two means the code needs a named function,
+   a named constant, or a type — not a paragraph.
+2. **Hard cap: 100 characters, including indentation.** Anything longer belongs in
+   `docs/<subsystem>.md`, referenced by name from a one-line pointer.
+3. Comment the _why_, the gotcha, or the invariant. Never restate the code, never narrate the sequence,
+   never argue a decision at length in-line.
+4. `///` on a public type or method is exempt from rule 1, not from rule 2.
+5. **Prefer deleting a comment to updating it.** If the code can be made obvious instead, do that.
+6. Never add a comment to explain a change you just made. The diff is not the audience.
+
+**Minimal code is the goal, not annotated code.** The measure of a good change here is fewer lines
+total — not the same logic with an explanation attached to it.
+
 ### 4.2 Target folder structure
 
 The design principle: **a folder is a feature; inside a feature, a subfolder is a layer.** The layer
@@ -1032,9 +1106,10 @@ Tinycast/
 - It scales: a 50th feature is a new sibling under `Features/`, and no existing folder grows.
 
 **Migration cost.** XcodeGen derives sources from `sources: - path: Tinycast`, so **every move is free at
-the project level** — `xcodegen generate` and done. The real cost is exactly three files that hard-code
-paths: `.github/workflows/ci.yml`, `docs/development.md`, and `AGENTS.md`. Update all three in the same
-commit as each move (they are already the contract; keeping them accurate is the point).
+the project level** — `xcodegen generate` and done. The only real cost is that the `Tools/` harness
+command lines hard-code file paths, and those paths are written down in `docs/development.md` and
+`AGENTS.md`. Update both in the same commit as each move — they are already the contract, and keeping
+them accurate is the point.
 
 ---
 
@@ -1048,17 +1123,17 @@ how likely it is to collide with feature work in flight. _UI risk_ = risk of a v
 
 ---
 
-### Week 0 — Guardrails (½ day, do this before anything else)
+### Week 0 — Baselines (½ day, do this before anything else)
 
-| #   | Task                                                                                                                                                                                                            | Refs  |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| 0.1 | Add the parallel `build` job to `ci.yml` (`xcodegen` + `xcodebuild build -configuration Debug` + DerivedData cache)                                                                                             | H-1   |
-| 0.2 | Add the binary-size budget step                                                                                                                                                                                 | H-1   |
-| 0.3 | Add `os_signpost` intervals around `AppIndex.scan`, `AppIndex.rank`, `PaletteWindowController.show`, `UninstallScanner.scan`, and `AppCore.start` — **baseline every number this document promises to improve** | §6    |
-| 0.4 | Record baselines: cold-launch time, binary size, RSS after 10 palette opens, RSS after browsing 50 clipboard images                                                                                             | brief |
+| #   | Task                                                                                                                                                                                                           | Refs  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 0.1 | Add `os_signpost` intervals around `AppIndex.scan`, `AppIndex.rank`, `PaletteWindowController.show`, `UninstallScanner.scan` and `AppCore.start` — **baseline every number this document promises to improve** | §6    |
+| 0.2 | Record baselines: cold-launch time, binary size, RSS after 10 palette opens, RSS after browsing 50 clipboard images, uninstall scan time on a heavyweight app                                                  | brief |
+| 0.3 | Record the comment-density baseline (`grep`-based, four numbers from H-1) so W7.6 can be measured rather than asserted                                                                                         | H-1   |
 
 _Ships alone: yes. Conflict surface: none. UI risk: none._
-**Without 0.1 and 0.3, every later phase is a guess.** This is the highest-priority half day in the plan.
+**Without 0.1, every later phase is a guess.** This is the highest-value half day in the plan — the
+signposts stay in the code permanently and cost nothing when no Instruments session is attached.
 
 ---
 
@@ -1069,7 +1144,7 @@ _Ships alone: yes. Conflict surface: none. UI risk: none._
 | 1.1 | `AppIconView` in `LauncherItemRow`; delete `AppEntry.icon`                                                                                                     | H-3  |
 | 1.2 | Cache the Settings-pane scan by directory mtime, threaded through `AppIndex.refresh` like `alternateNameCache`                                                 | H-2  |
 | 1.3 | In-memory binding cache + cached `candidateActions` in `HotKeyManager`                                                                                         | M-4  |
-| 1.4 | `TaskGroup` for uninstall directory sizing                                                                                                                     | H-4  |
+| 1.4 | Fully parallel uninstall scan — both root enumeration and directory sizing, uncapped, index-ordered writeback so display order is unchanged                    | H-4  |
 | 1.5 | `AppPaths` + adopt in the 8 stores (default-argument form only — no harness changes)                                                                           | M-5  |
 | 1.6 | `Memo<Key, Value>` + adopt at the 4 non-harness sites (`AppIndex`, `CalculatorHistoryStore`, `EmojiIndex`, `FrequentEmojiStore`); leave `ClipboardStore` alone | M-7  |
 | 1.7 | `HealthTicker`; `tolerance` + session-suspend on the clipboard poll                                                                                            | M-2  |
@@ -1093,9 +1168,9 @@ Per type: `@Observable` on the class → delete `@Published` → `@EnvironmentOb
 becomes unused.
 
 \*Ships alone: yes, one type per PR. Conflict surface: medium (touches view files). UI risk: none —
-but verify each store's view still updates, since a missed `@Environment` registration fails silently
-rather than at compile time. **This is exactly what the W0 build job catches for the type-level half;
-a 5-minute manual pass per store covers the rest.\***
+but verify each store's view still updates, since a missing `@Environment` registration compiles fine
+and fails at runtime. **Budget a 5-minute manual pass per store: open the surface that renders it,
+mutate the store, confirm the view moves.\***
 
 ---
 
@@ -1163,8 +1238,9 @@ view currently calls it (delete the forwarders in W7 once call sites are updated
 Mechanical. One PR per top-level destination, in this order (least to most disruptive):
 `DesignSystem/` → `Platform/` → `Windows/` → `Palette/` → `Features/<name>/` ×13 → `App/`.
 
-Every PR: `git mv` + `xcodegen generate` + update `ci.yml`, `docs/development.md`, `AGENTS.md` paths in
-the same commit. Extract `IconCache` from `AppIndex.swift` into `Platform/Images/` on the way past.
+Every PR: `git mv` + `xcodegen generate` + update the harness paths written down in
+`docs/development.md` and `AGENTS.md` in the same commit. Extract `IconCache` from `AppIndex.swift` into
+`Platform/Images/` on the way past.
 
 _Ships alone: yes. Conflict surface: **total but trivial** — `git` follows renames, so a rebase is
 mechanical. UI risk: none. Do this after W4/W5 so the files being moved are already the right files._
@@ -1176,15 +1252,18 @@ contents off-limits; a path change is not an edit, but nothing inside them may c
 
 ### Week 7 — Naming pass, exhaustiveness, feature template
 
-| #   | Task                                                                                                                                       | Refs                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| 7.1 | Apply the §4.1 renames (`ClipboardMonitor`, `HotKeyBindings`, `CommandCatalog`, `PaletteState`, `AppDisplayName`) — one commit, IDE-driven | L-3, L-4, L-5, L-10 |
-| 7.2 | Make all nine `AppEntry.Kind` switches exhaustive; collapse per-kind metadata into `KindDescriptor`                                        | H-6                 |
-| 7.3 | Delete `AppCore`'s W5 forwarding methods; move the 21 view-side `AppCore.shared` references to `@Environment`                              | §2.3                |
-| 7.4 | `SettingsBackup` completeness harness                                                                                                      | M-6                 |
-| 7.5 | Write `docs/adding-a-feature.md` — the folder skeleton, the five files, the checklist. Fold §4.1's table into `AGENTS.md`                  | H-5                 |
+| #   | Task                                                                                                                                                                                                                     | Refs                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| 7.1 | Apply the §4.1 renames (`ClipboardMonitor`, `HotKeyBindings`, `CommandCatalog`, `PaletteState`, `AppDisplayName`) — one commit, IDE-driven                                                                               | L-3, L-4, L-5, L-10 |
+| 7.2 | Make all nine `AppEntry.Kind` switches exhaustive; collapse per-kind metadata into `KindDescriptor`                                                                                                                      | H-6                 |
+| 7.3 | Delete `AppCore`'s W5 forwarding methods; move the 21 view-side `AppCore.shared` references to `@Environment`                                                                                                            | §2.3                |
+| 7.4 | `SettingsBackup` completeness harness                                                                                                                                                                                    | M-6                 |
+| 7.5 | Write `docs/adding-a-feature.md` — the folder skeleton, the five files, the checklist. Fold §4.1's table into `AGENTS.md`                                                                                                | H-5                 |
+| 7.6 | **Comment pass.** Rewrite the `AGENTS.md` comment clause to the H-1 budget, then triage all 181 stacked blocks and 572 over-120-char lines: delete, compress to one clause, or move to `docs/` behind a one-line pointer | H-1                 |
 
 _Ships alone: yes. Conflict surface: high but mechanical. UI risk: none._
+7.6 is best done **last in the week and in one commit per subsystem**, so a reviewer reads a pure
+comment diff rather than comment changes tangled into renames.
 
 ---
 
@@ -1194,7 +1273,7 @@ _Ships alone: yes. Conflict surface: high but mechanical. UI risk: none._
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | 8.1 | Re-run every W0 baseline; publish the before/after table                                                                                  |
 | 8.2 | Instruments: Allocations + Time Profiler over 20 palette opens; Energy Log over 10 idle minutes (validates M-2)                           |
-| 8.3 | Add an RSS ceiling check to CI if 8.2 shows it is stable enough to assert                                                                 |
+| 8.3 | Re-run the comment-density numbers against the 0.3 baseline                                                                               |
 | 8.4 | Update `docs/architecture.md` to describe the pure/effect/view layering as the named architecture, with the folder tree as its expression |
 | 8.5 | Re-audit `AGENTS.md`: every invariant that moved a file, and the harness command lines                                                    |
 
@@ -1204,7 +1283,7 @@ _Ships alone: yes. UI risk: none._
 
 | Phase                | Ships alone        | Conflict surface | UI risk     | Primary payoff                       |
 | -------------------- | ------------------ | ---------------- | ----------- | ------------------------------------ |
-| W0 Guardrails        | ✅                 | none             | none        | Makes everything after it safe       |
+| W0 Baselines         | ✅                 | none             | none        | Makes every later claim measurable   |
 | W1 Perf & hygiene    | ✅ per item        | low              | none        | Immediate, measurable wins           |
 | W2 Observation A     | ✅ per type        | medium           | none        | Foundation for W3                    |
 | W3 Observation B/C   | ✅ per type        | **high**         | none        | **Largest performance + memory win** |
@@ -1228,7 +1307,7 @@ memory benefit with the lowest risk of any subset.
 | P-1 | `@Observable` migration (C-3)                     | **High** (26 types, phased) | **Very high** — fewer body evaluations, less resident Combine machinery      | Low per type | The only change that improves CPU, RAM _and_ safety at once                                                                                                                                                                                                                                                  |
 | P-2 | Cache Settings-pane scan (H-2)                    | Low                         | High — ~80 file reads + 80 plist parses off every launcher open              | Low          | Mirror `SpotlightNames.Cache` exactly                                                                                                                                                                                                                                                                        |
 | P-3 | Async icons in Settings (H-3)                     | **Trivial**                 | High — removes main-thread rasterisation                                     | None         | 2 lines; best ratio in the doc                                                                                                                                                                                                                                                                               |
-| P-4 | Uninstall `TaskGroup` (H-4)                       | Medium                      | High — 4–8× on the app's longest operation                                   | Low          | Cap width at `activeProcessorCount` if external volumes regress                                                                                                                                                                                                                                              |
+| P-4 | Fully parallel uninstall scan (H-4)               | Medium                      | **Very high — 6–12× on the app's longest operation**                         | Low          | Uncapped and by design: a short user-initiated CPU/RAM burst is the right trade here. Display order is preserved structurally by index-ordered writeback, not by completion order                                                                                                                            |
 | P-5 | HotKey binding cache (M-4)                        | Low                         | Medium — 140 decodes off launch; recorder conflict scan becomes O(1) lookups | Low          | Prerequisite for C-3 wave C                                                                                                                                                                                                                                                                                  |
 | P-6 | Memoize the visibility+favorites chain (M-3)      | Low                         | Medium — ~700 element visits/render for users with favorites                 | Low          | Also removes the `openActions` workaround                                                                                                                                                                                                                                                                    |
 | P-7 | `HealthTicker` + poll tolerance (M-2)             | Low                         | Medium — idle energy                                                         | Low          | Validate with `powermetrics`, not intuition                                                                                                                                                                                                                                                                  |
@@ -1268,7 +1347,7 @@ recommendations below are about _reducing the surface where a future mistake bec
 | #   | Recommendation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Complexity          | Benefit                                              | Risk                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
 | K-1 | **Delete ~30 `MainActor.assumeIsolated` blocks** by migrating off Combine (C-3). Each one is a runtime trap that fires if the assumption is ever violated — e.g. if a future `@Published` is set from a background context. Removing them is a strict safety improvement                                                                                                                                                                                                                                                                                                   | High (rides on C-3) | **High**                                             | Low                                                                  |
-| K-2 | **Adopt structured concurrency where fan-out exists.** The codebase uses zero `TaskGroup`s. The uninstall sizing pass (H-4) is the clear case. Audit for a second: `UninstallScanner`'s per-root `childNames` + `parentFacts` could also parallelise, though it is far cheaper than sizing                                                                                                                                                                                                                                                                                 | Medium              | High (H-4), Low (roots)                              | Low                                                                  |
+| K-2 | **Adopt structured concurrency where fan-out exists.** The codebase uses zero `TaskGroup`s. The uninstall scan (H-4) is the case that matters and both its phases should go parallel — root enumeration _and_ sizing. The rule to apply elsewhere: parallelise a burst the user is waiting on, never steady-state background work. On that rule `AppIndex.scan` stays serial (it runs on every palette open, so saturating cores there would cost more in contention than it saves)                                                                                        | Medium              | **Very high** (H-4)                                  | Low                                                                  |
 | K-3 | **Cancellation.** `UninstallSession` and `SnippetsStore` handle it correctly (`scanTask?.cancel()`, generation counters, `Task.checkCancellation()`). `AppIndex.refresh` does _not_ cancel an in-flight scan — it uses a `refreshPending` trailing-collapse instead, which is the right call for a fast idempotent scan. **No change.** But `CurrencyRateStore.pump` should be re-verified after C-3 that its `while !Task.isCancelled, self.isEnabled` loop still holds                                                                                                   | Low                 | Medium                                               | Low                                                                  |
 | K-4 | **Task priorities.** Currently `.utility` for background scans and `.userInitiated` for icon/thumbnail decode and uninstall — correct and deliberate. One inconsistency: `AppIndex.refresh` uses `.utility` even though it runs on the _user's launcher keypress_ and gates first paint of new results. Consider `.userInitiated` there                                                                                                                                                                                                                                    | Trivial             | Low–Medium                                           | Low — measure, since `.utility` also keeps it off the way of UI work |
 | K-5 | **`Sendable`.** All cross-actor model types conform. The three `@unchecked Sendable` uses (`IconCache.Cache`, `ImageThumbnail.ImageCache`, `Decoded`, `SnippetRepository.Coordinator`, `ShellCommandRunner.StderrCapture`) are each justified in a comment and each is genuinely safe. **No change.** When C-3 lands, re-check that `@Observable` types crossing into detached tasks still do so by value                                                                                                                                                                  | Low                 | Low                                                  | Low                                                                  |
@@ -1286,28 +1365,28 @@ and it renders an Aqua alert on a forced-`.darkAqua` surface.
 
 ## Appendix A — Findings index
 
-| ID       | Severity | Title                                                                     | Effort |
-| -------- | -------- | ------------------------------------------------------------------------- | ------ |
-| C-1      | Critical | `AppCore` god object (1,348 lines, 13 responsibilities)                   | W5     |
-| C-2      | Critical | `RootPaletteView` god view (1,126 lines, 13 observed objects, 8 switches) | W4     |
-| C-3      | Critical | No Observation adoption on a macOS 26 target                              | W2–W3  |
-| H-1      | High     | CI does not compile the app (~24k lines ungated)                          | W0     |
-| H-2      | High     | Settings-pane scan repeated on every palette open                         | W1     |
-| H-3      | High     | Synchronous main-thread icon rasterisation in Settings                    | W1     |
-| H-4      | High     | Uninstall directory sizing is serial                                      | W1     |
-| H-5      | High     | A feature spans 14 files across 3 trees                                   | W4–W7  |
-| H-6      | High     | `AppEntry` union + nine scattered switches, four non-exhaustive           | W7     |
-| M-1      | Medium   | `Core/` is a 46-file flat namespace                                       | W6     |
-| M-2      | Medium   | Five timers; three duplicate health checks                                | W1     |
-| M-3      | Medium   | Unmemoized visibility + favorites chain per render                        | W1     |
-| M-4      | Medium   | `HotKeyManager` re-decodes UserDefaults per lookup                        | W1     |
-| M-5      | Medium   | Eight copies of the channel-directory computation                         | W1     |
-| M-6      | Medium   | `SettingsBackup` hand-mirror has no completeness check                    | W7     |
-| M-7      | Medium   | Six hand-rolled memo caches                                               | W1     |
-| M-8      | Medium   | `Features/Settings/` mixes four kinds of thing                            | W6     |
-| M-9      | Medium   | `AuxWindowController` hidden inside `AboutView.swift`                     | W6     |
-| L-1…L-10 | Low      | See §3                                                                    | W6–W7  |
-| K-6      | —        | The one `NSAlert` violating a documented invariant                        | W1     |
+| ID       | Severity | Title                                                                      | Effort |
+| -------- | -------- | -------------------------------------------------------------------------- | ------ |
+| C-1      | Critical | `AppCore` god object (1,348 lines, 13 responsibilities)                    | W5     |
+| C-2      | Critical | `RootPaletteView` god view (1,126 lines, 13 observed objects, 8 switches)  | W4     |
+| C-3      | Critical | No Observation adoption on a macOS 26 target                               | W2–W3  |
+| H-1      | High     | Comment volume has overtaken the code (181 stacked blocks, 51% >100 chars) | W7     |
+| H-2      | High     | Settings-pane scan repeated on every palette open                          | W1     |
+| H-3      | High     | Synchronous main-thread icon rasterisation in Settings                     | W1     |
+| H-4      | High     | Uninstall scan is fully serial (roots + sizing)                            | W1     |
+| H-5      | High     | A feature spans 14 files across 3 trees                                    | W4–W7  |
+| H-6      | High     | `AppEntry` union + nine scattered switches, four non-exhaustive            | W7     |
+| M-1      | Medium   | `Core/` is a 46-file flat namespace                                        | W6     |
+| M-2      | Medium   | Five timers; three duplicate health checks                                 | W1     |
+| M-3      | Medium   | Unmemoized visibility + favorites chain per render                         | W1     |
+| M-4      | Medium   | `HotKeyManager` re-decodes UserDefaults per lookup                         | W1     |
+| M-5      | Medium   | Eight copies of the channel-directory computation                          | W1     |
+| M-6      | Medium   | `SettingsBackup` hand-mirror has no completeness check                     | W7     |
+| M-7      | Medium   | Six hand-rolled memo caches                                                | W1     |
+| M-8      | Medium   | `Features/Settings/` mixes four kinds of thing                             | W6     |
+| M-9      | Medium   | `AuxWindowController` hidden inside `AboutView.swift`                      | W6     |
+| L-1…L-10 | Low      | See §3                                                                     | W6–W7  |
+| K-6      | —        | The one `NSAlert` violating a documented invariant                         | W1     |
 
 ## Appendix B — What deliberately stays unchanged
 
