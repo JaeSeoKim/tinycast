@@ -312,8 +312,10 @@ Exceptions, each earning its own word:
 - `Center` (`HotKeyCenter`) — the Carbon registration layer specifically.
 - `Presenter` (`HUDPresenter`) — owns the one-at-a-time / auto-dismiss / fade policy for both HUDs.
 - Domain terms with no better alternative: `SnippetTextInjector`, `WindowMover`, `HyperKeyTap`.
-- `Registry` is retired as a top-level suffix — a static table is a `Catalog`. It survives only on
-  `SnippetRepository`'s private nested `CoordinatorRegistry`, which really does register: it interns
-  one lock per canonical channel-directory path.
+- `Registry` and `ViewModel` are retired — a static table is a `Catalog`, and shared app state is a
+  `State`. Neither suffix appears anywhere in `Tinycast/`.
+- `Coordinator` means the action surface above and nothing else. `SnippetRepository`'s per-directory
+  mutex is a `DirectoryLock` held in a `DirectoryLockTable`, so the word is not overloaded against
+  `NSFileCoordinator` in the one file that uses both.
 - SwiftUI-layer suffixes (`View`, `Screen`, `Card`, `Row`, `Sheet`) are a separate vocabulary and are
   not governed by this table.
