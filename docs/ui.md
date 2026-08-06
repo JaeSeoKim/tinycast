@@ -39,6 +39,11 @@ These are the things that quietly break the look if changed. Preserve them unles
 - **Don't use the native scroll edge effect.** Inside a transparent panel it renders a hard-bounded rectangle. Use `edgeDissolve()`.
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
 - **No `NSAlert`, no `NSSlider`, no system popovers.** Every confirmation, failure report, value prompt and transient readout is Tinycast's own SwiftUI surface (see "Dialogs & HUD"). An Aqua alert on a white-alpha-over-vibrancy app reads as a different product, and its `runModal` run loop keeps Carbon hotkeys firing underneath.
+- **A dialog has three independent axes; never let one infer another.** The **icon** (`DialogRequest.symbol`, required) is always the *subject's* own glyph — a command being confirmed uses its `SystemAction.sfSymbol`, so the Restart dialog shows the same icon as the Restart row. Tone never picks an icon. The **tone** (`DialogTone`: `.neutral` / `.success` / `.danger`) tints only that glyph. The **button** takes its color from `DialogAction.Role` (`.standard` white / `.destructive` red / `.cancel` secondary), so a red-glyph security warning can still carry a plain white button — as "Import executable commands?" does.
+- **Resolve every glyph through `SymbolImage`, not `Image(systemName:)`.** Some catalog symbols are bundled assets in `Assets.xcassets` (`toggleBluetooth`), and `Image(systemName:)` silently renders nothing for those.
+- **↵ runs the primary action, Escape cancels, and Cancel always renders leading** (the left button), matching macOS convention. A button never prints its key cap; hovering it shows a `Tooltip` instead, styled like the palette's own keycap chips.
+- **A transient readout is a HUD, not a dialog.** `VolumeHUDController`'s box is volume and mute only, since that one needs an actual level and number; every other success or info confirmation goes through `MessageHUDController`'s pill, whose trailing glyph *is* its `DialogTone`. A pill has no subject to name, so the icon rule above does not apply to it — and that mapping stays file-scoped so nothing can reach for it when building a `DialogRequest`. A new HUD means a new presenter, not a second shape bolted onto an existing controller.
+- **Glass is for controls; content takes the panel recipe.** `glassEffect` needs a backdrop to lens, so it only works *inside* a window that already has a `VisualEffectView` — the action capsule, the menu circle, `PopoverMenu`, a dialog's buttons. On a bare borderless panel it falls back to an opaque backing and shows as a dark edge. Both HUDs therefore use `black panelDimming` → `VisualEffectView()` → `clipShape`, exactly like a dialog.
 
 ---
 
@@ -129,7 +134,7 @@ the `ScrollView`, **before `.thinScrollbar()`** (so the scrollbar overlay stays 
 
 ---
 
-## Rows, selection, hover — `Launcher/LauncherView.swift`, `Clipboard/ClipboardView.swift`, `Uninstall/UninstallView.swift`
+## Rows, selection, hover — `Launcher/UI/LauncherList.swift`, `Clipboard/UI/ClipboardView.swift`, `Uninstall/UI/UninstallView.swift`
 
 All lists share one row grammar so launcher and clipboard look identical:
 
@@ -143,7 +148,7 @@ All lists share one row grammar so launcher and clipboard look identical:
 ### Section headers
 
 All five palette lists (App Launcher, Clipboard, Emoji, Calculator History, Uninstall) render category labels
-through one shared **`SectionHeader`** (`.subheadline.medium`, secondary — `Features/Launcher/LauncherView.swift`).
+through one shared **`SectionHeader`** (`.subheadline.medium`, secondary — `Features/Launcher/UI/SectionHeader.swift`).
 The launcher shows a single "Results" header over search matches, and per-kind sections
 (Favorites / Applications / System Settings / Commands) for the empty query; clipboard/history use
 date buckets (Today / Yesterday / …), and the clipboard adds a "Pinned" section above them holding
@@ -156,7 +161,7 @@ leading gap. Headers are non-selectable display rows, so selection (keyed by id)
 
 ---
 
-## Liquid Glass — `Theme.frosted(in:)`, `Features/PopoverMenu.swift`
+## Liquid Glass — `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`
 
 Glass is **only** for floating controls, never the main surface.
 
@@ -297,7 +302,7 @@ pane use the native `.overlayScroller()`. Don't reintroduce native scrollers on 
 
 ---
 
-## Settings — `Features/Settings/SettingsComponents.swift`
+## Settings — `DesignSystem/SettingsComponents.swift`
 
 Settings runs in its own `NSWindow` (the SwiftUI `Settings` scene is unreliable for accessory apps) but
 shares the palette's `Theme` vocabulary. It reads as macOS System Settings, not the palette:
@@ -337,7 +342,7 @@ The calculator's inline `CalculatorCard` reuses this card language (`cardFill` +
 Its placeholder is drawn by Tinycast, not by the field's `prompt` — an `NSTextField` renders a prompt
 through either its cell or its (one point taller) field editor, so a real prompt steps vertically when
 focus moves. Don't reintroduce `prompt:` on that field. See
-[palette.md](palette.md#the-placeholder-is-tinycasts-not-the-fields).
+[features/palette.md](features/palette.md#the-placeholder-is-tinycasts-not-the-fields).
 
 ## Rules for agents working on the UI
 

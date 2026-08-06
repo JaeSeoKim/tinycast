@@ -72,131 +72,28 @@ app; changes always apply (fixed build path — no need to delete `build/`).
 
 ## Tests
 
-There's no XCTest target. Standalone harnesses:
+There is no XCTest target. The suite is eighteen standalone harnesses, run through one script:
 
 ```sh
-swiftc -swift-version 6 Tinycast/Features/Launcher/Model/SearchRelevance.swift Tools/fuzz-test.swift \
-    -o /tmp/fuzz-test && /tmp/fuzz-test                            # launcher matcher + field priority
-swiftc -swift-version 6 Tinycast/Features/Launcher/Model/SearchRelevance.swift \
-    Tinycast/Features/Launcher/Model/LauncherRankingStore.swift Tools/ranking-test.swift \
-    -o /tmp/ranking-test && /tmp/ranking-test                      # learned launcher ranking
-swiftc Tinycast/Features/Calculator/Model/*.swift Tools/calc-test.swift \
-    -o /tmp/calc-test && /tmp/calc-test                           # calculator engine
-swiftc -swift-version 6 Tinycast/Features/Clipboard/Model/ClipboardStore.swift Tools/clipboard-test.swift \
-    -o /tmp/clipboard-test && /tmp/clipboard-test                 # clipboard store
-swiftc -swift-version 6 Tinycast/Features/Launcher/Model/SearchScopes.swift Tools/scopes-test.swift \
-    -o /tmp/scopes-test && /tmp/scopes-test                       # launcher search scopes
-swiftc -swift-version 6 Tinycast/Features/Backup/Model/RaycastFormat.swift \
-    Tinycast/Features/Backup/Model/RaycastV1Decoder.swift Tinycast/Features/Backup/Service/Gunzip.swift \
-    Tinycast/Features/Clipboard/Model/ClipboardStore.swift Tools/raycast-test.swift \
-    -o /tmp/raycast-test && /tmp/raycast-test                     # raycast format detect + v1 decode
-swiftc Tinycast/Features/Emoji/Model/EmojiCatalog.swift Tinycast/Features/Emoji/Model/EmojiGridGeometry.swift \
-    Tinycast/Features/Emoji/Model/EmojiData.generated.swift Tools/emoji-test.swift \
-    -o /tmp/emoji-test && /tmp/emoji-test                         # emoji catalog + geometry
-swiftc -swift-version 6 Tinycast/Features/CustomCommands/Model/CustomCommand.swift \
-    Tinycast/Features/CustomCommands/Service/ShellCommandRunner.swift Tools/custom-command-test.swift \
-    -o /tmp/custom-command-test && /tmp/custom-command-test        # custom command store + runner
-swiftc -swift-version 6 Tinycast/Platform/NotificationToken.swift \
-    Tinycast/Platform/HealthTicker.swift Tinycast/Features/Snippets/Model/*.swift \
-    Tinycast/Features/Snippets/Service/*.swift \
-    Tools/snippets-test.swift -o /tmp/snippets-test && /tmp/snippets-test  # snippets
-swiftc -swift-version 6 Tinycast/Features/HotKeys/Model/DoubleTapModifier.swift \
-    Tinycast/Features/HotKeys/Model/DoubleTapDetector.swift Tools/hotkey-test.swift \
-    -o /tmp/hotkey-test && /tmp/hotkey-test                        # double-tap modifier recognizer
-swiftc -swift-version 6 Tinycast/DesignSystem/Theme.swift \
-    Tinycast/Features/HotKeys/UI/CalloutPlacement.swift Tools/callout-test.swift \
-    -o /tmp/callout-test && /tmp/callout-test                      # shortcut-recorder callout placement
-swiftc -swift-version 6 Tinycast/Features/SystemActions/Model/SystemAction.swift Tools/system-action-test.swift \
-    -o /tmp/system-action-test && /tmp/system-action-test        # system action metadata + safety
-swiftc -swift-version 6 Tinycast/Features/SystemActions/Model/VolumeLevel.swift Tools/volume-test.swift \
-    -o /tmp/volume-test && /tmp/volume-test                        # volume step grid + percentage
-swiftc -swift-version 6 Tinycast/Features/WindowManagement/WindowCommand.swift \
-    Tinycast/Features/WindowManagement/WindowLayout.swift \
-    Tinycast/Features/WindowManagement/WindowActionMemory.swift Tools/window-command-test.swift \
-    -o /tmp/window-command-test && /tmp/window-command-test        # window geometry + action memory
-swiftc -swift-version 6 Tinycast/Features/Uninstall/Model/UninstallTarget.swift \
-    Tinycast/Features/Uninstall/Model/UninstallSearchRoot.swift \
-    Tinycast/Features/Uninstall/Model/UninstallRules.swift \
-    Tinycast/Features/Uninstall/Model/UninstallProtection.swift \
-    Tinycast/Features/Uninstall/Model/UninstallPlan.swift \
-    Tools/uninstall-test.swift -o /tmp/uninstall-test && /tmp/uninstall-test  # uninstall attribution + locking
-swiftc -swift-version 6 Tinycast/Features/Quicklinks/Model/Quicklink.swift \
-    Tinycast/Features/Quicklinks/Model/QuicklinkDestination.swift \
-    Tinycast/Features/Quicklinks/Model/QuicklinkStore.swift \
-    Tinycast/Features/Quicklinks/Model/QuicklinkArchive.swift \
-    Tools/quicklink-test.swift -o /tmp/quicklink-test && /tmp/quicklink-test  # quicklink destinations + store
-swiftc -swift-version 6 Tinycast/Features/PaletteRowIndex.swift \
-    Tinycast/Features/Emoji/Model/EmojiGridGeometry.swift Tools/palette-selection-test.swift \
-    -o /tmp/palette-selection-test && /tmp/palette-selection-test  # palette flat-selection row order
-swiftc -swift-version 6 Tinycast/Features/Settings/AppSettingsKey.swift \
-    Tinycast/Features/Backup/Model/SettingsBackupCoverage.swift Tools/settings-backup-test.swift \
-    -o /tmp/settings-backup-test && /tmp/settings-backup-test    # settings backup mirror coverage
+./Tools/run-tests.sh              # all of them
+./Tools/run-tests.sh calc-test    # just one, while iterating
 ```
 
-`Tools/fuzz-test.swift` compiles the real `Tinycast/Features/Launcher/Model/SearchRelevance.swift`, which is why that
-file must stay Foundation-only and pure. Alongside the fixed cases it runs a seeded randomized loop
-(~100k queries) asserting that every score stays inside its field band, that the learned boost cap
-can never lift one out, and that scoring is deterministic. The calc harness compiles the real engine
-sources, which is why `Tinycast/Features/Calculator/Model/` must stay Foundation-only. The system-action harness
-similarly keeps `SystemAction.swift` independent from AppKit and all command side effects. The
-uninstall harness is the same idea taken furthest: it touches no filesystem at all, because
-`UninstallScanner` hands the rules directory _names_ and the protection classifier takes its
-environment facts as parameters.
+The script is the only place the harness set is written down, and CI runs exactly it. What each harness
+guards, which ones a given change obliges you to run, and the rest of the verification bar — purity
+checks, build and size budgets, the manual sweep — are in **[testing.md](testing.md)**.
 
-The clipboard harness likewise compiles the real `ClipboardStore.swift`, so that file must keep to
-Foundation + SQLite3 and depend on no other app source. Each case drives a store rooted in a
-throwaway temp directory (`ClipboardStore(directory:)`), so a run can never reach a real history.
-
-The custom-command harness spawns **real `/bin/zsh`** processes. Its shell-environment cases point
-`ZDOTDIR` at a throwaway fixture directory (and unset `TERM_PROGRAM`), so a run can never read or write
-the developer's own dotfiles. `/etc/zshrc` is still sourced for interactive shells, so the assertions
-are relative — the fixture's alias resolves with `-i` and not without — rather than absolute.
-
-The snippets harness compiles the real model, codec, template engine, Foundation-only repository,
-keyword/event/lifecycle policies, AppKit delivery primitives and main-actor store. Injected temporary
-roots and named pasteboards cover identity, per-channel isolation, malformed files, revision
-conflicts, watcher rearming, template determinism, delivery serialization and pasteboard restoration without touching a real snippets library or clipboard. The
-complete subsystem contract is in [snippets.md](snippets.md).
-
-The settings-backup harness compiles the real `AppSettingsKey` and `SettingsBackupCoverage`, and fails
-when a settings key is neither carried by `SettingsBackup.SettingsData` nor listed in
-`deliberatelyExcluded` with a reason. The mirror stays hand-written on purpose: reflection would
-silently sweep the next consent flag into an export, which is why `snippetsEnabled` is excluded by
-name. Adding a setting therefore means editing `SettingsBackupCoverage` in the same commit.
-
-The Raycast harness compiles the real format detector and v1 decoder, so both must stay Foundation +
-CommonCrypto + Carbon (no AppKit). It builds its own v1 files in-process — a small embedded gzip blob
-encrypted with `CCCrypt` — and feeds the mapper hand-written JSON, so no real `.rayconfig` is ever
-committed. Turning payload values into Tinycast's own types lives in `RaycastImportV1`, which needs
-AppKit and is covered by the app build instead. The format contract is in
-[raycast-import.md](raycast-import.md).
-
-The quicklink harness compiles the real model, destination detector, SQLite store and JSON archive,
-so those four must stay Foundation-only (plus SQLite3). Each store is rooted in a throwaway temp
-directory and every path rule is asked against an injected home, so a run can never reach a real
-library. One case deliberately corrupts a database file and asserts the store reports itself
-unavailable **and leaves the file byte-for-byte intact** — quicklinks are authored data, so unlike
-`ClipboardStore` this one never deletes and recreates.
-
-The window-command harness compiles the real catalog, geometry and action memory (Foundation +
-CoreGraphics — `CGRect`'s `Equatable` conformance lives in the CoreGraphics overlay, not Foundation).
-It covers tiling, gaps, cycling, restore, display moves and the memory's reset rules against synthetic
-`WindowLayout.Screen` values, plus a fuzz sweep over every command × gap × screen × degenerate window
-frame. All of it runs headless because the layer is pure: `WindowMover` owns every `AXUIElement` call
-and is deliberately not compiled in. The full contract is in
-[window-management.md](window-management.md).
-
-The palette-selection harness compiles `PaletteRowIndex`, the pure map from the flat selection index
-to the visible row order, which is why that file must stay Foundation-only even though it lives under
-`Features/`. It cannot import SwiftUI, so it tests no `body` — instead it asserts the row-order
-contract the palette guarantees: the calculator card occupies index 0 when present, section headers
-consume no index, empty sections are stepped over, `row(at:)` and `index(section:offset:)` invert each
-other across a sweep of section shapes, and a clamped selection always resolves to a row.
+Two things worth knowing before a local run: the custom-command harness spawns **real `/bin/zsh`**
+processes (pointed at a throwaway `ZDOTDIR` fixture, so it cannot read your dotfiles), and every
+store-backed harness roots itself in a temporary directory, so a run can never reach real history, a real
+snippets library or a real quicklink database.
 
 ## Formatting
 
-Formatting is whatever Xcode's own reindent does — there's no formatter and no linter. The bar is
-CONTRIBUTING.md's "builds clean": no new compiler warnings.
+Formatting is whatever Xcode's own reindent does — there is no formatter and no linter, deliberately
+([decisions.md](decisions.md) entry 26). The bar is "builds clean": no new compiler warnings. VS Code's
+Swift format-on-save is switched off in `.vscode/settings.json` for the same reason — with no shared
+config it reformats against toolchain defaults and produces diffs nobody asked for.
 
 ## Generated data
 
@@ -245,14 +142,15 @@ Full details in [signing.md](signing.md).
 Xcode 26 (same selection step as the release workflow). It has one job, a merge gate; a new push
 cancels the in-flight run for the same ref:
 
-- **`test`** — every `Tools/*.swift` harness from [Tests](#tests) above, in order.
+- **`test`** — `./Tools/run-tests.sh`. The workflow names no harness itself, so it cannot drift from
+  the script.
 
 There is **no `xcodebuild` step**: a Debug build costs minutes on every run and the release workflow
 builds before it ships anyway, so CI keeps to the one check that finishes in about a minute. A change
 that compiles nowhere still turns the PR green — **build locally before you open one** (`xcodebuild
 -project Tinycast.xcodeproj -scheme Tinycast -configuration Debug build`, or just ⌘B in Xcode).
 
-Same commands locally: the harness block from [Tests](#tests).
+Same command locally: `./Tools/run-tests.sh`.
 
 ## CI releases
 

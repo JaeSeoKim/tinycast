@@ -14,9 +14,9 @@
   // assembled .app bundle (see launch.json), not a bare executable.
   "swift.autoGenerateLaunchConfigurations": false,
 
-  // Format Swift files on save using swift-format (from the selected Xcode toolchain).
+  // Off on purpose: with no committed .swift-format, save-time formatting reflows against toolchain
+  // defaults and rewrites untouched lines. See docs/decisions.md entry 26.
   "[swift]": {
-    "editor.defaultFormatter": "swiftlang.swift-vscode",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": false
   }
 }

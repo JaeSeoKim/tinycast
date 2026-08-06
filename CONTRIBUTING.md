@@ -14,7 +14,7 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
   existing tokens ([`docs/ui.md`](docs/ui.md)). If you genuinely need a new one, justify it in the PR.
 - **No bloat.** Tinycast stays small on purpose — quality over quantity. A clean patch still gets
   declined if the feature isn't worth its weight, so open an issue and settle that before you build.
-- **Never break the Critical Invariants** in [`AGENTS.md`](AGENTS.md).
+- **Never break the Non-negotiables** in [`AGENTS.md`](AGENTS.md).
 
 ## Setup
 
@@ -22,17 +22,16 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 - `open Tinycast.xcodeproj` → ⌘R. Debug builds are their own channel (`Tinycast Dev.app`).
 - After editing `project.yml`: `xcodegen generate`, commit the result. No SwiftPM.
 - Details: [`docs/development.md`](docs/development.md). Architecture:
-  [`docs/architecture.md`](docs/architecture.md).
+  [`docs/architecture.md`](docs/architecture.md). Start at [`docs/`](docs/README.md).
 
 ## Before submitting
 
 - **A linked issue that got a green light.** No agreed issue, no merge — unless a maintainer marks
   the PR `typo` or `docs`.
 - Builds clean — no new warnings.
-- The `Tools/` harnesses pass; engine changes come with new cases. CI runs them on the PR as a merge
-  gate. It does **not** build the app, so **build locally** —
-  a PR that doesn't compile still looks green; [`docs/development.md`](docs/development.md#tests) has
-  the commands.
+- `./Tools/run-tests.sh` passes; engine changes come with new cases. CI runs exactly that script as a
+  merge gate. It does **not** build the app, so **build locally** — a PR that doesn't compile still looks
+  green. [`docs/testing.md`](docs/testing.md) has the rest of the bar.
 - Leak-tested and memory-measured. Numbers in the PR.
 - You actually used the app, on your path and the ones next to it.
 - Rebased on `main`, squashed into logical commits.
@@ -55,17 +54,32 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 
 ## Code style
 
-Match the surrounding code.
+[`docs/standards.md`](docs/standards.md) is the full version — architecture, naming, Swift style,
+concurrency, performance budgets and the comment rules. The short version:
 
-- Single-line comments only. Comment the _why_, never the _what_.
-- Views stay declarative; logic lives in models and managers.
-- Swift 6 isolation — heavy work off the main actor.
-- [`Core/Theme.swift`](Tinycast/Core/Theme.swift) tokens only. Read [`docs/ui.md`](docs/ui.md) before
-  any new view or restyle. Dark only — no light-mode styling.
+- Match the surrounding code. Prefer the simplest correct solution over the clever one.
+- Single-line comments only, capped at 100 characters. Comment the _why_, never the _what_.
+- Views stay declarative; logic lives in a model, a store or a coordinator.
+- Swift 6 isolation — `@MainActor` by default, heavy work explicitly off it.
+- [`DesignSystem/Theme.swift`](Tinycast/DesignSystem/Theme.swift) tokens only. Read
+  [`docs/ui.md`](docs/ui.md) before any new view or restyle. Dark only — no light-mode styling.
 - New long-lived state goes on `AppCore`, wired in `start()`.
 - Networked features ship **off** and consent-gated. Follow `CurrencyRateStore`.
 - Delete dead code. Never hand-edit the generated files.
+- Check [`docs/decisions.md`](docs/decisions.md) before "fixing" something that looks wrong — it may be
+  deliberate, and the entry says what would change it.
 - Commit messages imperative: `Add per-app hotkey toggle`.
+
+## Reviewing your own diff
+
+Worth a pass before you open the PR — these are the things that most often come back:
+
+- No new `MainActor.assumeIsolated`; it traps at runtime if the assumption is ever wrong.
+- Any new long-lived `Task` is stored and cancelled in `stop()` or `deinit`.
+- Any new observer uses `NotificationToken`, not a bare `addObserver`.
+- No `DispatchQueue.main.async` added to paper over an ordering problem.
+- Every escaping closure capturing `self` uses `[weak self]`.
+- Behaviour you didn't mean to change, didn't change.
 
 ## Bugs
 

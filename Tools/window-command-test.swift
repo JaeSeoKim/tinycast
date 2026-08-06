@@ -1,9 +1,4 @@
 // Standalone contract tests for the pure window-management geometry and action memory.
-// Run: swiftc -swift-version 6 Tinycast/Core/WindowManagement/WindowCommand.swift \
-//     Tinycast/Core/WindowManagement/WindowLayout.swift \
-//     Tinycast/Core/WindowManagement/WindowActionMemory.swift Tools/window-command-test.swift \
-//     -o /tmp/window-command-test && /tmp/window-command-test
-
 import CoreGraphics
 import Foundation
 

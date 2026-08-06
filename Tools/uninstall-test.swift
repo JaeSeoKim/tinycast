@@ -1,10 +1,4 @@
-// swiftc -swift-version 6 Tinycast/Core/Uninstall/UninstallTarget.swift \
-//     Tinycast/Core/Uninstall/UninstallSearchRoot.swift Tinycast/Core/Uninstall/UninstallRules.swift \
-//     Tinycast/Core/Uninstall/UninstallProtection.swift Tinycast/Core/Uninstall/UninstallPlan.swift \
-//     Tools/uninstall-test.swift -o /tmp/uninstall-test && /tmp/uninstall-test
-//
-// Pure layer only: no filesystem, no temp directories. Every environment fact is injected.
-
+// Standalone test for uninstall attribution, search roots, rules, protection and planning.
 import Foundation
 
 @main
