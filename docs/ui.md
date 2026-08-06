@@ -324,7 +324,7 @@ shortcut"), live held modifiers, and conflict (rejected caps + owner, orange).
   `OnboardingView`) and positions it. An overlay on the row would be clipped by the scroll view.
 - **`shortcutPopover.width` is load-bearing.** A recorder's centre is `xxl + xl + half the field` in
   from the pane edge, so the callout must stay under twice that to centre on it with the caret dead
-  centre. Widen it and the clamp kicks in and skews the caret. `Tools/callout-test.swift` pins this.
+  centre. Widen it and the clamp kicks in and skews the caret. `Tests/callout-test.swift` pins this.
 - **One glass shape.** `CalloutShape` (`HotKeys/UI/`) draws body and caret as a single path so `glassEffect`
   lenses them together. The caret is two straight edges meeting at an arc — a rounded-tip triangle,
   not a dome. Stock `.regular` glass, no hand-tuned shadow, as in `PopoverMenu`.

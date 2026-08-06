@@ -121,7 +121,7 @@ invalidates the cached order. `rank` resolves the whole learned table for a quer
 
 `SystemActionCatalog` is a Foundation-only inventory of the macOS actions Tinycast exposes. Its
 stable entry IDs, labels, symbols and confirmation policy are covered by
-`Tools/system-action-test.swift`; platform side effects live separately in `SystemActionRunner`.
+`Tests/system-action-test.swift`; platform side effects live separately in `SystemActionRunner`.
 `SystemActionCoordinator.runSystemAction(id:)` remains the one execution funnel — shared by palette activation and a
 global hotkey — hiding the floating palette before any confirmation or value dialog and surfacing
 permission-aware failures. With the palette closed it targets the frontmost app, so Hide Others and
@@ -148,7 +148,7 @@ Volume slider all render through `DialogController` rather than an `NSAlert`
 `arrow.clockwise`, Empty Trash `trash.slash` — so the dialog is recognizably about the row that
 opened it. Volume and mute actions also show Tinycast's transient volume HUD, since macOS only draws
 its own for real media keys. Volume Up/Down walk a 5% grid (`VolumeLevel.stepped`, covered by
-`Tools/volume-test.swift`): an off-grid level snaps to the next line rather than past it, so from 37%
+`Tests/volume-test.swift`): an off-grid level snaps to the next line rather than past it, so from 37%
 up lands on 40% and down on 35%, and repeated presses stay on round numbers.
 
 An action whose effect is invisible reports back through a pill (`MessageHUDController`, the same one
@@ -204,7 +204,7 @@ Only the display name is indexed. Activation resolves the stable UUID through th
 to `ShellCommandRunner`; see [custom-commands.md](custom-commands.md) for persistence, hotkeys and
 execution semantics.
 
-> **Invariant:** `Tools/fuzz-test.swift` compiles the real `Tinycast/Features/Launcher/Model/SearchRelevance.swift`, so
+> **Invariant:** `Tests/fuzz-test.swift` compiles the real `Tinycast/Features/Launcher/Model/SearchRelevance.swift`, so
 > that file must stay Foundation-only and pure. There is no copy of the scorer to keep in sync.
 
 The ranking harness covers prefix learning, frequency/recency scoring, persistence, and both reset

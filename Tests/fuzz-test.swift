@@ -347,7 +347,7 @@ struct FuzzTest {
             LauncherRankingBoostCap < SearchRelevance.bandStride - FuzzyMatch.maximumScore)
     }
 
-    /// Mirrors LauncherRankingStore.maximumBoost; Tools/ranking-test.swift asserts the real one.
+    /// Mirrors LauncherRankingStore.maximumBoost; Tests/ranking-test.swift asserts the real one.
     static let LauncherRankingBoostCap = 4_500
 
     // MARK: - Randomized property loop

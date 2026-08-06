@@ -51,7 +51,7 @@ surface. Light mode is not a switch; it is a second design.
 
 ### 5 — There is no XCTest target
 
-The test suite is `Tools/run-tests.sh`, driving eighteen standalone harnesses.
+The test suite is `Scripts/run-tests.sh`, driving eighteen standalone harnesses.
 
 **Why:** each harness compiles the *shipped* sources it guards, so the pure/effect boundary is enforced by
 compilation rather than by convention — a stray `import AppKit` in a `Model/` folder breaks the build of a

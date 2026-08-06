@@ -40,7 +40,7 @@ Same split as `WindowManagement`: a pure half that decides, an impure half that 
 | `UI/UninstallScreen.swift`, `UI/UninstallView.swift` | The palette screen, list, row and actions menu |
 | `UI/UninstallCoordinator.swift` | The action surface — confirmation lives here, not in the runner |
 
-The first five compile standalone into `Tools/uninstall-test.swift`, so they stay Foundation-only
+The first five compile standalone into `Tests/uninstall-test.swift`, so they stay Foundation-only
 and take every environment fact as a parameter. The scanner hands the rules **child names**, never
 URLs, which is what makes "no filesystem access in the pure layer" structural rather than a promise.
 
@@ -203,7 +203,7 @@ what stayed behind.
 ## Tests
 
 ```sh
-./Tools/run-tests.sh uninstall-test
+./Scripts/run-tests.sh uninstall-test
 ```
 
 No filesystem, no temp directories — every input is a `String` or a `PathFacts`. Beyond the per-rule

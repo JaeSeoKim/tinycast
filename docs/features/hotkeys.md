@@ -69,7 +69,7 @@ register a modifier-only shortcut at all, so this is a separate engine that meet
 at `HotKeyBinding`.
 
 `DoubleTapDetector` is the recognizer: Foundation-only, pure, and clock-injected (`now` is a caller-
-supplied monotonic timestamp), so `Tools/hotkey-test.swift` drives it without an event tap. A **tap**
+supplied monotonic timestamp), so `Tests/hotkey-test.swift` drives it without an event tap. A **tap**
 is a press that starts from no modifiers held, keeps exactly one of the four held with no `fn`
 alongside, sees no key press or mouse click, and is released within `maxHold` (250 ms — the same
 window `HyperKeyTap` calls a quick press). A **double-tap** is a second tap of the same modifier

@@ -22,7 +22,7 @@ run() {
     if [ -n "$only" ] && [ "$name" != "$only" ]; then return 0; fi
     ran=$((ran + 1))
 
-    if ! swiftc -swift-version 6 "$@" "Tools/$name.swift" -o "$BIN/$name" 2>&1; then
+    if ! swiftc -swift-version 6 "$@" "Tests/$name.swift" -o "$BIN/$name" 2>&1; then
         printf '\033[31mFAIL\033[0m  %-22s did not compile\n' "$name"
         failed+=("$name")
         return 0

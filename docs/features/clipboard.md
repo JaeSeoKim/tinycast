@@ -77,7 +77,7 @@ section, so `promote` skips pinned rows instead of rewriting the row and its FTS
 visible change.
 
 `load` reads every pinned row plus the newest 1000 unpinned ones as two indexed branches over a
-partial index on `pinned_at` (`Tools/clipboard-test.swift` covers the shape). The single
+partial index on `pinned_at` (`Tests/clipboard-test.swift` covers the shape). The single
 `pinned_at IS NOT NULL OR rowid >= ?` form reads better but cannot be driven from an index while
 holding row order, so it scans the whole table — ~12ms against ~1ms at 200k rows, on the main actor
 at launch.

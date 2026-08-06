@@ -28,7 +28,7 @@ entries and a still-registered shortcut moves nothing.
 | `Features/WindowManagement/WindowActionMemory.swift` | Foundation + CoreGraphics    | **Pure.** Per-window cycle position and restore point               |
 | `Features/WindowManagement/WindowMover.swift`        | AppKit + ApplicationServices | `@MainActor`. Every `AXUIElement` call and the coordinate flip      |
 
-The first three compile into `Tools/window-command-test.swift`, so they must not gain an AppKit,
+The first three compile into `Tests/window-command-test.swift`, so they must not gain an AppKit,
 SwiftUI or `NSScreen` dependency, and must stay pure — `WindowActionMemory` takes `now` as a parameter
 rather than reading a clock. CoreGraphics is needed only because `CGRect`'s `Equatable` conformance
 lives in that overlay rather than in Foundation.
@@ -190,7 +190,7 @@ stock Electron app tiles correctly without it, delete the helper rather than kee
 
 ## Testing
 
-`Tools/window-command-test.swift` (319 assertions) covers the catalog, the AX-space convention lock,
+`Tests/window-command-test.swift` (319 assertions) covers the catalog, the AX-space convention lock,
 tiling on divisible and non-divisible screens, off-origin and negative-coordinate displays, gap
 arithmetic including degenerate values, sizing, the Make Larger/Smaller round trip, nudges, display
 moves and wrapping, restore recovery, every `WindowActionMemory` rule, and a fuzz sweep over every

@@ -2,7 +2,7 @@ name: CI
 
 # The job is a merge gate and runs on PRs and on `main`. There is no xcodebuild step: the full Debug
 # build costs minutes and the release workflow already builds before it ships, so CI keeps to the one
-# check that finishes in about a minute — Tools/run-tests.sh, which owns the harness set outright so
+# check that finishes in about a minute — Scripts/run-tests.sh, which owns the harness set outright so
 # this file cannot drift from it. See docs/testing.md.
 on:
   pull_request:
@@ -34,5 +34,5 @@ jobs:
           echo "Using $XCODE_PATH"
           echo "DEVELOPER_DIR=$XCODE_PATH/Contents/Developer" >> "$GITHUB_ENV"
 
-      - name: Run Tools/ harnesses
-        run: ./Tools/run-tests.sh
+      - name: Run the harnesses
+        run: ./Scripts/run-tests.sh

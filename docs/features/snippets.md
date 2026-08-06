@@ -259,5 +259,5 @@ Run the real model, codec, template engine, repository, keyword listener with a 
 main-actor watcher against temporary roots:
 
 ```sh
-./Tools/run-tests.sh snippets-test
+./Scripts/run-tests.sh snippets-test
 ```

@@ -6,7 +6,7 @@ A palette sub-screen (reached like Clipboard / Calculator History) presenting a 
 
 - **`Model/` stays Foundation-only** — `EmojiCatalog`, `EmojiGridGeometry` and the generated dataset are
   compiled by `emoji-test`, so an `import AppKit` there breaks the test suite.
-- **`EmojiData.generated.swift` is emitted by `node Tools/gen-emoji.js`** (Node 18+ for global `fetch`)
+- **`EmojiData.generated.swift` is emitted by `node Scripts/gen-emoji.js`** (Node 18+ for global `fetch`)
   and is never edited by hand. Regenerate and commit instead.
 
 ## Layout

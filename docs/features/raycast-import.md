@@ -88,7 +88,7 @@ Notes that matter:
 ## Layout
 
 `RaycastFormat.swift` and `RaycastV1Decoder.swift` stay Foundation + CommonCrypto + Carbon so
-`Tools/raycast-test.swift` compiles them against the real sources. The decoder's job is _shape_ — it
+`Tests/raycast-test.swift` compiles them against the real sources. The decoder's job is _shape_ — it
 returns Raycast's own values in a plain `RaycastV1Payload`; turning those into Tinycast's domain types
 (`PopToRootTimeout`, `EmojiSkinTone`, `HyperKeyPhysicalKey`, `KeyShortcut`) is `RaycastImportV1`'s job.
 That is the same pure-layer / platform-layer split `Features/WindowManagement/` uses.

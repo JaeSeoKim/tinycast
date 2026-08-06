@@ -28,7 +28,7 @@ every shortcut without re-registering.
 ## Destinations
 
 `QuicklinkDestination.detect` decides what a link is from its shape alone — no filesystem or Launch
-Services read — which is what keeps it pure and covered by `Tools/quicklink-test.swift`. In order:
+Services read — which is what keeps it pure and covered by `Tests/quicklink-test.swift`. In order:
 
 | Shape                                                  | Result                                                            |
 | ------------------------------------------------------ | ----------------------------------------------------------------- |
@@ -152,7 +152,7 @@ fact decides the two ways `QuicklinkStore` differs from `ClipboardStore`, which 
 - **A database that won't open is never deleted.** `ClipboardStore` discards and recreates a corrupt
   file because history is regenerable; doing that here would destroy the user's library. The store
   publishes `isAvailable == false`, every mutation refuses with `QuicklinkError.storageUnavailable`,
-  and the pane says so. `Tools/quicklink-test.swift` asserts the file survives byte-for-byte.
+  and the pane says so. `Tests/quicklink-test.swift` asserts the file survives byte-for-byte.
 
 Editing preserves the UUID, and with it the quicklink's shortcut, favorite slot, visibility and
 learned ranking. Deleting goes through `AppCore`, which unwinds all four before removing the row.
@@ -184,5 +184,5 @@ excluding it would be cargo-culting.
 ## Standalone harness
 
 ```sh
-./Tools/run-tests.sh quicklink-test
+./Scripts/run-tests.sh quicklink-test
 ```

@@ -8,7 +8,7 @@ an emoji picker. SwiftUI + AppKit, running as an accessory with no Dock icon (`L
 - **Build:** XcodeGen owns the project — `Tinycast.xcodeproj` is committed but generated from
   `project.yml`. After editing `project.yml`, run `xcodegen generate` and commit. There is **no**
   `Package.swift` / SwiftPM, and never use `Bundle.module`.
-- **Test:** `./Tools/run-tests.sh`. There is no XCTest target; each harness compiles the shipped sources
+- **Test:** `./Scripts/run-tests.sh`. There is no XCTest target; each harness compiles the shipped sources
   it guards, so a harness that stops *compiling* is as real a failure as one that asserts.
 - **Channels:** Debug builds are their own channel — `Tinycast Dev.app` / `com.tinycast.app.dev` — so a
   local run never shares prefs, caches, TCC grants or login item with an installed stable/beta. Anything
@@ -63,7 +63,7 @@ doc, which opens with its own `## Invariants`.
 - **Tinycast presents its own dialogs, never `NSAlert` / `NSSlider` / system popovers.** Everything goes
   through `DialogController` (a question) or a HUD via `HUDPresenter` (a report).
 - **Generated files are never hand-edited.** `EmojiData.generated.swift` comes from
-  `node Tools/gen-emoji.js`, `CurrencyData.generated.swift` from `node Tools/gen-currencies.js`.
+  `node Scripts/gen-emoji.js`, `CurrencyData.generated.swift` from `node Scripts/gen-currencies.js`.
 - **`DesignSystem/Scrolling/EdgeDissolve.swift` and `ThinScrollbar.swift` are off-limits.** Both are tuned
   by eye against the palette's floating bars, so any edit is a visual regression. Needing to touch one to
   fix a scroll bug means the real fix belongs elsewhere.
@@ -112,7 +112,7 @@ grep -rhE '^\s*(//|///)' Tinycast --include="*.swift" \
 
 ## Before you finish
 
-- `./Tools/run-tests.sh` passes.
+- `./Scripts/run-tests.sh` passes.
 - The Debug build compiles with **no new warnings**.
 - Both comment-budget commands return `0`.
 - `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` returns nothing.

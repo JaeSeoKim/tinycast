@@ -2,7 +2,7 @@
 
 `Features/Calculator/Model/` is a **Foundation-only** engine (no AppKit / SwiftUI imports) fronted by
 `CalcMemo`, a one-deep memo mirroring `AppIndex`'s. It must stay Foundation-only because the
-`Tools/calc-test.swift` harness compiles the real engine sources — including `CalcDateTime`. It is
+`Tests/calc-test.swift` harness compiles the real engine sources — including `CalcDateTime`. It is
 also **pure**: the one input it can't compute, the FX rate table, is passed in (see Currency below).
 
 ## Invariants
@@ -13,7 +13,7 @@ also **pure**: the one input it can't compute, the FX rate table, is passed in (
 - **`CalcEngine.evaluate`'s `currency:` parameter defaults to `.off`**, so forgetting to pass a consented
   source disables the feature rather than enabling it. `CurrencyRateStore` owns the fetch, the consent
   flag and the cacheless `.ephemeral` session — see [decisions.md](../decisions.md) entries 10 and 11.
-- **`CurrencyData.generated.swift` is emitted by `node Tools/gen-currencies.js`** and never hand-edited.
+- **`CurrencyData.generated.swift` is emitted by `node Scripts/gen-currencies.js`** and never hand-edited.
   The only hand-maintained currency data is `CalcCurrency.contested`, the nouns several currencies share
   (`dollars`, `pounds`). Do not add slang or synonyms there — no source of truth, so they rot.
 
@@ -128,7 +128,7 @@ echoes the typed text (`10km to mi ×`) rather than the conversion's own shorten
 `expr from (to|in|->) to` token shape, so `eur to usd` implies an amount of 1 exactly like `m to ft`.
 A leading sign is swapped back into amount-first order, so `€20 to GBP` and `20€ to GBP` parse alike.
 
-The table is **generated except for the judgement calls**. `node Tools/gen-currencies.js` joins two
+The table is **generated except for the judgement calls**. `node Scripts/gen-currencies.js` joins two
 sources on the ISO code and emits `CurrencyData.generated.swift`:
 
 - **Frankfurter** decides which currencies exist — the same feed the rates come from, so the table

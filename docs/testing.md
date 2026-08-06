@@ -6,8 +6,8 @@ is a set of standalone harnesses, and the manual half is the sweep at the bottom
 ## The harnesses
 
 ```sh
-./Tools/run-tests.sh              # all of them
-./Tools/run-tests.sh calc-test    # just one, while iterating
+./Scripts/run-tests.sh              # all of them
+./Scripts/run-tests.sh calc-test    # just one, while iterating
 ```
 
 The script is the **only** place the harness set is written down — CI runs exactly this, so the two

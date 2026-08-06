@@ -6,7 +6,7 @@ conventions for writing new code live in [standards.md](standards.md).
 ## The layering
 
 Independently of the folder tree, every mature subsystem has converged on the same four layers, and the
-`Tools/` harnesses are what hold them apart.
+`Tests/` harnesses are what hold them apart.
 
 ```
 ┌─ PURE ─────────────────────────────────────────────────────────────────────┐
@@ -178,7 +178,8 @@ Tinycast/
         Settings/   the feature's own panes
     Settings/       the Settings shell only: SettingsRootView, SettingsTab, AppSettings,
                     AppSettingsKey, and Panes/ for the two panes no feature owns
-Tools/              the harnesses, run-tests.sh, and the two data generators
+Tests/              the standalone harnesses, one Swift file each
+Scripts/            run-tests.sh, the two data generators, packaging, formatting, editor setup
 ```
 
 A larger feature splits into all four sub-folders; a small one stays flat, as `Onboarding/` and

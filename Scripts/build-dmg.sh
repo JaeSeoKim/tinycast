@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build a signed Tinycast.app and pack it into build/Tinycast-<version>.dmg. Usage: ./build-dmg.sh [version]
+# Build a signed Tinycast.app into build/Tinycast-<version>.dmg. Usage: ./Scripts/build-dmg.sh [version]
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"; cd "$ROOT"
+cd "$(dirname "$0")/.." || exit 1
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 IDENTITY="Tinycast Self-Signed"
 DERIVED="build/DerivedData"

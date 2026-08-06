@@ -29,7 +29,7 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 - **A linked issue that got a green light.** No agreed issue, no merge — unless a maintainer marks
   the PR `typo` or `docs`.
 - Builds clean — no new warnings.
-- `./Tools/run-tests.sh` passes; engine changes come with new cases. CI runs exactly that script as a
+- `./Scripts/run-tests.sh` passes; engine changes come with new cases. CI runs exactly that script as a
   merge gate. It does **not** build the app, so **build locally** — a PR that doesn't compile still looks
   green. [`docs/testing.md`](docs/testing.md) has the rest of the bar.
 - Leak-tested and memory-measured. Numbers in the PR.

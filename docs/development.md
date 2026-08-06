@@ -75,8 +75,8 @@ app; changes always apply (fixed build path — no need to delete `build/`).
 There is no XCTest target. The suite is eighteen standalone harnesses, run through one script:
 
 ```sh
-./Tools/run-tests.sh              # all of them
-./Tools/run-tests.sh calc-test    # just one, while iterating
+./Scripts/run-tests.sh              # all of them
+./Scripts/run-tests.sh calc-test    # just one, while iterating
 ```
 
 The script is the only place the harness set is written down, and CI runs exactly it. What each harness
@@ -101,8 +101,8 @@ Two Swift files are emitted by scripts and must never be hand-edited. Both downl
 run them online, then commit the result:
 
 ```sh
-node Tools/gen-emoji.js            # -> Tinycast/Features/Emoji/Model/EmojiData.generated.swift
-node Tools/gen-currencies.js       # -> Tinycast/Features/Calculator/Model/CurrencyData.generated.swift
+node Scripts/gen-emoji.js            # -> Tinycast/Features/Emoji/Model/EmojiData.generated.swift
+node Scripts/gen-currencies.js       # -> Tinycast/Features/Calculator/Model/CurrencyData.generated.swift
 ```
 
 `gen-currencies.js` joins two sources on the ISO code: **Frankfurter**'s currency list (the same feed
@@ -121,8 +121,8 @@ an unquoted code just reports "no exchange rate".
 For a local signed DMG:
 
 ```sh
-./build-dmg.sh            # -> build/Tinycast-<version>.dmg (version from project.yml)
-./build-dmg.sh 0.5.7      # -> build/Tinycast-0.5.7.dmg
+./Scripts/build-dmg.sh            # -> build/Tinycast-<version>.dmg (version from project.yml)
+./Scripts/build-dmg.sh 0.5.7      # -> build/Tinycast-0.5.7.dmg
 ```
 
 It builds a Release `Tinycast.app` signed with `Tinycast Self-Signed` and packs it (with an
@@ -142,7 +142,7 @@ Full details in [signing.md](signing.md).
 Xcode 26 (same selection step as the release workflow). It has one job, a merge gate; a new push
 cancels the in-flight run for the same ref:
 
-- **`test`** — `./Tools/run-tests.sh`. The workflow names no harness itself, so it cannot drift from
+- **`test`** — `./Scripts/run-tests.sh`. The workflow names no harness itself, so it cannot drift from
   the script.
 
 There is **no `xcodebuild` step**: a Debug build costs minutes on every run and the release workflow
@@ -150,7 +150,7 @@ builds before it ships anyway, so CI keeps to the one check that finishes in abo
 that compiles nowhere still turns the PR green — **build locally before you open one** (`xcodebuild
 -project Tinycast.xcodeproj -scheme Tinycast -configuration Debug build`, or just ⌘B in Xcode).
 
-Same command locally: `./Tools/run-tests.sh`.
+Same command locally: `./Scripts/run-tests.sh`.
 
 ## CI releases
 
