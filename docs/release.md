@@ -22,15 +22,23 @@ details in [signing.md](signing.md).
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every PR and every push to `main`, on a `macos-26` runner with
-Xcode 26 (the same selection step as the release workflow). One job, a merge gate; a new push cancels
-the in-flight run for the same ref:
+`.github/workflows/ci.yml` runs on every PR, on a `macos-26` runner with Xcode 26 (the same selection
+step as the release workflow). One job, a merge gate; a new push cancels the in-flight run for the
+same ref. Two steps, both of which shell out to a script rather than naming rules or harnesses in the
+workflow, so neither can drift:
 
-- **`test`** — `./Scripts/run-tests.sh`. The workflow names no harness itself, so it cannot drift from
-  the script.
+- **the harnesses** — `./Scripts/run-tests.sh`.
+- **lint** — `./Scripts/lint.sh`, with `SWIFTLINT_REPORTER=github-actions-logging` so every violation
+  is annotated **inline on the PR diff** instead of being buried in the log. It runs under
+  `if: always()`, so a failing harness still surfaces the lint annotations in the same run. Warnings
+  annotate only; **lint errors fail the job**, exactly as a local run does.
+
+It does **not** run on pushes to `main`. `pull_request` builds the merge result, so re-running after a
+merge would re-test content CI has already seen. A direct push to `main` therefore gets no run at all —
+use **Actions → CI → Run workflow** if one ever needs checking.
 
 There is **no `xcodebuild` step**: a Debug build costs minutes on every run and the release workflow
-builds before it ships anyway, so CI keeps to the one check that finishes in about a minute. The
+builds before it ships anyway, so CI keeps to the checks that finish in about a minute. The
 consequence is that a change compiling nowhere still turns the PR green — **build locally before you
 open one**. See [testing.md](testing.md#definition-of-done).
 

@@ -30,8 +30,9 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 - **A linked issue that got a green light.** No agreed issue, no merge — unless a maintainer marks
   the PR `typo` or `docs`.
 - The whole bar in [`docs/testing.md`](docs/testing.md#definition-of-done) passes — harnesses, lint,
-  purity, a clean build. Engine changes come with new cases. CI runs only the harnesses and
-  does **not** build the app, so **build locally**: a PR that doesn't compile still looks green.
+  purity, a clean build. Engine changes come with new cases. CI runs the harnesses and lint — it
+  annotates lint violations on your diff — but does **not** build the app, so **build locally**: a PR
+  that doesn't compile still looks green.
 - Leak-tested and memory-measured. Numbers in the PR.
 - You actually used the app, on your path and the ones next to it.
 - Rebased on `main`, squashed into logical commits.

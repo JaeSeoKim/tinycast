@@ -11,7 +11,8 @@ command -v swiftlint >/dev/null || {
 
 [ "${1:-}" = "--fix" ] && swiftlint --fix --quiet
 
-if ! swiftlint lint --quiet; then
+# CI sets SWIFTLINT_REPORTER=github-actions-logging so violations land inline on the PR diff.
+if ! swiftlint lint --quiet ${SWIFTLINT_REPORTER:+--reporter "$SWIFTLINT_REPORTER"}; then
     echo
     echo "Lint errors above. Warnings do not block; errors do." >&2
     exit 1

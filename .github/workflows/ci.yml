@@ -1,13 +1,15 @@
 name: CI
 
-# The job is a merge gate and runs on PRs and on `main`. There is no xcodebuild step: the full Debug
-# build costs minutes and the release workflow already builds before it ships, so CI keeps to the one
-# check that finishes in about a minute — Scripts/run-tests.sh, which owns the harness set outright so
-# this file cannot drift from it. See docs/testing.md.
+# The job is a merge gate. There is no xcodebuild step: the full Debug build costs minutes and the
+# release workflow already builds before it ships, so CI keeps to the two checks that finish in about
+# a minute. Both go through the scripts rather than naming rules or harnesses here, so this file
+# cannot drift from them. See docs/testing.md.
+#
+# PRs only, deliberately. `pull_request` builds the *merge result*, so a push to `main` that came from
+# a green PR would re-test content CI has already seen. Use "Run workflow" for a direct push to main.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 # A new push supersedes the previous run for the same ref.
 concurrency:
@@ -36,3 +38,13 @@ jobs:
 
       - name: Run the harnesses
         run: ./Scripts/run-tests.sh
+
+      # `if: always()` so a failing harness still surfaces the lint annotations in the same run.
+      # Warnings annotate the diff; only lint *errors* fail the job, matching a local run.
+      - name: Lint
+        if: always()
+        env:
+          SWIFTLINT_REPORTER: github-actions-logging
+        run: |
+          command -v swiftlint >/dev/null || brew install swiftlint
+          ./Scripts/lint.sh

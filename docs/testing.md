@@ -15,9 +15,9 @@ The mechanical bar, in one place so it cannot drift. All five pass before a chan
 | A clean build | `xcodebuild … -configuration Debug CODE_SIGNING_ALLOWED=NO`, zero **new** warnings |
 | Docs still true | any doc your change made wrong, fixed in the same commit |
 
-CI runs only the first of these, and does not build the app at all — so the other four are on you.
-Each is expanded below; the manual sweep at the end of this file is the sixth, judged by what you
-touched.
+CI runs the first two and does not build the app at all — so the build, the purity grep and the docs
+are on you. Each is expanded below; the manual sweep at the end of this file is the sixth, judged by
+what you touched.
 
 ## The harnesses
 

@@ -117,7 +117,9 @@ Xcode's re-indent (⌃I), as it always has been. Two consequences worth knowing:
 - `force_try` is an error; `force_cast` only warns, because the AX and AppKit bridges have four
   legitimate ones.
 
-Errors block, warnings do not. SwiftLint does not run in CI; `./Scripts/lint.sh` before a PR is the bar.
+Errors block, warnings do not. CI runs this same script on every PR and annotates the diff with each
+violation — see [release.md](release.md#continuous-integration) — so run it locally first rather than
+finding out from a review.
 
 ## Generated data
 
