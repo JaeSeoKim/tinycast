@@ -199,6 +199,12 @@ reserved for a walk that hit `SizeBudget.maxEntries`, so it never doubles as "st
 The consequence to accept: confirming inside the first second states a total lower than what gets
 trashed. Everything selected is still trashed — only the number in the copy is early.
 
+Sizes are **logical bytes**, not allocated blocks: `.totalFileSizeKey` in the walk and `st_size` in
+`inspect`. Allocated blocks disagree with every other tool on the machine, badly. Xcode ships
+decmpfs-compressed, so its blocks read 4.19 GB against Finder's and Raycast's 9.45 GB, and a
+593-byte plist occupies one block and reads as 4 kB. Blocks are not the safer number either — a
+decmpfs payload can live in an xattr, which `st_blocks` does not count, so they are only a floor.
+
 `measure`'s task group is deliberately built in a `nonisolated` context. It is a structured child of
 `UninstallSession.scanTask`, which is what keeps `cancel()` reaching `Task.checkCancellation()`
 inside the enumerator loop, and building it there leaves no question about which executor 30

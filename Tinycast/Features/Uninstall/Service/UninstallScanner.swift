@@ -192,7 +192,8 @@ enum UninstallScanner {
             isOwnedByCurrentUser: info.st_uid == geteuid(),
             parentIsWritable: parent.isWritable,
             parentIsSticky: parent.isSticky)
-        return (facts, (info.st_mode & S_IFMT) == S_IFDIR, Int64(info.st_blocks) * 512)
+        // `st_size`, not `st_blocks`: a 593-byte plist occupies a block and must not read as 4 kB.
+        return (facts, (info.st_mode & S_IFMT) == S_IFDIR, Int64(info.st_size))
     }
 
     /// The permission that actually governs a trash, resolved once per root.
@@ -208,10 +209,11 @@ enum UninstallScanner {
         let isSticky: Bool
     }
 
-    /// On-disk bytes, like Finder; an unreadable subtree is skipped, not abandoned.
+    /// Logical bytes, like Finder; an unreadable subtree is skipped, not abandoned.
     private static func directorySize(of path: String, budget: SizeBudget) throws -> MeasuredSize {
         let url = URL(fileURLWithPath: path)
-        let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
+        // Not the allocated keys: Xcode ships decmpfs-compressed, and blocks read 4.19 GB of 9.45.
+        let keys: [URLResourceKey] = [.totalFileSizeKey, .fileSizeKey]
         guard
             let enumerator = FileManager.default.enumerator(
                 at: url, includingPropertiesForKeys: keys, options: [],
@@ -231,7 +233,7 @@ enum UninstallScanner {
                 break
             }
             let values = try? item.resourceValues(forKeys: keySet)
-            size.bytes += Int64(values?.totalFileAllocatedSize ?? values?.fileAllocatedSize ?? 0)
+            size.bytes += Int64(values?.totalFileSize ?? values?.fileSize ?? 0)
         }
         return size
     }
