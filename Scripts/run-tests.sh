@@ -15,12 +15,36 @@ failed=()
 ran=0
 only="${1:-}"
 
+# `--compile-db` prints each harness's compile command as JSON instead of running it, so
+# Scripts/setup-editor.sh can give SourceKit-LSP the source lists without a second copy of them.
+emit_db=0
+if [ "$only" = "--compile-db" ]; then
+    emit_db=1
+    only=""
+    printf '['
+fi
+
 # run <name> <source...> — compile the harness and run it, recording either kind of failure.
 run() {
     local name=$1
     shift
     if [ -n "$only" ] && [ "$name" != "$only" ]; then return 0; fi
     ran=$((ran + 1))
+
+    if [ "$emit_db" -eq 1 ]; then
+        [ "$ran" -gt 1 ] && printf ','
+        printf '{"directory":"%s","command":"swiftc -swift-version 6' "$PWD"
+        printf ' %s' "$@" "Tests/$name.swift"
+        printf '","files":['
+        local first=1
+        for source in "$@" "Tests/$name.swift"; do
+            [ "$first" -eq 0 ] && printf ','
+            printf '"%s/%s"' "$PWD" "$source"
+            first=0
+        done
+        printf ']}'
+        return 0
+    fi
 
     if ! swiftc -swift-version 6 "$@" "Tests/$name.swift" -o "$BIN/$name" 2>&1; then
         printf '\033[31mFAIL\033[0m  %-22s did not compile\n' "$name"
@@ -76,6 +100,11 @@ run raycast-test           Tinycast/Features/Backup/Model/RaycastFormat.swift \
                            Tinycast/Features/Clipboard/Model/ClipboardStore.swift
 run settings-backup-test   Tinycast/Features/Settings/AppSettingsKey.swift \
                            Tinycast/Features/Backup/Model/SettingsBackupCoverage.swift
+
+if [ "$emit_db" -eq 1 ]; then
+    printf ']\n'
+    exit 0
+fi
 
 if [ "$ran" -eq 0 ]; then
     echo "No harness named '$only'." >&2

@@ -8,7 +8,7 @@ verifying a change is [testing.md](testing.md).
 - macOS 26 or later (Liquid Glass).
 - Xcode 26 — it provides the SwiftUI macro plugin and the SDK.
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen), and for the editor tooling below:
-  `brew install swiftlint xcode-build-server` (`swift-format` ships with Xcode).
+  `brew install swiftlint xcode-build-server`.
 
 ## First-time setup
 
@@ -74,34 +74,37 @@ resolving. **F5** builds and launches the app; the fixed build path means change
 deleting `build/`.
 
 `.vscode/extensions.json` recommends the official `swiftlang.swift` extension, which is the only one
-this setup needs — it drives both SourceKit-LSP and `swift-format`. Toolchain selection belongs to it
-(Command Palette → *Swift: Select Toolchain* → Xcode); do not pin `swift.path` or `DEVELOPER_DIR` in
-settings, as that conflicts with the extension.
+this setup needs. Toolchain selection belongs to it (Command Palette → *Swift: Select Toolchain* →
+Xcode); do not pin `swift.path` or `DEVELOPER_DIR` in settings, as that conflicts with the extension.
 
-## Formatting & linting
+**The harnesses in `Tests/` get no cross-file symbols.** `xcodebuild` never compiles them — they are
+not in the Xcode project — so nothing emits a compile command for them and `.compile` has no entry.
+Inside a harness, the shipped types it compiles against do not resolve. `./Scripts/setup-editor.sh`
+adds an entry per harness to fix this, reading the source lists from `run-tests.sh` so the two cannot
+drift; re-run it after adding a harness.
+
+## Linting
 
 ```sh
-./Scripts/format.sh          # format the whole project, then lint it
-./Scripts/format.sh --check  # verify only; non-zero exit on drift
+./Scripts/lint.sh          # lint the whole project
+./Scripts/lint.sh --fix    # auto-correct the mechanical subset first
 ```
 
-`swift-format` owns whitespace, indentation and ordering; [SwiftLint](https://github.com/realm/SwiftLint)
-owns the rules that catch defects, including the two comment rules from
-[standards.md](standards.md#comments). Configuration is `.swift-format` and `.swiftlint.yml` at the repo
-root; the script skips the generated files and the two off-limits files in `DesignSystem/Scrolling/`.
+[SwiftLint](https://github.com/realm/SwiftLint) is the only code-quality tool here. `.swiftlint.yml` at
+the repo root excludes the generated files and the two off-limits files in `DesignSystem/Scrolling/`,
+and carries the two comment rules from [standards.md](standards.md#comments) as `custom_rules`.
 
-`swift-format` ships **inside the Xcode toolchain**, so there is nothing to install and nothing to keep
-in sync with the Swift version — SwiftLint is the only tool needing Homebrew. It runs with
-`"respectsExistingLineBreaks": true`, so it **never re-flows a line break you placed**. That is
-deliberate: rewrapping is what made an earlier attempt at format-on-save rewrite untouched code
-([decisions.md](decisions.md) entry 26). An over-long line is a SwiftLint warning to resolve instead.
+The config sticks to rules that catch defects and stays quiet about style, because **there is no
+formatter** — see [decisions.md](decisions.md) entry 26 for the measurements behind that. Formatting is
+Xcode's re-indent (⌃I), as it always has been. Two consequences worth knowing:
 
-Format-on-save is on in `.vscode/settings.json` and safe, because the config is committed and shared.
-The official `swiftlang.swift` extension drives `swift-format` directly, so no third-party formatter
-extension is involved. SwiftLint has no first-party extension, so its findings surface when you run the
-script or the **Format project** task rather than as you type.
+- `empty_count` is **disabled**, and `isEmpty`-style rewrites are unsafe here generally:
+  `LauncherRankingRecord` and `PaletteRowIndex` have a `count` that is a hit count, not a collection
+  count. A rule that rewrites `count > 0` to `!isEmpty` on them does not compile.
+- `force_try` is an error; `force_cast` only warns, because the AX and AppKit bridges have four
+  legitimate ones.
 
-Neither tool runs in CI; `./Scripts/format.sh --check` before a PR is the bar.
+Errors block, warnings do not. SwiftLint does not run in CI; `./Scripts/lint.sh` before a PR is the bar.
 
 ## Generated data
 

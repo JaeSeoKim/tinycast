@@ -10,7 +10,7 @@ The mechanical bar, in one place so it cannot drift. All five pass before a chan
 | Check | Command |
 | --- | --- |
 | The harnesses | `./Scripts/run-tests.sh` |
-| Format and lint | `./Scripts/format.sh --check` |
+| Lint | `./Scripts/lint.sh` |
 | Pure-layer purity | `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` |
 | A clean build | `xcodebuild … -configuration Debug CODE_SIGNING_ALLOWED=NO`, zero **new** warnings |
 | Docs still true | any doc your change made wrong, fixed in the same commit |
@@ -105,16 +105,16 @@ find ~/Library/Developer/Xcode/DerivedData -name "Tinycast*.app" -maxdepth 6 -pr
   this reason; the fix for a timeout is an annotation, not a restructure.
 - Release binary under **4 MB**, and under 2% growth for an ordinary change.
 
-### Format and lint
+### Lint
 
 ```sh
-./Scripts/format.sh --check
+./Scripts/lint.sh
 ```
 
-`swift-format` owns whitespace and ordering; SwiftLint owns the rules that catch defects, including the
-two checkable comment rules — the 100-character cap and the ban on stacked comment lines. Formatting is
-already applied on save in VS Code, so in practice this reports lint findings. Setup and configuration
-are in [development.md](development.md#formatting--linting).
+SwiftLint owns the rules that catch defects, including the two checkable comment rules — the
+100-character cap and the ban on stacked comment lines. Errors block; warnings do not. There is no
+formatter, deliberately — the configuration and the measurements behind that are in
+[development.md](development.md#linting) and [decisions.md](decisions.md) entry 26.
 
 ## Performance measurement
 

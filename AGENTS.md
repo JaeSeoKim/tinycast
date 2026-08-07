@@ -40,7 +40,7 @@ registers a system-wide chord. Full reasoning in [standards.md](docs/standards.m
 | `Tinycast/Windows/` | the non-palette AppKit surfaces: `Dialog/`, `HUD/`, `About/`, `AuxWindowController` |
 | `Tinycast/Features/` | one folder per feature; larger ones split `Model/` `Service/` `UI/` `Settings/` |
 | `Tests/` | the standalone harnesses — one Swift file each, no XCTest target |
-| `Scripts/` | every executable script: test runner, data generators, packaging, formatting, setup |
+| `Scripts/` | every executable script: test runner, data generators, packaging, linting, editor setup |
 
 | Read it before you | Doc |
 | --- | --- |
@@ -112,6 +112,6 @@ Each item is explained in [testing.md](docs/testing.md#definition-of-done).
 
 - `./Scripts/run-tests.sh` passes.
 - The Debug build compiles with **no new warnings**.
-- `./Scripts/format.sh --check` is clean.
+- `./Scripts/lint.sh` is clean.
 - `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` returns nothing.
 - Any doc your change made wrong is fixed in the same commit.

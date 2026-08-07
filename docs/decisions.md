@@ -274,27 +274,34 @@ stays the source of truth so settings changes are reviewable as text.
 **What would change this:** nothing while the app is an app rather than a library. Note that
 `Bundle.module` must never be used for shipped resources.
 
-### 26 — The formatter is `swift-format`, set to respect existing line breaks
+### 26 — There is a linter, and deliberately no formatter
 
-`.swift-format` sets `"respectsExistingLineBreaks": true`, so the formatter fixes indentation, spacing
-and ordering but does not re-flow line breaks a person placed. Over-long lines are a SwiftLint
-`line_length` warning to resolve deliberately instead.
+SwiftLint runs (`./Scripts/lint.sh`). Formatting is whatever Xcode's re-indent does, as before.
 
-**Why:** this project had no formatter at all until 2026, because a shared config had been actively
-harmful — VS Code's format-on-save silently reflowed five sites in `WindowLayout.swift` during the
-refactor, against no agreed config. Rewrapping is the specific behaviour that caused it: it rewrites
-lines nobody touched, and the result is worse than what a person wrote, because the formatter cannot
-see why a break was placed where it was. Turning that off is what makes format-on-save safe.
+**Why:** both candidates were adopted, configured and measured on this tree, and both wanted to change
+code rather than lay it out.
 
-`swift-format` over SwiftFormat specifically because it **ships in the Xcode toolchain** — no Homebrew
-dependency, nothing to keep in sync with the Swift version — and because the official `swiftlang.swift`
-VS Code extension drives it natively, so format-on-save needs no third-party editor extension. That
-matters: the SwiftFormat VS Code extension was deprecated, and a formatter is only as maintainable as
-the editor integration that runs it. Measured on this tree at adoption, `swift-format` also produced a
-quarter of the churn SwiftFormat did (575 changed lines against 2,208) — the same conservatism, without
-having to disable eight rules to get it.
+`swift-format`, which ships in the Xcode toolchain and is what sourcekit-lsp uses, rewrote `track({`
+onto two lines, split function signatures, moved `{` onto its own line after wrapped conditions, and
+added trailing commas SwiftLint then flagged. None of it was tunable: it changed exactly 74 files at
+`lineLength` 120 and at 1000.
 
-**What would change this:** Apple abandoning `swift-format`, or a formatting need it cannot express.
+SwiftFormat is configurable enough to leave structure alone — but only after disabling eight rules, and
+one of the rules left on introduced a **semantic** error. `--enable isEmpty` rewrote `$0.count > 0` to
+`!$0.isEmpty` in `LauncherRankingStore` and `PaletteRowIndex`, whose `count` is a hit count and not a
+collection count. Two harnesses stopped compiling. `numberFormatting` also silently stripped the digit
+separators from `3_000` and `9_007_199_254_740_992`.
+
+That is the same class of failure as the original incident behind this entry — VS Code's format-on-save
+reflowing five sites in `WindowLayout.swift` — and it is what a formatter is for: rewriting code nobody
+asked it to touch. A codebase this size, with one regular contributor and a consistent hand-tuned
+style, does not get enough back to justify it. SwiftLint gives the defect-catching half with none of
+the rewriting.
+
+For the same reason SwiftLint's `empty_count` rule is **disabled**: it flags the identical two lines.
+
+**What would change this:** several regular contributors, at which point re-run this experiment — but
+keep `isEmpty`/`empty_count` off, and verify against the harnesses before committing the result.
 
 ### 26a — SwiftLint carries the two comment rules
 
