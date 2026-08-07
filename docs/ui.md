@@ -47,7 +47,9 @@ These are the things that quietly break the look if changed. Preserve them unles
 
 ---
 
-## Tokens — `Tinycast/DesignSystem/Theme.swift`
+## Tokens
+
+Source: `Tinycast/DesignSystem/Theme.swift`.
 
 `Theme` is the single source of truth. **Never hardcode a spacing/radius/size/color that has a token.**
 Add a token rather than a magic number when introducing a new value.
@@ -111,7 +113,9 @@ the forced-dark environment). **Selection always beats hover** when a row is bot
 
 ---
 
-## Panel structure — `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`
+## Panel structure
+
+Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 - **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
 - **The results layer fills the whole panel.** The header and bottom bar attach via `.safeAreaInset(edge: .top/.bottom)` as transparent overlays that float _over_ the list. The list underlaps them and dissolves at the edges.
@@ -121,7 +125,9 @@ the forced-dark environment). **Selection always beats hover** when a row is bot
 
 ---
 
-## The edge dissolve — `DesignSystem/Scrolling/EdgeDissolve.swift`
+## The edge dissolve
+
+Source: `DesignSystem/Scrolling/EdgeDissolve.swift`.
 
 The signature effect. A scroll-driven `LinearGradient` mask on each list so rows soften as they approach
 a floating bar, ghost beneath it, and vanish only at the window edge. Attach with `.edgeDissolve()` on
@@ -134,7 +140,10 @@ the `ScrollView`, **before `.thinScrollbar()`** (so the scrollbar overlay stays 
 
 ---
 
-## Rows, selection, hover — `Launcher/UI/LauncherList.swift`, `Clipboard/UI/ClipboardView.swift`, `Uninstall/UI/UninstallView.swift`
+## Rows, selection, hover
+
+Source: `Launcher/UI/LauncherList.swift`, `Clipboard/UI/ClipboardView.swift`,
+`Uninstall/UI/UninstallView.swift`.
 
 All lists share one row grammar so launcher and clipboard look identical:
 
@@ -161,7 +170,9 @@ leading gap. Headers are non-selectable display rows, so selection (keyed by id)
 
 ---
 
-## Liquid Glass — `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`
+## Liquid Glass
+
+Source: `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`.
 
 Glass is **only** for floating controls, never the main surface.
 
@@ -175,7 +186,9 @@ Glass is **only** for floating controls, never the main surface.
 
 ---
 
-## Dialogs & HUD `Windows/Dialog/`, `Windows/HUD/`
+## Dialogs & HUD
+
+Source: `Windows/Dialog/`, `Windows/HUD/`.
 
 Tinycast owns its dialogs; `NSAlert` is never used. `DialogController` is owned by `AppCore` (the
 sole owner rule) and is the only presenter, so every confirmation in the app looks and behaves alike.
@@ -289,7 +302,9 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   midline — visible only on the session's first HUD, which is what makes it easy to miss. Add a
   third HUD by constructing another presenter, not by teaching an existing controller a second shape.
 
-## Scrollbars — `DesignSystem/Scrolling/ThinScrollbar.swift`
+## Scrollbars
+
+Source: `DesignSystem/Scrolling/ThinScrollbar.swift`.
 
 Custom thin overlay scrollbar (the native one flashes and reserves a gutter inside a transparent panel).
 `.hideNativeScrollers()` on the scroll _content_ forces the backing `NSScrollView` to a hidden `.overlay`
@@ -302,7 +317,9 @@ pane use the native `.overlayScroller()`. Don't reintroduce native scrollers on 
 
 ---
 
-## Settings — `DesignSystem/SettingsComponents.swift`
+## Settings
+
+Source: `DesignSystem/SettingsComponents.swift`.
 
 Settings runs in its own `NSWindow` (the SwiftUI `Settings` scene is unreliable for accessory apps) but
 shares the palette's `Theme` vocabulary. It reads as macOS System Settings, not the palette:
