@@ -3,6 +3,22 @@
 How to check that a change holds up. Tinycast has no XCTest target and no UI tests: the automated half
 is a set of standalone harnesses, and the manual half is the sweep at the bottom of this file.
 
+## Definition of done
+
+The mechanical bar, in one place so it cannot drift. All five pass before a change is finished.
+
+| Check | Command |
+| --- | --- |
+| The harnesses | `./Scripts/run-tests.sh` |
+| Format and lint | `./Scripts/format.sh --check` |
+| Pure-layer purity | `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` |
+| A clean build | `xcodebuild … -configuration Debug CODE_SIGNING_ALLOWED=NO`, zero **new** warnings |
+| Docs still true | any doc your change made wrong, fixed in the same commit |
+
+CI runs only the first of these, and does not build the app at all — so the other four are on you.
+Each is expanded below; the manual sweep at the end of this file is the sixth, judged by what you
+touched.
+
 ## The harnesses
 
 ```sh
@@ -89,17 +105,16 @@ find ~/Library/Developer/Xcode/DerivedData -name "Tinycast*.app" -maxdepth 6 -pr
   this reason; the fix for a timeout is an annotation, not a restructure.
 - Release binary under **4 MB**, and under 2% growth for an ordinary change.
 
-### The comment budget
-
-Both must return `0`:
+### Format and lint
 
 ```sh
-find Tinycast -name "*.swift" ! -name "*.generated.swift" -exec \
-  awk '/^[[:space:]]*\/\//{r++; if(r==2) b++; next} {r=0} END{print b+0}' {} \; | awk '{s+=$1} END {print s}'
-grep -rhE '^\s*(//|///)' Tinycast --include="*.swift" \
-  --exclude="*.generated.swift" --exclude=EdgeDissolve.swift --exclude=ThinScrollbar.swift \
-  | awk 'length>100' | wc -l
+./Scripts/format.sh --check
 ```
+
+SwiftFormat owns whitespace and ordering; SwiftLint owns the rules that catch defects, including the
+two checkable comment rules — the 100-character cap and the ban on stacked comment lines. Both surface
+in the editor as you type, so this command should already be clean by the time you run it. Setup and
+configuration are in [development.md](development.md#formatting--linting).
 
 ## Performance measurement
 

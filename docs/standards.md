@@ -1,29 +1,35 @@
 # Engineering standards
 
-How code in Tinycast is written. Most of this is **guidance** — it describes what the codebase already
-looks like so that new code reads like it was there all along, and a good reason to depart from it is a
-good reason. The exception is the short list under [Enforced](#enforced), which is checked mechanically
-and where consistency matters more than any individual preference.
+How code in Tinycast is written. This is **guidance** — it describes what the codebase already looks
+like so that new code reads like it was there all along, and a good reason to depart from it is a good
+reason. What is actually checked is the bar in
+[testing.md](testing.md#definition-of-done); the rules that may not be broken at all are the
+Non-negotiables in [`AGENTS.md`](../AGENTS.md).
 
 When this document and the code disagree, the code is probably right and this file is stale. Fix it.
 
-## Posture: always current
+## Posture
 
-Tinycast targets the latest Apple platforms and nothing else — macOS 26+, Swift 6 language mode, the
-Xcode 26 toolchain. There is no compatibility floor to defend and no shim layer, which is the whole
-reason the codebase stays as small as it does.
+The rule — latest-only, prefer modern APIs, no compatibility layers, never add backwards compatibility
+unasked — is stated in [`AGENTS.md`](../AGENTS.md#posture-latest-only-always). This section is the
+reasoning and the concrete shape it takes.
 
-- Prefer the modern API. Swift Concurrency over `DispatchQueue`, Observation over `ObservableObject`,
-  `SMAppService` over login-item shims, structured concurrency over detached bookkeeping.
-- When a system API gains a modern replacement, **migrate rather than wrap**. A wrapper preserving an old
-  spelling is the thing this project has spent the most effort deleting.
-- Deprecated APIs are a defect, not a warning to live with.
-- Raising the minimum macOS deletes the code that supported the old one. It does not gate it.
+The reason it is worth being strict about: a compatibility floor is not a one-time cost. Every shim
+outlives the platform that needed it, gets copied by the next feature that sees it, and turns a
+one-line call into a layer nobody dares delete. Tinycast has no external API, no plugin surface and one
+supported OS, so it has nothing to be compatible *with* — which is the whole reason it stays this
+small. The version-gated code this project has deleted has consistently been larger than the feature it
+was gating.
 
-Carbon is the one deliberate exception: the global hotkey engine uses `RegisterEventHotKey` because
-nothing modern can register a system-wide chord, and `CGEventTap` cannot see a lone modifier press. That
-is a capability gap, not inertia — and every raw C pointer is decoded to plain values before it crosses
-into actor code.
+In practice that means Observation and never `ObservableObject` or `@Published`; `async`/`await` and
+never a completion handler or a `DispatchQueue` hop; `SMAppService` and never an `LSSharedFileList`
+shim; structured concurrency and never detached bookkeeping you have to remember to cancel. When one of
+these gains a successor, the migration is the change — not a wrapper preserving the old spelling.
+
+Carbon is the one deliberate exception. The global hotkey engine uses `RegisterEventHotKey` because
+nothing modern can register a system-wide chord, and `CGEventTap` cannot see a lone modifier press.
+That is a capability gap, not inertia — and every raw C pointer is decoded to plain values before it
+crosses into actor code.
 
 ## Architecture and feature organization
 
@@ -201,8 +207,8 @@ Minimal code, not annotated prose.
 6. A `///` doc comment on a public type or method follows the same rules. It is not a licence to stack
    lines.
 
-Rules 1 and 2 are checked mechanically. `EdgeDissolve.swift` and `ThinScrollbar.swift` are exempt because
-they are off-limits entirely.
+Rules 1 and 2 are also SwiftLint rules, so a violation shows up as you type rather than in a gate at the
+end. `EdgeDissolve.swift` and `ThinScrollbar.swift` are exempt because they are off-limits entirely.
 
 ## Accessibility
 
@@ -210,17 +216,9 @@ Every custom control carries a label and the traits that describe it. The palett
 control surface, so nothing comes for free — a row, a keycap chip, a footer pill and a dialog button all
 need saying explicitly. Adding it as the view is written costs a line; retrofitting it costs a rewrite.
 
-## Enforced
+## What is actually checked
 
-Everything above is guidance. These are checked, and all of them must pass before a change is done.
-Commands and rationale live in [testing.md](testing.md).
-
-| Check | Command |
-| --- | --- |
-| The test suite | `./Scripts/run-tests.sh` |
-| Pure-layer purity | `grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Model/` |
-| Comment rule 1 — no stacked comments | the `awk` one-liner in [testing.md](testing.md#the-comment-budget) |
-| Comment rule 2 — the 100-char cap | the `grep`/`awk` one-liner in [testing.md](testing.md#the-comment-budget) |
-| A clean build | `xcodebuild … -configuration Debug CODE_SIGNING_ALLOWED=NO`, zero new warnings |
-
-Anything not on this list is a judgement call. Make it, and say why in the PR if it is not obvious.
+Everything above is guidance. The mechanical bar — the harnesses, the purity grep, format and lint, a
+clean build — is one list, in [testing.md](testing.md#definition-of-done), so that it cannot drift by
+being written down twice. Anything not on it is a judgement call: make it, and say why in the PR if it
+is not obvious.

@@ -18,7 +18,8 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 
 ## Setup
 
-- macOS 26+, Xcode 26. Do the one-time signing setup ([`docs/signing.md`](docs/signing.md) §1).
+- macOS 26+, Xcode 26. Run `./Scripts/setup-editor.sh`, then do the one-time signing setup
+  ([`docs/signing.md`](docs/signing.md) §1).
 - `open Tinycast.xcodeproj` → ⌘R. Debug builds are their own channel (`Tinycast Dev.app`).
 - After editing `project.yml`: `xcodegen generate`, commit the result. No SwiftPM.
 - Details: [`docs/development.md`](docs/development.md). Architecture:
@@ -28,10 +29,9 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 
 - **A linked issue that got a green light.** No agreed issue, no merge — unless a maintainer marks
   the PR `typo` or `docs`.
-- Builds clean — no new warnings.
-- `./Scripts/run-tests.sh` passes; engine changes come with new cases. CI runs exactly that script as a
-  merge gate. It does **not** build the app, so **build locally** — a PR that doesn't compile still looks
-  green. [`docs/testing.md`](docs/testing.md) has the rest of the bar.
+- The whole bar in [`docs/testing.md`](docs/testing.md#definition-of-done) passes — harnesses, format
+  and lint, purity, a clean build. Engine changes come with new cases. CI runs only the harnesses and
+  does **not** build the app, so **build locally**: a PR that doesn't compile still looks green.
 - Leak-tested and memory-measured. Numbers in the PR.
 - You actually used the app, on your path and the ones next to it.
 - Rebased on `main`, squashed into logical commits.
@@ -54,32 +54,17 @@ Check existing [issues](https://github.com/abue-ammar/tinycast/issues) and
 
 ## Code style
 
-[`docs/standards.md`](docs/standards.md) is the full version — architecture, naming, Swift style,
-concurrency, performance budgets and the comment rules. The short version:
+Read [`AGENTS.md`](AGENTS.md) first — the posture, the Non-negotiables and the naming and comment rules
+are all there, and they apply to a human contributor exactly as they do to an agent.
+[`docs/standards.md`](docs/standards.md) is the full version: architecture, naming, Swift style,
+concurrency and the performance budgets. [`docs/ui.md`](docs/ui.md) before any new view or restyle, and
+[`docs/decisions.md`](docs/decisions.md) before "fixing" something that looks wrong — it may be
+deliberate, and the entry says what would change it.
 
-- Match the surrounding code. Prefer the simplest correct solution over the clever one.
-- Single-line comments only, capped at 100 characters. Comment the _why_, never the _what_.
-- Views stay declarative; logic lives in a model, a store or a coordinator.
-- Swift 6 isolation — `@MainActor` by default, heavy work explicitly off it.
-- [`DesignSystem/Theme.swift`](Tinycast/DesignSystem/Theme.swift) tokens only. Read
-  [`docs/ui.md`](docs/ui.md) before any new view or restyle. Dark only — no light-mode styling.
-- New long-lived state goes on `AppCore`, wired in `start()`.
-- Networked features ship **off** and consent-gated. Follow `CurrencyRateStore`.
-- Delete dead code. Never hand-edit the generated files.
-- Check [`docs/decisions.md`](docs/decisions.md) before "fixing" something that looks wrong — it may be
-  deliberate, and the entry says what would change it.
+Two things that are only about contributing, and so are not in those docs:
+
 - Commit messages imperative: `Add per-app hotkey toggle`.
-
-## Reviewing your own diff
-
-Worth a pass before you open the PR — these are the things that most often come back:
-
-- No new `MainActor.assumeIsolated`; it traps at runtime if the assumption is ever wrong.
-- Any new long-lived `Task` is stored and cancelled in `stop()` or `deinit`.
-- Any new observer uses `NotificationToken`, not a bare `addObserver`.
-- No `DispatchQueue.main.async` added to paper over an ordering problem.
-- Every escaping closure capturing `self` uses `[weak self]`.
-- Behaviour you didn't mean to change, didn't change.
+- Behaviour you didn't mean to change, didn't change. Say so explicitly in the PR if it did.
 
 ## Bugs
 
