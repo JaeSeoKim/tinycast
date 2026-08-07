@@ -274,17 +274,40 @@ stays the source of truth so settings changes are reviewable as text.
 **What would change this:** nothing while the app is an app rather than a library. Note that
 `Bundle.module` must never be used for shipped resources.
 
-### 26 — There is no formatter and no linter
+### 26 — The formatter is `swift-format`, set to respect existing line breaks
 
-Formatting is whatever Xcode's reindent does. The bar is a clean build with no new warnings.
+`.swift-format` sets `"respectsExistingLineBreaks": true`, so the formatter fixes indentation, spacing
+and ordering but does not re-flow line breaks a person placed. Over-long lines are a SwiftLint
+`line_length` warning to resolve deliberately instead.
 
-**Why:** adopting swift-format or SwiftLint means a tree-wide reformatting diff and a config to argue
-about, on a codebase whose style is already consistent. Worse, a shared config has been actively harmful
-here: VS Code's format-on-save silently reflowed five sites in `WindowLayout.swift` during the refactor,
-against no agreed config at all — which is why format-on-save is switched off in `.vscode/settings.json`.
+**Why:** this project had no formatter at all until 2026, because a shared config had been actively
+harmful — VS Code's format-on-save silently reflowed five sites in `WindowLayout.swift` during the
+refactor, against no agreed config. Rewrapping is the specific behaviour that caused it: it rewrites
+lines nobody touched, and the result is worse than what a person wrote, because the formatter cannot
+see why a break was placed where it was. Turning that off is what makes format-on-save safe.
 
-**What would change this:** more than one regular contributor, at which point commit a `.swift-format`
-config *and* reformat the whole tree in a single isolated commit.
+`swift-format` over SwiftFormat specifically because it **ships in the Xcode toolchain** — no Homebrew
+dependency, nothing to keep in sync with the Swift version — and because the official `swiftlang.swift`
+VS Code extension drives it natively, so format-on-save needs no third-party editor extension. That
+matters: the SwiftFormat VS Code extension was deprecated, and a formatter is only as maintainable as
+the editor integration that runs it. Measured on this tree at adoption, `swift-format` also produced a
+quarter of the churn SwiftFormat did (575 changed lines against 2,208) — the same conservatism, without
+having to disable eight rules to get it.
+
+**What would change this:** Apple abandoning `swift-format`, or a formatting need it cannot express.
+
+### 26a — SwiftLint carries the two comment rules
+
+The 100-character cap and the ban on stacked comment lines are `custom_rules` in `.swiftlint.yml`,
+scoped to `Tinycast/`.
+
+**Why:** they were two `awk`/`grep` one-liners pasted into three documents, run by hand at the end of a
+change. As lint rules they are written once and surface at the point the comment is typed. The scope is
+`Tinycast/` because that is exactly what the shell checks covered — the harnesses in `Tests/` were never
+held to it.
+
+**What would change this:** deciding the harnesses should be held to the comment policy too, which is a
+change to the policy, not to the tooling.
 
 ### 27 — Zero third-party dependencies
 

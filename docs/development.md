@@ -8,7 +8,7 @@ verifying a change is [testing.md](testing.md).
 - macOS 26 or later (Liquid Glass).
 - Xcode 26 — it provides the SwiftUI macro plugin and the SDK.
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen), and for the editor tooling below:
-  `brew install swiftformat swiftlint xcode-build-server`.
+  `brew install swiftlint xcode-build-server` (`swift-format` ships with Xcode).
 
 ## First-time setup
 
@@ -73,9 +73,10 @@ once. That task keeps `.compile` in sync on every subsequent build, so new and r
 resolving. **F5** builds and launches the app; the fixed build path means changes always apply without
 deleting `build/`.
 
-`.vscode/extensions.json` lists the three extensions this setup expects — VS Code offers them on first
-open. Toolchain selection belongs to the Swift extension (Command Palette → *Swift: Select Toolchain* →
-Xcode); do not pin `swift.path` or `DEVELOPER_DIR` in settings, as it conflicts with the extension.
+`.vscode/extensions.json` recommends the official `swiftlang.swift` extension, which is the only one
+this setup needs — it drives both SourceKit-LSP and `swift-format`. Toolchain selection belongs to it
+(Command Palette → *Swift: Select Toolchain* → Xcode); do not pin `swift.path` or `DEVELOPER_DIR` in
+settings, as that conflicts with the extension.
 
 ## Formatting & linting
 
@@ -84,17 +85,22 @@ Xcode); do not pin `swift.path` or `DEVELOPER_DIR` in settings, as it conflicts 
 ./Scripts/format.sh --check  # verify only; non-zero exit on drift
 ```
 
-[SwiftFormat](https://github.com/nicklockwood/SwiftFormat) owns whitespace, ordering and redundancy;
-[SwiftLint](https://github.com/realm/SwiftLint) owns the rules that catch defects. Configuration is
-`.swiftformat` and `.swiftlint.yml` at the repo root; both exclude the generated files and the two
-off-limits files in `DesignSystem/Scrolling/`.
+`swift-format` owns whitespace, indentation and ordering; [SwiftLint](https://github.com/realm/SwiftLint)
+owns the rules that catch defects, including the two comment rules from
+[standards.md](standards.md#comments). Configuration is `.swift-format` and `.swiftlint.yml` at the repo
+root; the script skips the generated files and the two off-limits files in `DesignSystem/Scrolling/`.
 
-SwiftFormat runs with `--maxwidth none`, so it **never rewraps a line**. That is deliberate: rewrapping
-is what made an earlier attempt at format-on-save rewrite untouched code
-([decisions.md](decisions.md) entry 26). An over-long line is a SwiftLint warning for a human to
-resolve instead.
+`swift-format` ships **inside the Xcode toolchain**, so there is nothing to install and nothing to keep
+in sync with the Swift version — SwiftLint is the only tool needing Homebrew. It runs with
+`"respectsExistingLineBreaks": true`, so it **never re-flows a line break you placed**. That is
+deliberate: rewrapping is what made an earlier attempt at format-on-save rewrite untouched code
+([decisions.md](decisions.md) entry 26). An over-long line is a SwiftLint warning to resolve instead.
 
-Format-on-save is on in `.vscode/settings.json`, and safe, because the config is committed and shared.
+Format-on-save is on in `.vscode/settings.json` and safe, because the config is committed and shared.
+The official `swiftlang.swift` extension drives `swift-format` directly, so no third-party formatter
+extension is involved. SwiftLint has no first-party extension, so its findings surface when you run the
+script or the **Format project** task rather than as you type.
+
 Neither tool runs in CI; `./Scripts/format.sh --check` before a PR is the bar.
 
 ## Generated data

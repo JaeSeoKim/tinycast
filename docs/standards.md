@@ -207,8 +207,8 @@ Minimal code, not annotated prose.
 6. A `///` doc comment on a public type or method follows the same rules. It is not a licence to stack
    lines.
 
-Rules 1 and 2 are also SwiftLint rules, so a violation shows up as you type rather than in a gate at the
-end. `EdgeDissolve.swift` and `ThinScrollbar.swift` are exempt because they are off-limits entirely.
+Rules 1 and 2 are SwiftLint `custom_rules`, scoped to `Tinycast/` — `./Scripts/format.sh` reports them.
+`EdgeDissolve.swift` and `ThinScrollbar.swift` are exempt because they are off-limits entirely.
 
 ## Accessibility
 

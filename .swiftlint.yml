@@ -1,0 +1,68 @@
+# SwiftLint owns the rules that catch defects. SwiftFormat owns whitespace and ordering, so nothing
+# purely cosmetic is enabled here. See docs/standards.md and docs/development.md.
+
+included:
+  - Tinycast
+  - Tests
+
+excluded:
+  - Tinycast/DesignSystem/Scrolling/EdgeDissolve.swift
+  - Tinycast/DesignSystem/Scrolling/ThinScrollbar.swift
+  - Tinycast/Features/Emoji/Model/EmojiData.generated.swift
+  - Tinycast/Features/Calculator/Model/CurrencyData.generated.swift
+
+# Noisy here, or actively wrong for this codebase.
+disabled_rules:
+  - todo                                      # tracked in issues, not by the linter
+  - trailing_whitespace                       # SwiftFormat owns whitespace
+  - identifier_name                           # rejects `id`, `dx`, `x` — all correct here
+  - type_body_length                          # a SwiftUI view is legitimately long
+  - function_body_length
+  - file_length                               # RootPaletteView is 662 lines by design
+  - cyclomatic_complexity                     # a switch over AppEntry.Kind is not complex
+  - nesting                                   # namespace enums are the house style
+  - large_tuple
+  - multiple_closures_with_trailing_closure   # fights SwiftUI
+
+# Each one prevents a real class of defect, not a style preference.
+opt_in_rules:
+  - first_where
+  - last_where
+  - contains_over_filter_count
+  - contains_over_first_not_nil
+  - empty_count
+  - fatal_error_message
+  - explicit_init
+  - implicitly_unwrapped_optional
+  - redundant_nil_coalescing
+  - toggle_bool
+  - static_over_final_class
+  - prefer_self_in_static_references
+  - unneeded_parentheses_in_closure_argument
+  - weak_delegate
+
+force_cast: error
+force_try: error
+
+line_length:
+  warning: 120
+  error: 250
+  ignores_urls: true
+  ignores_comments: false     # the 100-char comment cap below relies on comments being measured
+
+# The two comment rules from docs/standards.md#comments, checked as you type rather than in a gate.
+# Scoped to shipped code, which is exactly what the shell checks they replace covered.
+custom_rules:
+  comment_line_length:
+    name: "Comment length"
+    regex: '^(?=[ \t]*\/\/)[^\n]{101,}'
+    included: ".*/Tinycast/.*"
+    message: "Comments cap at 100 characters. Longer prose belongs in docs/."
+    severity: warning
+
+  stacked_comments:
+    name: "Stacked comments"
+    regex: '^[ \t]*\/{2,3}[^\n]*\n[ \t]*\/{2,3}'
+    included: ".*/Tinycast/.*"
+    message: "Never two consecutive comment lines. If it needs two, it needs a name."
+    severity: warning

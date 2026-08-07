@@ -1,9 +1,0 @@
-version: 2
-
-# Tinycast has zero third-party Swift dependencies and no Package.swift, so there is no "swift"
-# ecosystem to watch here. Action pins are the only thing that actually needs updating.
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"

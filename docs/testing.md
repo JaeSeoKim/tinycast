@@ -111,10 +111,10 @@ find ~/Library/Developer/Xcode/DerivedData -name "Tinycast*.app" -maxdepth 6 -pr
 ./Scripts/format.sh --check
 ```
 
-SwiftFormat owns whitespace and ordering; SwiftLint owns the rules that catch defects, including the
-two checkable comment rules — the 100-character cap and the ban on stacked comment lines. Both surface
-in the editor as you type, so this command should already be clean by the time you run it. Setup and
-configuration are in [development.md](development.md#formatting--linting).
+`swift-format` owns whitespace and ordering; SwiftLint owns the rules that catch defects, including the
+two checkable comment rules — the 100-character cap and the ban on stacked comment lines. Formatting is
+already applied on save in VS Code, so in practice this reports lint findings. Setup and configuration
+are in [development.md](development.md#formatting--linting).
 
 ## Performance measurement
 
