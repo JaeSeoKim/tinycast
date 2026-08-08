@@ -45,8 +45,22 @@ private struct OverlayScrollerConfigurator: NSViewRepresentable {
             styleObserver = NotificationToken(token, center: .default)
         }
 
+        /// A `Form` or `List` builds its own scroll view, so a `.background` probe on one is a
+        /// cousin of that scroll view rather than a descendant and `enclosingScrollView` misses it.
+        /// Climb until an ancestor's subtree holds one; content nested *inside* a scroll view still
+        /// takes the exact first branch.
+        private var targetScrollView: NSScrollView? {
+            if let scrollView = enclosingScrollView { return scrollView }
+            var ancestor = superview
+            while let current = ancestor {
+                if let scrollView = current.firstScrollViewInSubtree { return scrollView }
+                ancestor = current.superview
+            }
+            return nil
+        }
+
         func applyOverlayStyle() {
-            guard let scrollView = enclosingScrollView else {
+            guard let scrollView = targetScrollView else {
                 // Not spliced in yet; retry next tick, bounded so it can't spin forever.
                 guard attemptsRemaining > 0 else { return }
                 attemptsRemaining -= 1
@@ -61,5 +75,15 @@ private struct OverlayScrollerConfigurator: NSViewRepresentable {
             scrollView.hasVerticalScroller = true
             scrollView.tile()  // reclaim any gutter the legacy scroller had reserved, same layout pass
         }
+    }
+}
+
+extension NSView {
+    fileprivate var firstScrollViewInSubtree: NSScrollView? {
+        for subview in subviews {
+            if let scrollView = subview as? NSScrollView { return scrollView }
+            if let nested = subview.firstScrollViewInSubtree { return nested }
+        }
+        return nil
     }
 }

@@ -76,9 +76,11 @@ enum Theme {
         /// A menu row's glyph slot, sized so symbol and app-icon rows read the same.
         static let menuIcon: CGFloat = 20
         /// Settings window: the size it opens at, which is also the floor it can be resized to.
-        static let settingsWindow = CGSize(width: 720, height: 550)
-        /// Settings window: sidebar column width and the small icon used in setting rows.
-        static let settingsSidebar: CGFloat = 184
+        static let settingsWindow = CGSize(width: 760, height: 580)
+        /// Settings sidebar: a fixed column, wide enough for "Window Management".
+        static let settingsSidebar: CGFloat = 215
+        /// The narrowest the pane column may get before a grouped row's control starts colliding.
+        static let settingsDetailMinimum: CGFloat = 420
         static let settingsRowIcon: CGFloat = 20
         /// The state indicator dot beside a settings row title.
         static let statusDot: CGFloat = 6

@@ -16,15 +16,11 @@ struct SettingsPane<Content: View>: View {
                 SettingsHeader(title: title, subtitle: subtitle)
                 content
             }
-            // Ignore the titlebar safe area: one fixed inset every side reads better.
             .padding(Theme.Spacing.xxl)
             .frame(maxWidth: .infinity, alignment: .leading)
             // The native overlay scroller here, matching other windowed setting lists.
             .overlayScroller()
         }
-        .ignoresSafeArea(edges: .top)
-        // Outside the ScrollView, so an open recorder's callout isn't clipped by it.
-        .shortcutRecorderPopoverHost()
     }
 }
 

@@ -29,7 +29,6 @@ struct AboutView: View {
                     links
                     support
                 }
-                // Ignore the titlebar safe area; one fixed inset every side, as in `SettingsPane`.
                 .padding(Theme.Spacing.xxl)
                 .frame(maxWidth: .infinity)
                 .overlayScroller()
@@ -38,7 +37,6 @@ struct AboutView: View {
             footer
                 .padding(.bottom, Theme.Spacing.xxl)
         }
-        .ignoresSafeArea(edges: .top)
     }
 
     private var hero: some View {
