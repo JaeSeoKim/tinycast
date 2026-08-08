@@ -70,7 +70,6 @@ struct ClipboardSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .confirmationDialog(
             "Clear clipboard history?",
             isPresented: $confirmingClear,

@@ -22,7 +22,6 @@ struct WindowManagementSettingsView: View {
             .settingsEnabled(settings.windowManagementEnabled)
         }
         .formStyle(.grouped)
-        .overlayScroller()
     }
 
     private var options: some View {

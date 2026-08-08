@@ -46,7 +46,6 @@ struct CommandsSettingsView: View {
             .settingsEnabled(settings.customCommandsEnabled)
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .sheet(item: $editor) { target in
             CustomCommandEditorSheet(command: target.command)
         }

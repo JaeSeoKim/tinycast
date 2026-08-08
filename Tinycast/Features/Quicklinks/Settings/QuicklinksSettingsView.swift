@@ -30,7 +30,6 @@ struct QuicklinksSettingsView: View {
             .settingsEnabled(settings.quicklinksEnabled)
         }
         .formStyle(.grouped)
-        .overlayScroller()
         // Presented from the pane, so "Create Quicklink" can open it from the palette.
         .sheet(item: $core.pendingQuicklinkEdit) { request in
             QuicklinkEditorSheet(quicklink: request.quicklink)

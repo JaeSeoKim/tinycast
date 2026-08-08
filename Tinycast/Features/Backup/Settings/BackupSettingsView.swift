@@ -80,7 +80,6 @@ struct BackupSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
     }
 
     @ViewBuilder

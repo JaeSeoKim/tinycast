@@ -46,7 +46,6 @@ struct SnippetsSettingsView: View {
             .settingsEnabled(settings.snippetsEnabled)
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .sheet(item: $editor) { target in
             SnippetEditorSheet(record: target.record)
         }

@@ -16,7 +16,6 @@ struct SettingsSidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .overlayScroller()
     }
 
     /// `List` hands back an optional selection; routing it through `select` is what records history.

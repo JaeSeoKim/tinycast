@@ -32,7 +32,6 @@ struct AboutView: View {
                 support
             }
             .formStyle(.grouped)
-            .overlayScroller()
 
             // Outside the form, so the copyright stays pinned to the bottom edge.
             footer

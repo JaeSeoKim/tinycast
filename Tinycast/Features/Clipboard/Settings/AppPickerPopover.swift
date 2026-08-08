@@ -38,7 +38,6 @@ struct AppPickerPopover: View {
                 }
                 .padding(Theme.Spacing.sm)
             }
-            .overlayScroller()
         }
         .frame(width: 220, height: 240)
     }

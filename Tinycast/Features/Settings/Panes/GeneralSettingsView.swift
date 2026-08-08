@@ -151,7 +151,6 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .confirmationDialog(
             "Reset learned launcher ranking?",
             isPresented: $confirmingRankingReset,

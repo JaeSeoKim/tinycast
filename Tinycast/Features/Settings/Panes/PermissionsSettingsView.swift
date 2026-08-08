@@ -37,7 +37,6 @@ struct PermissionsSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .onAppear { accessibilityTrusted = Permissions.isAccessibilityTrusted() }
         .onReceive(refreshTimer) { _ in
             let trusted = Permissions.isAccessibilityTrusted()

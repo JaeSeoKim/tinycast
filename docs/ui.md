@@ -313,7 +313,14 @@ style; `.thinScrollbar()` on the scroll view draws a hairline thumb (`Color.prim
 
 Routing: the palette lists (App Launcher, Clipboard history, Emoji, Calculator history) use
 `.thinScrollbar()` + `.hideNativeScrollers()`; the Clipboard preview (right pane) and every Settings
-pane use the native `.overlayScroller()`. Don't reintroduce native scrollers on the palette lists.
+pane take the native scroller as-is. Don't reintroduce native scrollers on the palette lists.
+
+**Native scrollers are overlay app-wide, set once.** `AppDelegate.applicationWillFinishLaunching`
+writes `AppleShowScrollBars = WhenScrolling` into Tinycast's own defaults domain, which outranks the
+global one. Under the system's "Automatic" setting AppKit otherwise switches every scroll view to
+thick legacy scrollers the moment it sees a mouse — a scroll view is born overlay and flips ~half a
+second later, which read as a thick bar flashing at the right edge of each pane. There is no
+per-scroll-view shim: chasing that flip after the fact is what caused the flash.
 
 ---
 

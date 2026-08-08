@@ -35,6 +35,5 @@ struct EmojiSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
     }
 }

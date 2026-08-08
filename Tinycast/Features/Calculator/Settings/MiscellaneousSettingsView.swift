@@ -48,7 +48,6 @@ struct MiscellaneousSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .overlayScroller()
         .sheet(isPresented: $askingConsent) {
             CurrencyConsentSheet(
                 onCancel: { askingConsent = false },
