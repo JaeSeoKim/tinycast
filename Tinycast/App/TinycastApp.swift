@@ -20,7 +20,7 @@ struct TinycastApp: App {
                 AppCore.shared.paletteCoordinator.showPalette(mode: .clipboard)
             }
             Divider()
-            Button("Settings...") { AppCore.shared.paletteCoordinator.showSettings() }
+            Button("Settings...") { AppCore.shared.settingsCoordinator.showSettings() }
                 .keyboardShortcut(",")
             Divider()
             Button("Quit \(appName)") { NSApp.terminate(nil) }

@@ -23,8 +23,9 @@ that need a fake store.
 
 ### 2 — Windows are AppKit, not SwiftUI scenes
 
-`TinycastApp` declares only a `MenuBarExtra`. The palette is a borderless `NSPanel`; Settings, About and
-Onboarding are plain `NSWindow`s via `AuxWindowController`.
+`TinycastApp` declares only a `MenuBarExtra`. The palette is a borderless `NSPanel`; Settings and
+Onboarding are titled `NSWindow`s, one `AppWindowController` each. The main menu is built by hand too,
+replacing SwiftUI's — see entry 32.
 
 **Why:** SwiftUI's `Settings` and `Window` scenes behave unreliably in an accessory (`LSUIElement`) app —
 activation, ordering and restoration all misbehave — and the palette needs frame control that a SwiftUI
@@ -365,3 +366,26 @@ notice. See [hotkeys.md](features/hotkeys.md#include-shift-re-points-what-is-alr
 
 **What would change this:** a way to know at capture time that the flags came from the tap — the tap would
 have to mark its rewritten events in a field `NSEvent` still exposes.
+
+### 32 — Settings and the palette are two lifecycles, and ⌘Q closes a window
+
+The palette and Settings share no window ownership. Hiding the palette never closes, hides or reorders
+Settings; closing Settings never touches the palette. Neither coordinator can reach the other's surface —
+`PaletteCoordinator` holds no `AppCore` back-reference at all, which is what makes that checkable.
+
+Two consequences look wrong out of context:
+
+- **The app builds its own `NSApp.mainMenu`** (`App/MainMenuController.swift`), replacing the one SwiftUI
+  installs during `applicationWillFinishLaunching`. SwiftUI's carries a real `Quit ⌘Q`, so with Settings
+  focused — or even with just the palette up — ⌘Q terminated the background agent.
+- **⌘Q is "Close Settings", not Quit.** Quitting stays on the menu-bar extra and the launcher's Quit
+  Tinycast command. The item is titled for what it does, and `validateMenuItem` greys it out when no
+  Settings window is open.
+
+**Why:** Tinycast is an agent that happens to have a settings window, not a windowed app. Every reflex
+that closes a window — ⌘Q, ⌘W, the red traffic light, the last window closing — has to leave the hotkeys,
+the clipboard poller and the snippet listener running, or the app silently stops being itself.
+`applicationShouldTerminateAfterLastWindowClosed` returns `false` for the same reason.
+
+**What would change this:** Tinycast growing a document surface, where ⌘Q meaning Quit would matter more
+than an agent surviving a closed window.
