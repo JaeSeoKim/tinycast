@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One category's Settings card; never filters by visibility, so hidden rows stay listed.
-struct LauncherItemsCard: View {
+/// One category's Settings sections; never filters by visibility, so hidden rows stay listed.
+struct LauncherItemsSection: View {
     let kind: AppEntry.Kind
     let header: String
     let searchPrompt: String
@@ -17,42 +17,30 @@ struct LauncherItemsCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
-            SettingsSearchField(prompt: searchPrompt, query: $query)
+        Section {
+            Toggle(isOn: kindBinding) {
+                Text("Show in launcher")
+                Text("Uncheck an item below to hide just that one.")
+            }
+        } header: {
+            Text(header)
+        }
 
-            SettingsCard(header: header) {
-                SettingsRow(
-                    title: "Show in launcher",
-                    subtitle: "Uncheck an item below to hide just that one.",
-                    systemImage: "magnifyingglass",
-                    tint: .green
-                ) {
-                    Toggle("Show in launcher", isOn: kindBinding)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .accessibilityLabel("Show in launcher")
-                }
-                SettingsDivider()
+        Section {
+            SettingsFilterField(prompt: searchPrompt, query: $query)
 
-                // Rows dim while the category is off but stay interactive.
-                LazyVStack(spacing: 1) {
-                    if entries.isEmpty {
-                        Text(query.isEmpty ? "Nothing here yet." : "No matches for “\(query)”.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, Theme.Spacing.xxl)
-                    } else {
-                        ForEach(entries) { entry in
-                            LauncherItemRow(entry: entry)
-                        }
-                    }
+            if entries.isEmpty {
+                Text(query.isEmpty ? "Nothing here yet." : "No matches for “\(query)”.")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            } else {
+                ForEach(entries) { entry in
+                    LauncherItemRow(entry: entry)
                 }
-                .padding(Theme.Spacing.sm)
-                .opacity(visibility.isKindVisible(kind) ? 1 : 0.45)
             }
         }
+        // Rows dim while the category is off but stay interactive, so one can still be re-hidden.
+        .opacity(visibility.isKindVisible(kind) ? 1 : 0.45)
     }
 
     private var kindBinding: Binding<Bool> {
@@ -66,30 +54,25 @@ struct LauncherItemsCard: View {
 private struct LauncherItemRow: View {
     let entry: AppEntry
     @Environment(VisibilityStore.self) private var visibility
-    // Hover lives on the row itself so a mouse sweep repaints only the rows entering/leaving.
-    @State private var hovered = false
 
     var body: some View {
-        HStack(spacing: Theme.Spacing.lg) {
-            AppIconView(app: entry)
-                .frame(width: 22, height: 22)
-            Text(entry.name).lineLimit(1)
-            Spacer(minLength: Theme.Spacing.xl)
-            if let action = entry.hotKeyAction {
-                ShortcutRecorder(action: action)
+        LabeledContent {
+            HStack(spacing: Theme.Spacing.lg) {
+                if let action = entry.hotKeyAction {
+                    ShortcutRecorder(action: action)
+                }
+                Toggle("", isOn: itemBinding)
+                    .labelsHidden()
+                    .toggleStyle(.checkbox)
+                    .accessibilityLabel("Show \(entry.name) in launcher")
             }
-            Toggle("", isOn: itemBinding)
-                .labelsHidden()
-                .toggleStyle(.checkbox)
-                .accessibilityLabel("Show \(entry.name) in launcher")
+        } label: {
+            Label {
+                Text(entry.name).lineLimit(1)
+            } icon: {
+                AppIconView(app: entry).frame(width: 18, height: 18)
+            }
         }
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
-                .fill(hovered ? Theme.Colors.rowHover : .clear)
-        )
-        .onHover { hovered = $0 }
     }
 
     private var itemBinding: Binding<Bool> {

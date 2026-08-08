@@ -25,6 +25,7 @@ struct SettingsHistoryTests {
         aNewBranchDiscardsTheOldOne()
         clampsAtBothEnds()
         sidebarCoversEveryPane()
+        sidebarIdentityNamespacesAreDisjoint()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -114,5 +115,16 @@ struct SettingsHistoryTests {
             Set(grouped) == Set(SettingsTab.allCases),
             "every pane appears in exactly one sidebar group")
         expect(grouped.count == SettingsTab.allCases.count, "and none appears twice")
+    }
+
+    /// A selectable `List` flattens section and row IDs into one namespace. When both were `Int`
+    /// raw values the ranges overlapped, and SwiftUI dropped whole groups from the sidebar.
+    static func sidebarIdentityNamespacesAreDisjoint() {
+        let sections = Set(SettingsSection.allCases.map { AnyHashable($0.id) })
+        let tabs = Set(SettingsTab.allCases.map { AnyHashable($0.id) })
+        expect(
+            sections.isDisjoint(with: tabs),
+            "no sidebar group shares an identity with a pane")
+        expect(tabs.count == SettingsTab.allCases.count, "and every pane's identity is its own")
     }
 }

@@ -1,7 +1,8 @@
-enum SettingsTab: Int, CaseIterable, Identifiable {
+enum SettingsTab: CaseIterable, Identifiable {
     case general, applications, systemSettings, systemActions, commands, quicklinks, snippets,
         windowManagement, clipboard, emoji, permissions, backup, miscellaneous, about
-    var id: Int { rawValue }
+    /// The case, never an index: a selectable `List` flattens section and row IDs into one namespace.
+    var id: Self { self }
 
     var title: String {
         switch self {
@@ -44,9 +45,10 @@ enum SettingsTab: Int, CaseIterable, Identifiable {
 
 /// The sidebar's groups; declaration order is display order, and `tabs` is the order within a group.
 /// Not spelled `SettingsTab.Section`, which would shadow SwiftUI's `Section` at every call site.
-enum SettingsSection: Int, CaseIterable, Identifiable {
+enum SettingsSection: CaseIterable, Identifiable {
     case general, launcher, features, advanced
-    var id: Int { rawValue }
+    /// See `SettingsTab.id`: distinct types keep the two namespaces from colliding.
+    var id: Self { self }
 
     var title: String {
         switch self {
