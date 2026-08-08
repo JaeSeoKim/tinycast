@@ -1,10 +1,10 @@
-enum SettingsTab: Int, CaseIterable, Identifiable, Hashable {
+enum SettingsTab: CaseIterable, Identifiable, Hashable {
     // Declaration order is sidebar order; `Group.tabs` slices it, so keep each group contiguous.
     case general, permissions
     case applications, systemSettings, systemActions, commands, quicklinks
     case snippets, windowManagement, clipboard, emoji
     case backup, miscellaneous, about
-    var id: Int { rawValue }
+    var id: Self { self }
 
     /// A sidebar section, so fourteen panes read as four short lists rather than one long one.
     enum Group: CaseIterable, Identifiable {

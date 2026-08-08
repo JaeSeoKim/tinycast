@@ -207,5 +207,5 @@ Every `SettingsTab` maps to one `…SettingsView` built on the `SettingsPane` / 
 `DesignSystem/SettingsComponents.swift`. A pane lives with its feature; only a pane no feature owns
 (General, Permissions) lives in `Settings/Panes/`. The four launcher-category panes — Applications,
 System Settings, System Actions, Commands — are thin wrappers over the shared `LauncherItemsCard`.
-`SettingsTab.Group` sections the sidebar; its declaration order **is** sidebar order, so the arrow-key
-`stepping(_:)` walks the same sequence the eye reads. Nothing persists the raw value.
+`SettingsTab.Group` sections the sidebar; its declaration order **is** sidebar order, so `Group.tabs`
+slices `allCases` and each group has to stay contiguous. Nothing persists a tab, so the enum is raw-less.

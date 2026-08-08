@@ -28,12 +28,15 @@ final class SettingsWindowPresenter {
         let token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.isOpen = false
-                DockPresence.syncAfterClose()
-            }
+            Task { @MainActor in self?.windowDidClose() }
         }
         closeObserver = NotificationToken(token, center: .default)
+    }
+
+    private func windowDidClose() {
+        isOpen = false
+        guard let window else { return }
+        DockPresence.syncAfterClose(of: window)
     }
 
     /// Opens Settings on `tab`, or switches an already-open window to it.
@@ -51,9 +54,8 @@ final class SettingsWindowPresenter {
         initialTab = tab
         isOpen = true
         openWindow?(id: Self.windowID)
-        DispatchQueue.main.async {
-            self.window?.makeKeyAndOrderFront(nil)
-        }
+        // Only a reopen has a window to raise: SwiftUI leaves a closed scene's window alive.
+        window?.makeKeyAndOrderFront(nil)
     }
 
     /// Re-raise an open Settings window, or false when there isn't one.

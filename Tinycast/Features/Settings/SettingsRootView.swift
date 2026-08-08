@@ -34,7 +34,6 @@ struct SettingsRootView: View {
             .navigationTitle("")
             // Every pane is one click away in the list; collapsing the column only hides them.
             .toolbar(removing: .sidebarToggle)
-            .toolbarBackground(.clear, for: .automatic)
             // Resizable, so AppKit aligns the toolbar's leading items to the split divider.
             .navigationSplitViewColumnWidth(
                 min: Theme.Size.settingsSidebar, ideal: Theme.Size.settingsSidebar,
@@ -50,6 +49,7 @@ struct SettingsRootView: View {
                                 Image(systemName: "chevron.backward")
                             }
                             .help("Back")
+                            .accessibilityLabel("Back")
                             .disabled(!history.canGoBack)
                         }
                         ToolbarItem(placement: .navigation) {
@@ -57,13 +57,13 @@ struct SettingsRootView: View {
                                 Image(systemName: "chevron.forward")
                             }
                             .help("Forward")
+                            .accessibilityLabel("Forward")
                             .disabled(!history.canGoForward)
                         }
                     }
             }
         }
         .navigationSplitViewStyle(.balanced)
-        .toolbarBackground(.clear, for: .windowToolbar)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .onReceive(NotificationCenter.default.publisher(for: .tinycastSelectSettingsTab)) { note in
             if let target = note.object as? SettingsTab { history.visit(target) }

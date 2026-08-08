@@ -75,12 +75,12 @@ enum Theme {
         static let menuWidth: CGFloat = 276
         /// A menu row's glyph slot, sized so symbol and app-icon rows read the same.
         static let menuIcon: CGFloat = 20
-        /// Settings window: sidebar column width, and the glyph slot its rows share with a callout.
         static let settingsWindow = CGSize(width: 900, height: 720)
         /// The floor for a resizable window: below this the split view's columns collapse.
         static let settingsWindowMin = CGSize(width: 820, height: 660)
         static let settingsSidebar: CGFloat = 200
         static let settingsSidebarMax: CGFloat = 280
+        /// The glyph slot a settings row shares with a callout, so the two align.
         static let settingsGlyph: CGFloat = 20
         /// The app picker, sized to show a handful of rows without becoming a second window.
         static let appPicker = CGSize(width: 250, height: 260)

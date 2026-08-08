@@ -76,6 +76,6 @@ final class AuxWindowController: NSObject, NSWindowDelegate {
         else { return }
         windows.removeValue(forKey: id)
         // Not `windows.isEmpty`: Settings is a scene, a titled window this type never sees.
-        DockPresence.syncAfterClose()
+        DockPresence.syncAfterClose(of: window)
     }
 }

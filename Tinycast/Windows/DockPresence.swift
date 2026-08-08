@@ -7,13 +7,11 @@ enum DockPresence {
         NSApp.setActivationPolicy(.regular)
     }
 
-    /// Deferred a turn: on `willClose` the closing window is still listed in `NSApp.windows`.
-    static func syncAfterClose() {
-        DispatchQueue.main.async {
-            let titled = NSApp.windows.contains {
-                $0.isVisible && $0.styleMask.contains(.titled)
-            }
-            if !titled { NSApp.setActivationPolicy(.accessory) }
+    /// `closing` is excluded by identity: on `willClose` it is still listed and still visible.
+    static func syncAfterClose(of closing: NSWindow) {
+        let titled = NSApp.windows.contains {
+            $0 !== closing && $0.isVisible && $0.styleMask.contains(.titled)
         }
+        if !titled { NSApp.setActivationPolicy(.accessory) }
     }
 }
