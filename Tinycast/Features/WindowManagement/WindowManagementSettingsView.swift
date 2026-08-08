@@ -19,9 +19,7 @@ struct WindowManagementSettingsView: View {
                 options
                 commands
             }
-            // Same dim as a hidden launcher category; the switch above stays live.
-            .opacity(settings.windowManagementEnabled ? 1 : 0.45)
-            .disabled(!settings.windowManagementEnabled)
+            .settingsEnabled(settings.windowManagementEnabled)
         }
         .formStyle(.grouped)
         .overlayScroller()
@@ -74,19 +72,16 @@ private struct WindowCommandSettingsRow: View {
     @Environment(VisibilityStore.self) private var visibility
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: Theme.Spacing.lg) {
-                ShortcutRecorder(action: .windowCommand(id: command.id))
+        SettingsRow(title: command.name) {
+            Image(systemName: command.sfSymbol)
+        } trailing: {
+            ShortcutRecorder(action: .windowCommand(id: command.id))
 
-                Toggle("", isOn: visibilityBinding)
-                    .labelsHidden()
-                    .toggleStyle(.checkbox)
-                    .help("Show in launcher")
-                    .accessibilityLabel("Show \(command.name) in launcher")
-            }
-        } label: {
-            Label(command.name, systemImage: command.sfSymbol)
-                .lineLimit(1)
+            Toggle("", isOn: visibilityBinding)
+                .labelsHidden()
+                .toggleStyle(.checkbox)
+                .help("Show in launcher")
+                .accessibilityLabel("Show \(command.name) in launcher")
         }
     }
 

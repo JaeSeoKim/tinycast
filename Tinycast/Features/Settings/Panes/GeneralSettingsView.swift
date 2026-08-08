@@ -27,7 +27,7 @@ struct GeneralSettingsView: View {
         @Bindable var settings = settings
         return Form {
             Section {
-                LabeledContent("App Launcher") {
+                SettingsRow(title: "App Launcher") {
                     ShortcutRecorder(action: .togglePalette)
                 }
             } header: {
@@ -102,7 +102,7 @@ struct GeneralSettingsView: View {
                     Text("Hyper Key will remap to the \(hyperGlyphs) modifier keys.")
                 }
                 // Flipping it re-points recorded chords, so it needs a chord to mean.
-                .disabled(settings.hyperKey == .none)
+                .settingsEnabled(settings.hyperKey != .none)
             } header: {
                 Text("Hyper Key")
             }

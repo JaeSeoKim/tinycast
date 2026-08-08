@@ -43,9 +43,7 @@ struct SnippetsSettingsView: View {
                 library
                 libraryNotices
             }
-            // Same dim as a hidden launcher category; the switch above stays live.
-            .opacity(settings.snippetsEnabled ? 1 : 0.45)
-            .disabled(!settings.snippetsEnabled)
+            .settingsEnabled(settings.snippetsEnabled)
         }
         .formStyle(.grouped)
         .overlayScroller()
@@ -174,31 +172,23 @@ private struct SnippetSettingsRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: Theme.Spacing.lg) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.plain)
-                .help("Edit Snippet")
-                .accessibilityLabel("Edit \(record.snippet.name)")
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
-                .help("Delete Snippet")
-                .accessibilityLabel("Delete \(record.snippet.name)")
+        SettingsRow(title: record.snippet.name, subtitle: metadata) {
+            Image(systemName: "doc.text")
+        } trailing: {
+            Button(action: onEdit) {
+                Image(systemName: "pencil")
             }
-        } label: {
-            // `LabeledContent` styles the first label view as the title and the rest as subtitles.
-            Label(record.snippet.name, systemImage: "doc.text")
-                .lineLimit(1)
-            Text(metadata)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(metadata)
+            .buttonStyle(.plain)
+            .help("Edit Snippet")
+            .accessibilityLabel("Edit \(record.snippet.name)")
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+            .help("Delete Snippet")
+            .accessibilityLabel("Delete \(record.snippet.name)")
         }
     }
 

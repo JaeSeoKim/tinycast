@@ -34,14 +34,24 @@ struct LauncherItemsSection: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
             } else {
-                ForEach(entries) { entry in
-                    LauncherItemRow(entry: entry)
+                // One Form row holding a lazy stack: a `Form` realizes every row it is handed, and
+                // this list runs to hundreds of apps. The padding restores the row rhythm it loses.
+                LazyVStack(spacing: 0) {
+                    ForEach(entries) { entry in
+                        if entry.id != entries.first?.id { Divider() }
+                        LauncherItemRow(entry: entry)
+                            .padding(.vertical, Self.rowPadding)
+                    }
                 }
+                .padding(.vertical, -Self.rowPadding)
             }
         }
         // Rows dim while the category is off but stay interactive, so one can still be re-hidden.
         .opacity(visibility.isKindVisible(kind) ? 1 : 0.45)
     }
+
+    /// A grouped `Form` row's own vertical padding.
+    private static let rowPadding: CGFloat = 15
 
     private var kindBinding: Binding<Bool> {
         Binding(
@@ -56,22 +66,16 @@ private struct LauncherItemRow: View {
     @Environment(VisibilityStore.self) private var visibility
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: Theme.Spacing.lg) {
-                if let action = entry.hotKeyAction {
-                    ShortcutRecorder(action: action)
-                }
-                Toggle("", isOn: itemBinding)
-                    .labelsHidden()
-                    .toggleStyle(.checkbox)
-                    .accessibilityLabel("Show \(entry.name) in launcher")
+        SettingsRow(title: entry.name) {
+            AppIconView(app: entry).frame(width: 18, height: 18)
+        } trailing: {
+            if let action = entry.hotKeyAction {
+                ShortcutRecorder(action: action)
             }
-        } label: {
-            Label {
-                Text(entry.name).lineLimit(1)
-            } icon: {
-                AppIconView(app: entry).frame(width: 18, height: 18)
-            }
+            Toggle("", isOn: itemBinding)
+                .labelsHidden()
+                .toggleStyle(.checkbox)
+                .accessibilityLabel("Show \(entry.name) in launcher")
         }
     }
 

@@ -67,13 +67,17 @@ private struct OverlayScrollerConfigurator: NSViewRepresentable {
                 DispatchQueue.main.async { [weak self] in self?.applyOverlayStyle() }
                 return
             }
-            guard scrollView.scrollerStyle != .overlay || !scrollView.autohidesScrollers else {
-                return  // already in the target state — don't churn layout on re-runs
+            // Touch only what is actually wrong. Re-asserting a setting the scroll view already
+            // holds makes AppKit re-tile and flash the scrollers — once per pane, on every switch.
+            if scrollView.scrollerStyle != .overlay {
+                scrollView.scrollerStyle = .overlay  // thin floating knob that reserves no width
             }
-            scrollView.scrollerStyle = .overlay  // thin floating knob that reserves no width
-            scrollView.autohidesScrollers = true
-            scrollView.hasVerticalScroller = true
-            scrollView.tile()  // reclaim any gutter the legacy scroller had reserved, same layout pass
+            if !scrollView.autohidesScrollers {
+                scrollView.autohidesScrollers = true
+            }
+            if !scrollView.hasVerticalScroller {
+                scrollView.hasVerticalScroller = true
+            }
         }
     }
 }

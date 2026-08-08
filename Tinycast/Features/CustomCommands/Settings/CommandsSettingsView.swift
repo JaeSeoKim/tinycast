@@ -43,9 +43,7 @@ struct CommandsSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            // Same dim as a hidden launcher category; the switch above stays live.
-            .opacity(settings.customCommandsEnabled ? 1 : 0.45)
-            .disabled(!settings.customCommandsEnabled)
+            .settingsEnabled(settings.customCommandsEnabled)
         }
         .formStyle(.grouped)
         .overlayScroller()
@@ -81,34 +79,25 @@ private struct CustomCommandSettingsRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: Theme.Spacing.lg) {
-                ShortcutRecorder(action: .customCommand(id: command.id))
+        SettingsRow(title: command.name, subtitle: command.command) {
+            Image(systemName: CustomCommand.sfSymbol)
+        } trailing: {
+            ShortcutRecorder(action: .customCommand(id: command.id))
 
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.plain)
-                .help("Edit Command")
-                .accessibilityLabel("Edit \(command.name)")
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
-                .help("Delete Command")
-                .accessibilityLabel("Delete \(command.name)")
+            Button(action: onEdit) {
+                Image(systemName: "pencil")
             }
-        } label: {
-            // `LabeledContent` styles the first label view as the title and the rest as subtitles.
-            Label(command.name, systemImage: CustomCommand.sfSymbol)
-                .lineLimit(1)
-            Text(command.command)
-                .monospaced()
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(command.command)
+            .buttonStyle(.plain)
+            .help("Edit Command")
+            .accessibilityLabel("Edit \(command.name)")
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+            .help("Delete Command")
+            .accessibilityLabel("Delete \(command.name)")
         }
     }
 }

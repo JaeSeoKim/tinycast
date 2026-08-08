@@ -27,9 +27,7 @@ struct QuicklinksSettingsView: View {
                 behaviour
                 transfer
             }
-            // Same dim as a hidden launcher category; the switch above stays live.
-            .opacity(settings.quicklinksEnabled ? 1 : 0.45)
-            .disabled(!settings.quicklinksEnabled)
+            .settingsEnabled(settings.quicklinksEnabled)
         }
         .formStyle(.grouped)
         .overlayScroller()
@@ -153,51 +151,36 @@ private struct QuicklinkSettingsRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        LabeledContent {
-            HStack(spacing: Theme.Spacing.lg) {
-                ShortcutRecorder(action: .quicklink(id: quicklink.id))
-
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.plain)
-                .help("Edit Quicklink")
-                .accessibilityLabel("Edit \(quicklink.name)")
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
-                .help("Delete Quicklink")
-                .accessibilityLabel("Delete \(quicklink.name)")
+        SettingsRow(title: quicklink.name, subtitle: quicklink.link) {
+            SymbolImage(name: symbol, size: 13)
+        } trailing: {
+            if quicklink.isPinned {
+                Image(systemName: "pin.fill")
+                    .foregroundStyle(.secondary)
+                    .help("Pinned to the top")
             }
-        } label: {
-            // `LabeledContent` styles the first label view as the title and the rest as subtitles.
-            Label {
-                HStack(spacing: Theme.Spacing.sm) {
-                    Text(quicklink.name).lineLimit(1)
-                    if quicklink.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
-                            .help("Pinned to the top")
-                    }
-                    if !quicklink.showsInRootSearch {
-                        Image(systemName: "eye.slash")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
-                            .help("Hidden from root search")
-                    }
-                }
-            } icon: {
-                SymbolImage(name: symbol, size: 13)
+            if !quicklink.showsInRootSearch {
+                Image(systemName: "eye.slash")
+                    .foregroundStyle(.secondary)
+                    .help("Hidden from root search")
             }
-            Text(quicklink.link)
-                .monospaced()
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(quicklink.link)
+
+            ShortcutRecorder(action: .quicklink(id: quicklink.id))
+
+            Button(action: onEdit) {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.plain)
+            .help("Edit Quicklink")
+            .accessibilityLabel("Edit \(quicklink.name)")
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+            .help("Delete Quicklink")
+            .accessibilityLabel("Delete \(quicklink.name)")
         }
     }
 
