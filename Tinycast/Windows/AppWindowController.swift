@@ -9,15 +9,18 @@ final class AppWindowController: NSObject, NSWindowDelegate {
     private let contentSize: CGSize
     private let isResizable: Bool
     private let autosaveName: String?
+    private let activation: ActivationPolicy
     private var window: NSWindow?
 
     init(
-        title: String, contentSize: CGSize, resizable: Bool = false, autosaveName: String? = nil
+        title: String, contentSize: CGSize, resizable: Bool = false, autosaveName: String? = nil,
+        activation: ActivationPolicy
     ) {
         self.title = title
         self.contentSize = contentSize
         self.isResizable = resizable
         self.autosaveName = autosaveName
+        self.activation = activation
     }
 
     /// Open, including while miniaturized — `NSWindow.isVisible` reads false in the Dock.
@@ -32,7 +35,7 @@ final class AppWindowController: NSObject, NSWindowDelegate {
         }
         let window = makeWindow(hosting: content())
         self.window = window
-        ActivationPolicy.windowDidOpen()
+        activation.windowDidOpen(window)
         raise(window)
         return true
     }
@@ -52,9 +55,9 @@ final class AppWindowController: NSObject, NSWindowDelegate {
     // MARK: - NSWindowDelegate
 
     func windowWillClose(_ notification: Notification) {
-        guard window != nil else { return }
-        window = nil
-        ActivationPolicy.windowDidClose()
+        guard let window else { return }
+        self.window = nil
+        activation.windowDidClose(window)
     }
 
     // MARK: - Private

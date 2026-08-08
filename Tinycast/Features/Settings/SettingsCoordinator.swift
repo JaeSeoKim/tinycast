@@ -4,14 +4,15 @@ import SwiftUI
 /// Nothing here shows or hides the palette, and nothing in the palette closes this window.
 @MainActor
 final class SettingsCoordinator {
-    private let window = AppWindowController(
-        title: "Settings", contentSize: Theme.Size.settingsWindow, resizable: true,
-        autosaveName: "SettingsWindow")
+    private let window: AppWindowController
     /// Environment injection only — never for state this type owns.
     private unowned let core: AppCore
 
     init(core: AppCore) {
         self.core = core
+        window = AppWindowController(
+            title: "Settings", contentSize: Theme.Size.settingsWindow, resizable: true,
+            autosaveName: "SettingsWindow", activation: core.activationPolicy)
     }
 
     var isOpen: Bool { window.isOpen }

@@ -1,18 +1,19 @@
 import AppKit
 
 /// The app runs as an accessory; a titled window needs `.regular` for a Dock icon, a main menu and
-/// working traffic lights, so the policy follows how many are open rather than any one window.
+/// working traffic lights. Held by window identity rather than a count, so a repeated open or close
+/// is a no-op instead of stranding the Dock icon on a drifted tally.
 @MainActor
-enum ActivationPolicy {
-    private static var openWindows = 0
+final class ActivationPolicy {
+    private var openWindows: Set<ObjectIdentifier> = []
 
-    static func windowDidOpen() {
-        openWindows += 1
+    func windowDidOpen(_ window: NSWindow) {
+        openWindows.insert(ObjectIdentifier(window))
         NSApp.setActivationPolicy(.regular)
     }
 
-    static func windowDidClose() {
-        openWindows = max(0, openWindows - 1)
-        if openWindows == 0 { NSApp.setActivationPolicy(.accessory) }
+    func windowDidClose(_ window: NSWindow) {
+        openWindows.remove(ObjectIdentifier(window))
+        if openWindows.isEmpty { NSApp.setActivationPolicy(.accessory) }
     }
 }

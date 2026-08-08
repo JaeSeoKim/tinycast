@@ -171,7 +171,8 @@ Tinycast/
   DesignSystem/     Theme (the token source), KeyCapChip, Tooltip, SymbolImage,
                     VisualEffectView, PopoverMenu, SettingsComponents, Scrolling/, Interaction/
   Platform/         system shims: Permissions, LaunchAtLogin, CursorScreen, AppDisplayName,
-                    NotificationToken, AppPaths, Signposts, HealthTicker, Memo, Images/
+                    NotificationToken, AppPaths, Signposts, HealthTicker, Memo, ActivationPolicy,
+                    Images/
   Palette/          the palette shell: PalettePanel, PaletteWindowController, RootPaletteView,
                     the PaletteScreen protocol, PaletteCoordinator, PaletteState, PaletteMode
   Windows/          the non-palette AppKit surfaces: AppWindowController, Dialog/, HUD/, About/

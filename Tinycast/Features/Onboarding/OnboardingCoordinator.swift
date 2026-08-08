@@ -3,13 +3,15 @@ import SwiftUI
 /// The first-run wizard's own window lifecycle, also re-runnable from Settings.
 @MainActor
 final class OnboardingCoordinator {
-    private let window = AppWindowController(
-        title: "Welcome to Tinycast", contentSize: OnboardingView.windowSize)
+    private let window: AppWindowController
     /// Environment injection only — never for state this type owns.
     private unowned let core: AppCore
 
     init(core: AppCore) {
         self.core = core
+        window = AppWindowController(
+            title: "Welcome to Tinycast", contentSize: OnboardingView.windowSize,
+            activation: core.activationPolicy)
     }
 
     var isOpen: Bool { window.isOpen }
