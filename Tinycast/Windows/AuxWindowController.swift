@@ -43,8 +43,7 @@ final class AuxWindowController: NSObject, NSWindowDelegate {
             window.center()
             windows[id] = window
         }
-        // Promote to regular for a Dock icon; demoted when the last aux window closes.
-        NSApp.setActivationPolicy(.regular)
+        DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
 
@@ -60,7 +59,7 @@ final class AuxWindowController: NSObject, NSWindowDelegate {
     func focusExisting() -> Bool {
         guard let window = windows.values.first(where: { $0.isVisible }) ?? windows.values.first
         else { return false }
-        NSApp.setActivationPolicy(.regular)
+        DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         return true
@@ -76,6 +75,7 @@ final class AuxWindowController: NSObject, NSWindowDelegate {
             let id = windows.first(where: { $0.value === window })?.key
         else { return }
         windows.removeValue(forKey: id)
-        if windows.isEmpty { NSApp.setActivationPolicy(.accessory) }
+        // Not `windows.isEmpty`: Settings is a scene, a titled window this type never sees.
+        DockPresence.syncAfterClose()
     }
 }

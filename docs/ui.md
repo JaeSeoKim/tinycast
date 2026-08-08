@@ -80,7 +80,8 @@ Always `RoundedRectangle(cornerRadius:, style: .continuous)` — continuous corn
 
 `panelWidth 750` · `panelHeight 475` · `headerHeight 44` · `bottomBarHeight 52` · `rowIcon 24` ·
 `keyCap 18` · `recorderKeyCap 16` · `menuButton 36` · `clipboardListWidth 290` · `menuWidth 276` · `menuIcon 20` ·
-`settingsWindow 760×620` · `settingsSidebar 200` · `settingsSidebarMax 280` · `settingsGlyph 20` ·
+`settingsWindow 900×720` · `settingsWindowMin 820×660` · `settingsSidebar 200` ·
+`settingsSidebarMax 280` · `settingsGlyph 20` ·
 `passphraseField 160` · `appPicker 250×260` · `dialogWidth 420` · `dialogIcon 32` · `hudWidth 200` ·
 `hudHeight 100` · `volumeTrackHeight 6` · `volumeKnob 16` · `volumeReadout 38`
 
@@ -97,9 +98,9 @@ System fonts only — **no fixed point sizes in views** (honors Dynamic Type). `
 explicit size (20pt regular). Use `rowTitle` (`.body`), `sectionHeader` (`.subheadline.medium`),
 `rowTrailing`/`bar`/`menuRow`/`keyCap` etc. as named.
 
-Settings has its own five, so no pane hardcodes a text style: `paneTitle` (`.title2.bold`),
-`paneSubtitle` (`.callout`), `cardHeader` (`.subheadline.semibold`), `cardFooter` (`.caption`),
-`rowSubtitle` (`.caption`).
+Settings has its own three, so no pane hardcodes a text style: `cardHeader` (`.headline` — row-title
+size, leading on weight, as System Settings' group headers do), `cardFooter` (`.caption`) and
+`rowSubtitle` (`.caption`). A pane draws no title of its own; the toolbar names it.
 
 ### Colors (`Theme.Colors`) — the white-alpha ramp
 
@@ -338,7 +339,19 @@ opened by `SettingsWindowPresenter`. That is load-bearing, not incidental: only 
 back/forward capsule at the detail column's leading edge and insets the traffic lights over the
 sidebar. Build the same view in a hand-made `NSWindow` and those items pin themselves beside the
 traffic lights at every toolbar style — verified against `.automatic`, `.expanded`, `.preference`,
-`.unified` and `.unifiedCompact`. Default size **760 × 620**, freely resizable.
+`.unified` and `.unifiedCompact`. Default size **900 × 720**, resizable down to `settingsWindowMin`.
+
+The scene comes with two behaviours that have to be opted out of, both verified by driving a window
+open and closed rather than by inspection:
+
+- **SwiftUI terminates the app when the scene's last window closes**, even while the app is already
+  `.accessory` — so `AppDelegate.applicationShouldTerminateAfterLastWindowClosed` returns `false`.
+  A menu-bar app outlives its windows; without this, closing Settings quits Tinycast.
+- **SwiftUI keeps a closed scene's window *and* view tree alive**, and builds the tree at launch even
+  if Settings is never opened. So `SettingsWindowPresenter.isOpen` gates the content: the panes mount
+  on open and deallocate on close, and `SettingsRootView(initialTab:)` — not the notification — picks
+  the pane for a fresh mount. The notification only switches an already-open window. Because the
+  window outlives its close, "is Settings open?" is `window.isVisible`, never `window != nil`.
 
 The shell is stock AppKit, so don't re-implement any of it:
 
@@ -358,7 +371,7 @@ The shell is stock AppKit, so don't re-implement any of it:
 - **`SettingsSwitch`** is the only switch: `.controlSize(.small)`, with the row's title as its
   accessibility label, so no call site can drift on size or lose its label. Buttons and pickers stay at
   the default control size.
-- **`SettingsCard`**: rounded `card 10` container, `cardFill` (white 0.06) fill, **no border** — the fill carries the group; a stroke reads as a web card. Content is clipped to the corner radius, so a row's own hover fill rounds correctly. Optional `header` above it (`cardHeader`, primary) and optional `footer` below it (`cardFooter`, secondary), both indented `xs`.
+- **`SettingsCard`**: rounded `card 10` container, `cardFill` (white 0.06) fill, **no border** — the fill carries the group; a stroke reads as a web card. Content is clipped to the corner radius, so a row's own hover fill rounds correctly. Optional `header` above it (`cardHeader` — 13pt semibold, the row titles' size at a heavier weight) and optional `footer` below it (`cardFooter`, secondary), both indented `xs`.
 - **`SettingsRow`**: **no leading glyph** — a decorated row reads as a list item, not a setting. Title + optional caption subtitle + optional `statusDot`, trailing control, fixed `.horizontal xl / .vertical xl` rhythm. `SettingsDivider` splits rows with a hairline inset `xl`, aligned to the label.
 - **One explanation per card, not per row.** Generic prose belongs in the card's `footer`. A row keeps its own `subtitle` only when the text is dynamic (the Hyper Key status line) or row-specific (a quicklink's URL, a command's shell line, a scope's path).
 - **Sidebar grouping**: four `Section`s from `SettingsTab.Group`, each a `Label(tab.title, systemImage:)`. `SettingsTab`'s declaration order is sidebar order and `Group.tabs` slices it, so a pane left out of a group vanishes from the window — `settings-history-test` pins that.

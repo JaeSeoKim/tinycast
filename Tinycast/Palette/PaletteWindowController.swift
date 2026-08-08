@@ -19,11 +19,10 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
 
     func show() {
         Signposts.interval("PaletteWindowController.show") {
-            // Ignore ourselves, so paste and focus-restore target the user's real app.
+            // Our own windows displace nothing: restoring a stale app would bury Settings.
             let frontmost = NSWorkspace.shared.frontmostApplication
-            if frontmost?.processIdentifier != NSRunningApplication.current.processIdentifier {
-                previousApp = frontmost
-            }
+            let isSelf = frontmost?.processIdentifier == NSRunningApplication.current.processIdentifier
+            previousApp = isSelf ? nil : frontmost
             // Once per summon, and from `previousApp`, so the label names the paste target.
             core.palette.pasteTarget = PasteTarget(app: previousApp)
             let panel = ensurePanel()

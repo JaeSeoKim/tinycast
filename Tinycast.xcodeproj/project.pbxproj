@@ -128,6 +128,7 @@
 		9F82DA5A46BB39A6C6DD075D /* DialogRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D150930C930F1FB5E2A31B /* DialogRequest.swift */; };
 		9F8806D46EBAF7058FC2EAEC /* PaletteRowIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52BD814D567DFEFD303B1750 /* PaletteRowIndex.swift */; };
 		A0A247FFDB1EA278C0F6F813 /* BackupActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8CBA97041AAA96C0B7FF2E /* BackupActions.swift */; };
+		A0DEEB06C5357858D37D0F21 /* DockPresence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8936FF8C6D144A018596659E /* DockPresence.swift */; };
 		A11EB7D1852FB3D56DDBE7C3 /* SystemActionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 296F67E23BF91CFBC6D66385 /* SystemActionCoordinator.swift */; };
 		A1F267E9D9914DB60DEEE0AD /* DoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83C54F3A609CD1C2CDF304FB /* DoubleTapDetector.swift */; };
 		A2073E8EBBAAB620E27F0BD5 /* SnippetTextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725A38B32FDAA64D4A4A88DF /* SnippetTextInjector.swift */; };
@@ -316,6 +317,7 @@
 		858E08BB313EC330C2D5E50C /* LauncherCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherCoordinator.swift; sourceTree = "<group>"; };
 		85B00A698366E83C7352BC1E /* HotKeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyBinding.swift; sourceTree = "<group>"; };
 		86545F54669A075FBDA5D1F1 /* CalculatorHistoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorHistoryScreen.swift; sourceTree = "<group>"; };
+		8936FF8C6D144A018596659E /* DockPresence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPresence.swift; sourceTree = "<group>"; };
 		8AFD491421DFE25892C0FC37 /* RaycastV1Decoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastV1Decoder.swift; sourceTree = "<group>"; };
 		8E58EBB08450BA3426DF0565 /* AppIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIndex.swift; sourceTree = "<group>"; };
 		8F6F59F3C88C49BDED945F25 /* EdgeDissolve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeDissolve.swift; sourceTree = "<group>"; };
@@ -1028,6 +1030,7 @@
 				83DF8416682FC5121DD7FD6E /* Dialog */,
 				E33AE5825517FE9F2777C810 /* HUD */,
 				41A52665A3078BAAD151528C /* AuxWindowController.swift */,
+				8936FF8C6D144A018596659E /* DockPresence.swift */,
 			);
 			path = Windows;
 			sourceTree = "<group>";
@@ -1291,6 +1294,7 @@
 				C215695FE671BC591DC99C2B /* DialogPanel.swift in Sources */,
 				9F82DA5A46BB39A6C6DD075D /* DialogRequest.swift in Sources */,
 				5C801A9043908577FB99A555 /* DialogView.swift in Sources */,
+				A0DEEB06C5357858D37D0F21 /* DockPresence.swift in Sources */,
 				A1F267E9D9914DB60DEEE0AD /* DoubleTapDetector.swift in Sources */,
 				DFB25A4CDD35071B745F2EF9 /* DoubleTapModifier.swift in Sources */,
 				FFE6952D79F28B62E189C097 /* DoubleTapMonitor.swift in Sources */,

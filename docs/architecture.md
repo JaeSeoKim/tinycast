@@ -110,6 +110,13 @@ imperatively from AppKit.
   over the sidebar. A hand-built `NSWindow` pins those items beside the traffic lights at any toolbar
   style. The SwiftUI `Settings` scene remains unusable here — it never materialises in an accessory
   app — so `Window(id:)` plus an `OpenWindowAction` captured from `MenuBarExtra`'s label is the route.
+  The presenter binds the scene's `NSWindow` (a scene window has no delegate to hook) and gates the
+  panes on `isOpen`, so closing Settings gives its memory back. See [ui.md](ui.md#settings).
+- **Window lifetimes are not shared.** The palette panel is built once and kept for the process's
+  life, so a summon is instant; Settings is torn down and rebuilt on every open. Neither reaches into
+  the other: `DockPresence` owns the activation policy from the titled windows alone, so the
+  borderless palette can never move the Dock icon, and `PaletteWindowController` restores focus only
+  to an app it actually displaced — never to a stale one, which would bury Settings.
 - **About / Onboarding** — plain `NSWindow`s via `Windows/AuxWindowController.swift`. (About is a
   Settings pane; the controller hosts only Onboarding now.)
 - **Dialogs** — borderless `DialogPanel`s driven by `DialogController`, the app's only presenter for

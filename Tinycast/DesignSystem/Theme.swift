@@ -76,7 +76,9 @@ enum Theme {
         /// A menu row's glyph slot, sized so symbol and app-icon rows read the same.
         static let menuIcon: CGFloat = 20
         /// Settings window: sidebar column width, and the glyph slot its rows share with a callout.
-        static let settingsWindow = CGSize(width: 760, height: 620)
+        static let settingsWindow = CGSize(width: 900, height: 720)
+        /// The floor for a resizable window: below this the split view's columns collapse.
+        static let settingsWindowMin = CGSize(width: 820, height: 660)
         static let settingsSidebar: CGFloat = 200
         static let settingsSidebarMax: CGFloat = 280
         static let settingsGlyph: CGFloat = 20
@@ -132,8 +134,8 @@ enum Theme {
         static let rowTitle = Font.body
         static let rowTrailing = Font.callout
         static let sectionHeader = Font.subheadline.weight(.medium)
-        /// Settings: a card's header — the largest type a pane draws — and its footer.
-        static let cardHeader = Font.title3.weight(.semibold)
+        /// Settings: a card's header — row-title size, leading on weight — and its footer.
+        static let cardHeader = Font.headline
         static let cardFooter = Font.caption
         static let rowSubtitle = Font.caption
         /// The big value line on the calculator answer card (both source and target sides).

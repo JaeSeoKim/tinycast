@@ -1,30 +1,36 @@
 import AppKit
 import SwiftUI
 
-/// Opens the SwiftUI `Window` scene hosting Settings; docs/ui.md#settings says why it is a scene.
+/// Opens the Settings scene and gates its content; docs/ui.md#settings covers both.
 @MainActor
+@Observable
 final class SettingsWindowPresenter {
     nonisolated static let windowID = "settings"
 
-    private var openWindow: OpenWindowAction?
-    private var closeObserver: NotificationToken?
+    /// Drives the scene's content. False means the panes are not in memory.
+    private(set) var isOpen = false
+    /// The pane a fresh mount starts on; the tree is rebuilt on every open.
+    private(set) var initialTab: SettingsTab = .general
+
+    @ObservationIgnored private var openWindow: OpenWindowAction?
+    /// Weak: SwiftUI owns this window's lifetime, and a closed one must not read as open.
+    @ObservationIgnored private weak var window: NSWindow?
+    @ObservationIgnored private var closeObserver: NotificationToken?
 
     func adopt(_ action: OpenWindowAction) {
         openWindow = action
-        guard closeObserver == nil else { return }
-        // The scene owns this window, so nothing else can demote the app when it closes.
+    }
+
+    /// Called when the scene mounts. SwiftUI owns the delegate, so the close is observed instead.
+    func bind(_ window: NSWindow) {
+        guard window !== self.window else { return }
+        self.window = window
         let token = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification, object: nil, queue: .main
-        ) { note in
-            let closing = note.object as? NSWindow
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard closing?.identifier?.rawValue == Self.windowID else { return }
-                // Another window may still be up; the Dock icon belongs to the last one standing.
-                let others = NSApp.windows.filter {
-                    $0.isVisible && $0.identifier?.rawValue != Self.windowID
-                        && $0.styleMask.contains(.titled)
-                }
-                if others.isEmpty { NSApp.setActivationPolicy(.accessory) }
+                self?.isOpen = false
+                DockPresence.syncAfterClose()
             }
         }
         closeObserver = NotificationToken(token, center: .default)
@@ -32,40 +38,31 @@ final class SettingsWindowPresenter {
 
     /// Opens Settings on `tab`, or switches an already-open window to it.
     func show(tab: SettingsTab) {
-        // A Dock icon while a real window is up; `AppDelegate` demotes when the last one closes.
-        NSApp.setActivationPolicy(.regular)
+        DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
 
-        if let window = existingWindow {
+        if let window, window.isVisible {
             window.makeKeyAndOrderFront(nil)
-            select(tab)
+            NotificationCenter.default.post(name: .tinycastSelectSettingsTab, object: tab)
             return
         }
 
+        // Mount the panes before the window exists, so the fresh tree starts on `tab`.
+        initialTab = tab
+        isOpen = true
         openWindow?(id: Self.windowID)
-        // The scene mounts on `.general`; the pane switch has to wait for it to exist.
         DispatchQueue.main.async {
-            self.existingWindow?.makeKeyAndOrderFront(nil)
-            self.select(tab)
+            self.window?.makeKeyAndOrderFront(nil)
         }
     }
 
     /// Re-raise an open Settings window, or false when there isn't one.
     @discardableResult
     func focusExisting() -> Bool {
-        guard let window = existingWindow, window.isVisible else { return false }
-        NSApp.setActivationPolicy(.regular)
+        guard let window, window.isVisible else { return false }
+        DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         return true
-    }
-
-    private func select(_ tab: SettingsTab) {
-        guard tab != .general else { return }
-        NotificationCenter.default.post(name: .tinycastSelectSettingsTab, object: tab)
-    }
-
-    private var existingWindow: NSWindow? {
-        NSApp.windows.first { $0.identifier?.rawValue == Self.windowID }
     }
 }

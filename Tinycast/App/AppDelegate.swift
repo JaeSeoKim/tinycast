@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppCore.shared.prepareForTermination()
     }
 
+    /// A menu-bar app outlives its windows; SwiftUI would terminate when Settings closes.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         AppCore.shared.paletteCoordinator.handleReopen()
         return true
