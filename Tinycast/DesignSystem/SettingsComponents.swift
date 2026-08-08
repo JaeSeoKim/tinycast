@@ -4,71 +4,68 @@ import SwiftUI
 
 // MARK: - Pane scaffold
 
-/// The standard pane layout, so headers, insets and scrolling stay identical.
+/// The standard pane layout. No title: the toolbar names the pane.
 struct SettingsPane<Content: View>: View {
-    let title: String
-    let subtitle: String
     @ViewBuilder var content: Content
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.xxl) {
-                SettingsHeader(title: title, subtitle: subtitle)
                 content
             }
-            // Ignore the titlebar safe area: one fixed inset every side reads better.
+            // The toolbar owns the top inset now, so this is a plain margin on all four sides.
             .padding(Theme.Spacing.xxl)
             .frame(maxWidth: .infinity, alignment: .leading)
             // The native overlay scroller here, matching other windowed setting lists.
             .overlayScroller()
         }
-        .ignoresSafeArea(edges: .top)
         // Outside the ScrollView, so an open recorder's callout isn't clipped by it.
         .shortcutRecorderPopoverHost()
     }
 }
 
-/// The title + subtitle block at the top of every pane.
-struct SettingsHeader: View {
-    let title: String
-    let subtitle: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            Text(title)
-                .font(.title2.weight(.bold))
-            Text(subtitle)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
 // MARK: - Grouped card
 
-/// The System Settings "card": a rounded, hairline-bordered group of rows.
+/// The System Settings "card". Its fill carries the group alone: a border reads as a web card.
 struct SettingsCard<Content: View>: View {
     var header: String?
+    /// One paragraph explaining the whole group, so its rows can stay a single line each.
+    var footer: String?
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             if let header {
                 Text(header)
-                    .font(Theme.Typography.sectionHeader)
-                    .foregroundStyle(.secondary)
+                    .font(Theme.Typography.cardHeader)
                     .padding(.leading, Theme.Spacing.xs)
             }
+            // Clipped, so a row's own hover fill takes the card's corners.
             VStack(spacing: 0) { content }
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-                        .fill(Theme.Colors.cardFill)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-                        .strokeBorder(Theme.Colors.cardStroke, lineWidth: 1)
-                )
+                .background(Theme.Colors.cardFill)
+                .clipShape(
+                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+            if let footer {
+                Text(footer)
+                    .font(Theme.Typography.cardFooter)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Theme.Spacing.xs)
+            }
         }
+    }
+}
+
+/// Every settings switch: one size, and its title as the label, so no call site can drift.
+struct SettingsSwitch: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(title, isOn: $isOn)
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.small)
     }
 }
 
@@ -76,39 +73,21 @@ struct SettingsCard<Content: View>: View {
 struct FeatureSwitchCard: View {
     let header: String
     let enableTitle: String
-    let enableSubtitle: String
-    let systemImage: String
-    let launcherSubtitle: String
+    /// One paragraph covering both switches, so neither row needs its own caption.
+    let footer: String
     @Binding var isEnabled: Bool
     @Binding var showsInLauncher: Bool
 
     var body: some View {
-        SettingsCard(header: header) {
-            SettingsRow(
-                title: enableTitle,
-                subtitle: enableSubtitle,
-                systemImage: systemImage,
-                tint: .green
-            ) {
-                Toggle(enableTitle, isOn: $isEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .accessibilityLabel(enableTitle)
+        SettingsCard(header: header, footer: footer) {
+            SettingsRow(title: enableTitle) {
+                SettingsSwitch(title: enableTitle, isOn: $isEnabled)
             }
             SettingsDivider()
-            SettingsRow(
-                title: "Show in launcher",
-                subtitle: launcherSubtitle,
-                systemImage: "magnifyingglass",
-                tint: .green
-            ) {
-                Toggle("Show in launcher", isOn: $showsInLauncher)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .accessibilityLabel("Show in launcher")
+            SettingsRow(title: "Show in launcher") {
+                SettingsSwitch(title: "Show in launcher", isOn: $showsInLauncher)
             }
-            // Same dim as ShortcutsSettingsView's hidden-category card.
-            .opacity(isEnabled ? 1 : 0.45)
+            .opacity(isEnabled ? 1 : Theme.Opacity.disabled)
             .disabled(!isEnabled)
         }
     }
@@ -155,34 +134,26 @@ struct SettingsDivider: View {
         Rectangle()
             .fill(Theme.Colors.cardStroke)
             .frame(height: 1)
-            .padding(.leading, Theme.Spacing.xl + Theme.Size.settingsRowIcon + Theme.Spacing.lg)
+            .padding(.leading, Theme.Spacing.xl)
     }
 }
 
 // MARK: - Row
 
-/// One settings line; a fixed rhythm keeps every card aligned whatever the control.
+/// One settings line: label and control. Its `xl` inset places a recorder — see `callout-test`.
 struct SettingsRow<Trailing: View>: View {
     let title: String
     var subtitle: String?
-    var systemImage: String?
-    var tint: Color = .secondary
     /// Optional state indicator rendered after the title (green = active, orange = attention).
     var statusDot: Color?
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
-            if let systemImage {
-                Image(systemName: systemImage)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(tint)
-                    .frame(width: Theme.Size.settingsRowIcon)
-            }
             VStack(alignment: .leading, spacing: Theme.Spacing.xs / 2) {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text(title)
-                        .font(.body)
+                        .font(Theme.Typography.rowTitle)
                     if let statusDot {
                         Circle()
                             .fill(statusDot)
@@ -191,7 +162,7 @@ struct SettingsRow<Trailing: View>: View {
                 }
                 if let subtitle {
                     Text(subtitle)
-                        .font(.caption)
+                        .font(Theme.Typography.rowSubtitle)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -200,7 +171,7 @@ struct SettingsRow<Trailing: View>: View {
             trailing
         }
         .padding(.horizontal, Theme.Spacing.xl)
-        .padding(.vertical, Theme.Spacing.lg)
+        .padding(.vertical, Theme.Spacing.xl)
     }
 }
 
@@ -219,12 +190,12 @@ struct SettingsCallout<Trailing: View>: View {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(tint)
-                .frame(width: Theme.Size.settingsRowIcon)
+                .frame(width: Theme.Size.settingsGlyph)
             VStack(alignment: .leading, spacing: Theme.Spacing.xs / 2) {
-                Text(title).font(.body)
+                Text(title).font(Theme.Typography.rowTitle)
                 if let message {
                     Text(message)
-                        .font(.caption)
+                        .font(Theme.Typography.rowSubtitle)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

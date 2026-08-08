@@ -6,25 +6,19 @@ struct PermissionsSettingsView: View {
     private let refreshTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        SettingsPane(
-            title: "Permissions",
-            subtitle: "Access Tinycast needs to work with other apps."
-        ) {
-            SettingsCard(header: "Accessibility") {
-                SettingsRow(
-                    title: "Accessibility",
-                    subtitle: "Lets Tinycast paste a clipboard item into the app you were using.",
-                    systemImage: "accessibility",
-                    tint: .blue
-                ) {
+        SettingsPane {
+            SettingsCard(
+                header: "Accessibility",
+                footer: "Accessibility lets Tinycast paste a clipboard item into the app you were "
+                    + "using, and remap the Hyper Key. Granting it opens Privacy & Security › "
+                    + "Accessibility."
+            ) {
+                SettingsRow(title: "Accessibility") {
                     statusBadge
                 }
                 SettingsDivider()
                 SettingsRow(
-                    title: accessibilityTrusted ? "Manage in System Settings" : "Grant access",
-                    subtitle: "Opens Privacy & Security › Accessibility.",
-                    systemImage: "arrow.up.forward.app",
-                    tint: .secondary
+                    title: accessibilityTrusted ? "Manage in System Settings" : "Grant access"
                 ) {
                     Button(accessibilityTrusted ? "Open…" : "Open Settings…") {
                         Permissions.openAccessibilitySettings()

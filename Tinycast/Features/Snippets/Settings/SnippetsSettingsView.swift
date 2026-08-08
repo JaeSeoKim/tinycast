@@ -10,18 +10,12 @@ struct SnippetsSettingsView: View {
 
     var body: some View {
         @Bindable var settings = settings
-        return SettingsPane(
-            title: "Snippets",
-            subtitle:
-                "Create reusable text templates and expand them from the launcher or with a keyword."
-        ) {
+        return SettingsPane {
             FeatureSwitchCard(
                 header: "Snippets",
                 enableTitle: "Enable snippets",
-                enableSubtitle:
-                    "Reusable Markdown templates, expanded from the launcher or a typed keyword.",
-                systemImage: "curlybraces",
-                launcherSubtitle: "Find your snippets in launcher search.",
+                footer: "Reusable Markdown templates, expanded from the launcher or a typed "
+                    + "keyword. Showing them in the launcher makes them findable from search.",
                 // Enabling is also keyword-expansion consent, so it uses the confirming setter.
                 isEnabled: Binding(
                     get: { settings.snippetsEnabled },
@@ -36,7 +30,6 @@ struct SnippetsSettingsView: View {
                     tint: .orange
                 ) {
                     Button("Grant Access…") { Permissions.openAccessibilitySettings() }
-                        .controlSize(.small)
                 }
             }
 
@@ -45,7 +38,7 @@ struct SnippetsSettingsView: View {
                 libraryNotices
             }
             // Same dim as the hidden-category card; the switch above stays live.
-            .opacity(settings.snippetsEnabled ? 1 : 0.45)
+            .opacity(settings.snippetsEnabled ? 1 : Theme.Opacity.disabled)
             .disabled(!settings.snippetsEnabled)
         }
         .sheet(item: $editor) { target in
@@ -64,13 +57,14 @@ struct SnippetsSettingsView: View {
     }
 
     private var snippetsCard: some View {
-        SettingsCard(header: "Library") {
+        SettingsCard(
+            header: "Library",
+            footer: "Give a snippet a searchable name and an optional expansion keyword. They are "
+                + "plain Markdown files in this channel’s Application Support folder."
+        ) {
             if sortedSnippets.isEmpty {
                 SettingsRow(
-                    title: snippetsStore.state == .loading ? "Loading snippets…" : "No snippets",
-                    subtitle: "Add one to make it searchable from the launcher.",
-                    systemImage: "doc.text",
-                    tint: .secondary
+                    title: snippetsStore.state == .loading ? "Loading snippets…" : "No snippets"
                 ) {
                     EmptyView()
                 }
@@ -85,25 +79,13 @@ struct SnippetsSettingsView: View {
             }
 
             SettingsDivider()
-            SettingsRow(
-                title: "New Snippet",
-                subtitle: "Give the snippet a searchable name and an optional expansion keyword.",
-                systemImage: "plus.circle",
-                tint: .green
-            ) {
+            SettingsRow(title: "New Snippet") {
                 Button("Add…") { editor = EditorTarget(record: nil) }
-                    .controlSize(.small)
             }
 
             SettingsDivider()
-            SettingsRow(
-                title: "Snippets Folder",
-                subtitle: "Plain Markdown files in this channel’s Application Support folder.",
-                systemImage: "folder",
-                tint: .green
-            ) {
+            SettingsRow(title: "Snippets Folder") {
                 Button("Open Folder", action: core.snippetExpansion.revealSnippetsInFinder)
-                    .controlSize(.small)
                     .accessibilityHint("Reveals this Tinycast channel’s snippets folder in Finder.")
             }
         }
@@ -188,17 +170,12 @@ private struct SnippetSettingsRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.green)
-                .frame(width: Theme.Size.settingsRowIcon)
-
             VStack(alignment: .leading, spacing: Theme.Spacing.xs / 2) {
                 Text(record.snippet.name)
-                    .font(.body)
+                    .font(Theme.Typography.rowTitle)
                     .lineLimit(1)
                 Text(metadata)
-                    .font(.caption)
+                    .font(Theme.Typography.rowSubtitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)

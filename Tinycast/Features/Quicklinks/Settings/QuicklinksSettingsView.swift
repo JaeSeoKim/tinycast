@@ -11,17 +11,12 @@ struct QuicklinksSettingsView: View {
     var body: some View {
         @Bindable var core = core
         @Bindable var settings = settings
-        return SettingsPane(
-            title: "Quicklinks",
-            subtitle: "Turn a URL, search, file, folder or deeplink into its own command."
-        ) {
+        return SettingsPane {
             FeatureSwitchCard(
                 header: "Quicklinks",
                 enableTitle: "Enable quicklinks",
-                enableSubtitle:
-                    "Open saved destinations from the launcher, a shortcut, or Search Quicklinks.",
-                systemImage: Quicklink.sfSymbol,
-                launcherSubtitle: "Find your quicklinks in launcher search.",
+                footer: "Open saved destinations from the launcher, a shortcut, or Search "
+                    + "Quicklinks. Showing them in the launcher makes them findable from search.",
                 isEnabled: $settings.quicklinksEnabled,
                 showsInLauncher: $settings.quicklinksShowInLauncher)
 
@@ -32,7 +27,7 @@ struct QuicklinksSettingsView: View {
                 transfer
             }
             // Same dim as a hidden launcher category; the switch above stays live.
-            .opacity(settings.quicklinksEnabled ? 1 : 0.45)
+            .opacity(settings.quicklinksEnabled ? 1 : Theme.Opacity.disabled)
             .disabled(!settings.quicklinksEnabled)
         }
         // Presented from the pane, so "Create Quicklink" can open it from the palette.
@@ -67,15 +62,14 @@ struct QuicklinksSettingsView: View {
         if !store.quicklinks.isEmpty {
             SettingsSearchField(prompt: "Search quicklinks…", query: $query)
         }
-        SettingsCard {
+        SettingsCard(
+            footer: "Name a quicklink, paste a link, then give it a shortcut if you want one."
+        ) {
             if results.isEmpty {
                 SettingsRow(
                     title: store.quicklinks.isEmpty ? "No quicklinks" : "No matches",
                     subtitle: store.quicklinks.isEmpty
-                        ? "Add one to make it searchable from the launcher."
-                        : "No quicklink matches “\(query)”.",
-                    systemImage: Quicklink.sfSymbol,
-                    tint: .secondary
+                        ? nil : "No quicklink matches “\(query)”."
                 ) {
                     EmptyView()
                 }
@@ -90,38 +84,26 @@ struct QuicklinksSettingsView: View {
             }
             SettingsDivider()
 
-            SettingsRow(
-                title: "Add Quicklink",
-                subtitle: "Name it, paste a link, then give it a shortcut if you want one.",
-                systemImage: "plus.circle",
-                tint: .green
-            ) {
+            SettingsRow(title: "Add Quicklink") {
                 Button("Add…") { core.quicklinkCoordinator.editQuicklink(nil) }
-                    .controlSize(.small)
             }
         }
     }
 
     private var behaviour: some View {
         @Bindable var settings = settings
-        return SettingsCard(header: "Behaviour") {
-            SettingsRow(
-                title: "Open in a new window",
-                subtitle:
-                    "Ask the handler for a new window instead of reusing its frontmost tab. "
-                    + "Only apps that accept a new-window argument can honour this.",
-                systemImage: "macwindow.badge.plus",
-                tint: .blue
-            ) {
-                Toggle("", isOn: $settings.quicklinkOpensNewWindow).labelsHidden()
+        return SettingsCard(
+            header: "Behaviour",
+            footer: "A new window is asked of the handler instead of reusing its frontmost tab; "
+                + "only apps that accept a new-window argument can honour it. The fallback covers "
+                + "what {selection} does when the app in front exposes nothing to read."
+        ) {
+            SettingsRow(title: "Open in a new window") {
+                SettingsSwitch(
+                    title: "Open in a new window", isOn: $settings.quicklinkOpensNewWindow)
             }
             SettingsDivider()
-            SettingsRow(
-                title: "When there's no selected text",
-                subtitle: "What {selection} does when the app in front exposes nothing to read.",
-                systemImage: "text.cursor",
-                tint: .indigo
-            ) {
+            SettingsRow(title: "When there's no selected text") {
                 Picker("", selection: $settings.quicklinkSelectionFallback) {
                     ForEach(QuicklinkSelectionFallback.allCases) { option in
                         Text(option.title).tag(option)
@@ -131,37 +113,26 @@ struct QuicklinksSettingsView: View {
                 .fixedSize()
             }
             SettingsDivider()
-            SettingsRow(
-                title: "Confirm before deleting",
-                subtitle: "Ask first when deleting a quicklink from the launcher's Actions menu.",
-                systemImage: "trash",
-                tint: .red
-            ) {
-                Toggle("", isOn: $settings.quicklinkConfirmsBeforeDelete).labelsHidden()
+            SettingsRow(title: "Confirm before deleting") {
+                SettingsSwitch(
+                    title: "Confirm before deleting",
+                    isOn: $settings.quicklinkConfirmsBeforeDelete)
             }
         }
     }
 
     private var transfer: some View {
-        SettingsCard(header: "Import & Export") {
-            SettingsRow(
-                title: "Import quicklinks",
-                subtitle: "Add quicklinks from a JSON file, skipping any you already have.",
-                systemImage: "square.and.arrow.down",
-                tint: .teal
-            ) {
+        SettingsCard(
+            header: "Import & Export",
+            footer: "Importing adds quicklinks from a JSON file, skipping any you already have. "
+                + "Exporting writes your whole library to one."
+        ) {
+            SettingsRow(title: "Import quicklinks") {
                 Button("Import…") { Task { await core.quicklinkCoordinator.importQuicklinks() } }
-                    .controlSize(.small)
             }
             SettingsDivider()
-            SettingsRow(
-                title: "Export quicklinks",
-                subtitle: "Write your whole library to a JSON file.",
-                systemImage: "square.and.arrow.up",
-                tint: .teal
-            ) {
+            SettingsRow(title: "Export quicklinks") {
                 Button("Export…") { Task { await core.quicklinkCoordinator.exportQuicklinks() } }
-                    .controlSize(.small)
                     .disabled(store.quicklinks.isEmpty)
             }
         }
@@ -185,14 +156,15 @@ private struct QuicklinkSettingsRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
+            // The symbol is the quicklink's own identity, so it stays — monochrome, not tinted.
             SymbolImage(name: symbol, size: 13)
-                .foregroundStyle(.cyan)
-                .frame(width: Theme.Size.settingsRowIcon)
+                .foregroundStyle(.secondary)
+                .frame(width: Theme.Size.settingsGlyph)
 
             VStack(alignment: .leading, spacing: Theme.Spacing.xs / 2) {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text(quicklink.name)
-                        .font(.body)
+                        .font(Theme.Typography.rowTitle)
                         .lineLimit(1)
                     if quicklink.isPinned {
                         Image(systemName: "pin.fill")
@@ -208,7 +180,7 @@ private struct QuicklinkSettingsRow: View {
                     }
                 }
                 Text(quicklink.link)
-                    .font(.caption.monospaced())
+                    .font(Theme.Typography.rowSubtitle.monospaced())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)

@@ -9,28 +9,18 @@ struct ClipboardSettingsView: View {
 
     var body: some View {
         @Bindable var settings = settings
-        return SettingsPane(
-            title: "Clipboard",
-            subtitle: "Control how much history Tinycast keeps and which apps are recorded."
-        ) {
-            SettingsCard(header: "Shortcut") {
-                SettingsRow(
-                    title: "Clipboard History",
-                    subtitle: "Open the clipboard history browser.",
-                    systemImage: "doc.on.clipboard",
-                    tint: .orange
-                ) {
+        return SettingsPane {
+            SettingsCard(header: "Shortcut", footer: "Open the clipboard history browser.") {
+                SettingsRow(title: "Clipboard History") {
                     ShortcutRecorder(action: .toggleClipboard)
                 }
             }
 
-            SettingsCard(header: "History") {
-                SettingsRow(
-                    title: "Keep history for",
-                    subtitle: "Entries older than this are deleted automatically.",
-                    systemImage: "clock.arrow.circlepath",
-                    tint: .orange
-                ) {
+            SettingsCard(
+                header: "History",
+                footer: "Entries older than this are deleted automatically."
+            ) {
+                SettingsRow(title: "Keep history for") {
                     Picker("", selection: $settings.clipboardRetention) {
                         ForEach(ClipboardRetention.allCases) { retention in
                             Text(retention.title).tag(retention)
@@ -44,7 +34,10 @@ struct ClipboardSettingsView: View {
                 }
             }
 
-            SettingsCard(header: "Disabled Applications") {
+            SettingsCard(
+                header: "Disabled Applications",
+                footer: "Clipboard changes from these apps won't be recorded."
+            ) {
                 ForEach(settings.clipboardDisabledApps, id: \.self) { bundleID in
                     DisabledAppRow(bundleID: bundleID) {
                         settings.clipboardDisabledApps.removeAll { $0 == bundleID }
@@ -52,16 +45,11 @@ struct ClipboardSettingsView: View {
                     SettingsDivider()
                 }
 
-                HStack(spacing: Theme.Spacing.lg) {
-                    Text("Clipboard changes from these apps won't be recorded.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: Theme.Spacing.xl)
+                SettingsRow(title: "Add application") {
                     Button {
                         showingAppPicker = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.borderless)
                     .popover(isPresented: $showingAppPicker, arrowEdge: .bottom) {
@@ -71,19 +59,14 @@ struct ClipboardSettingsView: View {
                         }
                     }
                 }
-                .padding(.horizontal, Theme.Spacing.xl)
-                .padding(.vertical, Theme.Spacing.md)
             }
 
-            SettingsCard(header: "Danger Zone") {
-                SettingsRow(
-                    title: "Clear history",
-                    subtitle: "Permanently remove every saved clip and image.",
-                    systemImage: "trash",
-                    tint: .red
-                ) {
+            SettingsCard(
+                header: "Danger Zone",
+                footer: "Permanently remove every saved clip and image."
+            ) {
+                SettingsRow(title: "Clear history") {
                     Button("Clear…", role: .destructive) { confirmingClear = true }
-                        .controlSize(.regular)
                 }
             }
         }
@@ -116,7 +99,7 @@ private struct DisabledAppRow: View {
                 .resizable()
                 .frame(width: 22, height: 22)
             Text(name)
-                .font(.body)
+                .font(Theme.Typography.rowTitle)
                 .lineLimit(1)
             Spacer(minLength: Theme.Spacing.xl)
             Button(action: onRemove) {
@@ -125,6 +108,7 @@ private struct DisabledAppRow: View {
             }
             .buttonStyle(.plain)
         }
+        // `lg` beside a 22pt icon lands on the same height as a plain `SettingsRow`.
         .padding(.horizontal, Theme.Spacing.xl)
         .padding(.vertical, Theme.Spacing.lg)
     }

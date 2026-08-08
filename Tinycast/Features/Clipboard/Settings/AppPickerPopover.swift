@@ -7,7 +7,7 @@ struct AppPickerPopover: View {
     var excluded: Set<String> = []
     /// Shown above the list when the caller can also clear its choice.
     var clearTitle: String?
-    /// Nil means the caller's `clearTitle` row was tapped.
+    /// Nil means the `clearTitle` row was tapped.
     let onSelect: (String?) -> Void
 
     @Environment(AppIndex.self) private var appIndex
@@ -20,50 +20,69 @@ struct AppPickerPopover: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            TextField("Search apps…", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .padding(Theme.Spacing.md)
-            Divider()
+        VStack(spacing: Theme.Spacing.sm) {
+            SettingsSearchField(prompt: "Search apps…", query: $query)
             ScrollView {
                 LazyVStack(spacing: 1) {
                     if let clearTitle, query.isEmpty {
-                        row(title: clearTitle, icon: nil) { onSelect(nil) }
+                        AppPickerRow(title: clearTitle, icon: nil) { onSelect(nil) }
                     }
                     ForEach(candidates) { app in
-                        row(title: app.name, icon: app.icon) {
+                        AppPickerRow(title: app.name, icon: app.icon) {
                             if let id = app.bundleID { onSelect(id) }
                         }
                     }
+                    if candidates.isEmpty, clearTitle == nil {
+                        Text(query.isEmpty ? "No apps left to add." : "No apps match “\(query)”.")
+                            .font(Theme.Typography.rowSubtitle)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, Theme.Spacing.xxl)
+                    }
                 }
-                .padding(Theme.Spacing.sm)
+                .overlayScroller()
             }
         }
-        .frame(width: 280, height: 320)
+        .padding(Theme.Spacing.md)
+        .frame(width: Theme.Size.appPicker.width, height: Theme.Size.appPicker.height)
     }
+}
 
-    private func row(title: String, icon: NSImage?, action: @escaping () -> Void) -> some View {
+/// One app in the picker, shaped like every other icon-and-name row in the app.
+private struct AppPickerRow: View {
+    let title: String
+    let icon: NSImage?
+    let action: () -> Void
+
+    @State private var hovered = false
+
+    var body: some View {
         Button(action: action) {
-            HStack(spacing: Theme.Spacing.lg) {
+            HStack(spacing: Theme.Spacing.md) {
                 Group {
                     if let icon {
                         Image(nsImage: icon).resizable()
                     } else {
                         Image(systemName: "app.dashed")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .frame(width: 20, height: 20)
+                .frame(width: Theme.Size.settingsGlyph, height: Theme.Size.settingsGlyph)
                 Text(title)
+                    .font(Theme.Typography.rowTitle)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, Theme.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Radius.menu, style: .continuous)
+                    .fill(hovered ? Theme.Colors.rowHover : .clear)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovered = $0 }
     }
 }
 

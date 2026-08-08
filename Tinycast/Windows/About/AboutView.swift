@@ -29,7 +29,7 @@ struct AboutView: View {
                     links
                     support
                 }
-                // Ignore the titlebar safe area; one fixed inset every side, as in `SettingsPane`.
+                // One fixed inset every side, as in `SettingsPane`; the toolbar owns the top.
                 .padding(Theme.Spacing.xxl)
                 .frame(maxWidth: .infinity)
                 .overlayScroller()
@@ -38,7 +38,6 @@ struct AboutView: View {
             footer
                 .padding(.bottom, Theme.Spacing.xxl)
         }
-        .ignoresSafeArea(edges: .top)
     }
 
     private var hero: some View {
@@ -80,7 +79,6 @@ struct AboutView: View {
                     AboutLinkRow(link: link)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
         }
     }
 
@@ -150,13 +148,13 @@ private struct AboutLinkRow: View {
         } label: {
             HStack(spacing: Theme.Spacing.lg) {
                 glyph
-                    .frame(width: Theme.Size.settingsRowIcon)
+                    .frame(width: Theme.Size.settingsGlyph)
                     .foregroundStyle(.secondary)
                 Text(link.title)
-                    .font(.body)
+                    .font(Theme.Typography.rowTitle)
                 Spacer(minLength: Theme.Spacing.xl)
                 Text(link.detail)
-                    .font(.caption)
+                    .font(Theme.Typography.rowSubtitle)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
                 Image(systemName: "arrow.up.right")

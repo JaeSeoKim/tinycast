@@ -5,18 +5,13 @@ struct WindowManagementSettingsView: View {
 
     var body: some View {
         @Bindable var settings = settings
-        return SettingsPane(
-            title: "Window Management",
-            subtitle:
-                "Snap, resize and move the frontmost window from the launcher or a global shortcut."
-        ) {
+        return SettingsPane {
             FeatureSwitchCard(
                 header: "Window Management",
                 enableTitle: "Enable window management",
-                enableSubtitle:
-                    "Moves the window you were last in, using the Accessibility permission Tinycast already uses to paste.",
-                systemImage: "macwindow",
-                launcherSubtitle: "Find the window commands in launcher search.",
+                footer: "Moves the window you were last in, using the Accessibility permission "
+                    + "Tinycast already uses to paste. Showing them in the launcher makes the "
+                    + "window commands findable from search.",
                 isEnabled: $settings.windowManagementEnabled,
                 showsInLauncher: $settings.windowManagementShowInLauncher)
 
@@ -25,38 +20,30 @@ struct WindowManagementSettingsView: View {
                 commandsCard
             }
             // Same dim as the hidden-category card; the switch above stays live.
-            .opacity(settings.windowManagementEnabled ? 1 : 0.45)
+            .opacity(settings.windowManagementEnabled ? 1 : Theme.Opacity.disabled)
             .disabled(!settings.windowManagementEnabled)
         }
     }
 
     private var optionsCard: some View {
         @Bindable var settings = settings
-        return SettingsCard(header: "Options") {
-            SettingsRow(
-                title: "Cycle sizes on repeat",
-                subtitle:
-                    "Triggering a half again steps it through a third and two thirds before returning.",
-                systemImage: "arrow.triangle.2.circlepath",
-                tint: .blue
-            ) {
-                Toggle("Cycle sizes on repeat", isOn: $settings.windowCycleOnRepeat)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .accessibilityLabel("Cycle sizes on repeat")
+        return SettingsCard(
+            header: "Options",
+            footer: "Triggering a half again steps it through a third and two thirds before "
+                + "returning. The gap is the points left between tiled windows and around the "
+                + "screen edge."
+        ) {
+            SettingsRow(title: "Cycle sizes on repeat") {
+                SettingsSwitch(
+                    title: "Cycle sizes on repeat", isOn: $settings.windowCycleOnRepeat)
             }
 
             SettingsDivider()
 
-            SettingsRow(
-                title: "Gap between windows",
-                subtitle: "Points left between tiled windows and around the screen edge.",
-                systemImage: "square.split.2x1",
-                tint: .blue
-            ) {
+            SettingsRow(title: "Gap between windows") {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text("\(settings.windowGap) pt")
-                        .font(.body.monospacedDigit())
+                        .font(Theme.Typography.rowTitle.monospacedDigit())
                         .foregroundStyle(.secondary)
                     Stepper(
                         "Gap between windows", value: $settings.windowGap, in: 0...64, step: 2)
@@ -102,13 +89,13 @@ private struct WindowCommandSettingsRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
+            // The glyph diagrams the layout the command produces, so it isn't decoration.
             Image(systemName: command.sfSymbol)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.blue)
-                .frame(width: Theme.Size.settingsRowIcon)
+                .foregroundStyle(.secondary)
+                .frame(width: Theme.Size.settingsGlyph)
 
             Text(command.name)
-                .font(.body)
+                .font(Theme.Typography.rowTitle)
                 .lineLimit(1)
 
             Spacer(minLength: Theme.Spacing.lg)

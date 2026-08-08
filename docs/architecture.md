@@ -103,8 +103,15 @@ imperatively from AppKit.
   never drives the window size — without that the hosting view resizes the panel to fit content and the
   top edge drifts on the compact↔expanded swap. The panel auto-dismisses on `windowDidResignKey`.
   See [features/palette.md](features/palette.md).
-- **Settings / About / Onboarding** — plain `NSWindow`s via `Windows/AuxWindowController.swift`. SwiftUI
-  `Settings` and `Window` scenes are unreliable for accessory apps, so this is deliberate.
+- **Settings** — a SwiftUI `Window` scene declared in `TinycastApp`, opened by
+  `Features/Settings/SettingsWindowPresenter.swift`. This is the one scene-owned window, and it has to
+  be: only a scene makes `NavigationSplitView`'s sidebar a real `NSSplitViewItem`, which is what puts
+  the toolbar's back/forward capsule at the detail column's leading edge and insets the traffic lights
+  over the sidebar. A hand-built `NSWindow` pins those items beside the traffic lights at any toolbar
+  style. The SwiftUI `Settings` scene remains unusable here — it never materialises in an accessory
+  app — so `Window(id:)` plus an `OpenWindowAction` captured from `MenuBarExtra`'s label is the route.
+- **About / Onboarding** — plain `NSWindow`s via `Windows/AuxWindowController.swift`. (About is a
+  Settings pane; the controller hosts only Onboarding now.)
 - **Dialogs** — borderless `DialogPanel`s driven by `DialogController`, the app's only presenter for
   confirmations, failure reports and value prompts. Presentation is `async`, so nothing blocks the main
   actor, and the presenter refuses a second dialog while one is up — that, not a flag, is what stops a
@@ -179,8 +186,8 @@ Tinycast/
         Service/    effects — stores, monitors, runners, AppKit glue
         UI/         screens, views, and the feature's coordinator
         Settings/   the feature's own panes
-    Settings/       the Settings shell only: SettingsRootView, SettingsTab, AppSettings,
-                    AppSettingsKey, and Panes/ for the two panes no feature owns
+    Settings/       the Settings shell only: SettingsRootView, SettingsTab, SettingsHistory,
+                    AppSettings, AppSettingsKey, and Panes/ for the two panes no feature owns
 Tests/              the standalone harnesses, one Swift file each
 Scripts/            run-tests.sh, the two data generators, packaging, formatting, editor setup
 ```
@@ -193,3 +200,5 @@ Every `SettingsTab` maps to one `…SettingsView` built on the `SettingsPane` / 
 `DesignSystem/SettingsComponents.swift`. A pane lives with its feature; only a pane no feature owns
 (General, Permissions) lives in `Settings/Panes/`. The four launcher-category panes — Applications,
 System Settings, System Actions, Commands — are thin wrappers over the shared `LauncherItemsCard`.
+`SettingsTab.Group` sections the sidebar; its declaration order **is** sidebar order, so the arrow-key
+`stepping(_:)` walks the same sequence the eye reads. Nothing persists the raw value.

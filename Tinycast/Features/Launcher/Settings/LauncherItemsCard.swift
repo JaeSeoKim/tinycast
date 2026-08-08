@@ -20,18 +20,11 @@ struct LauncherItemsCard: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             SettingsSearchField(prompt: searchPrompt, query: $query)
 
-            SettingsCard(header: header) {
-                SettingsRow(
-                    title: "Show in launcher",
-                    subtitle: "Uncheck an item below to hide just that one.",
-                    systemImage: "magnifyingglass",
-                    tint: .green
-                ) {
-                    Toggle("Show in launcher", isOn: kindBinding)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .accessibilityLabel("Show in launcher")
+            SettingsCard(
+                header: header, footer: "Uncheck an item below to hide just that one."
+            ) {
+                SettingsRow(title: "Show in launcher") {
+                    SettingsSwitch(title: "Show in launcher", isOn: kindBinding)
                 }
                 SettingsDivider()
 
@@ -50,7 +43,7 @@ struct LauncherItemsCard: View {
                     }
                 }
                 .padding(Theme.Spacing.sm)
-                .opacity(visibility.isKindVisible(kind) ? 1 : 0.45)
+                .opacity(visibility.isKindVisible(kind) ? 1 : Theme.Opacity.disabled)
             }
         }
     }

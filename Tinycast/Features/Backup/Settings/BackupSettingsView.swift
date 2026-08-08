@@ -28,68 +28,43 @@ struct BackupSettingsView: View {
     }
 
     var body: some View {
-        SettingsPane(
-            title: "Backup",
-            subtitle: "Export your settings, restore a backup, or import from Raycast."
-        ) {
-            SettingsCard(header: "Tinycast") {
-                SettingsRow(
-                    title: "Export Settings",
-                    subtitle:
-                        "Save your shortcuts, custom commands, favorites, and preferences to JSON.",
-                    systemImage: "square.and.arrow.up",
-                    tint: .blue
-                ) {
+        SettingsPane {
+            SettingsCard(
+                header: "Tinycast",
+                footer: "Exporting saves your shortcuts, custom commands, favorites and "
+                    + "preferences to JSON. Importing restores from a Tinycast backup, changing "
+                    + "only the values the file contains."
+            ) {
+                SettingsRow(title: "Export Settings") {
                     Button("Export…") { Task { await BackupActions.exportSettings(core: core) } }
-                        .controlSize(.small)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Import Settings",
-                    subtitle:
-                        "Restore from a Tinycast backup. Only values in the file are changed.",
-                    systemImage: "square.and.arrow.down",
-                    tint: .green
-                ) {
+                SettingsRow(title: "Import Settings") {
                     Button("Import…") { Task { await BackupActions.importSettings(core: core) } }
-                        .controlSize(.small)
                 }
             }
 
-            SettingsCard(header: "Import from Raycast") {
-                SettingsRow(
-                    title: "Raycast Export",
-                    subtitle: raycastFileSubtitle,
-                    systemImage: "doc.badge.gearshape",
-                    tint: .orange
-                ) {
+            SettingsCard(
+                header: "Import from Raycast",
+                footer: "Choose a Raycast export, enter the password you set when exporting it, "
+                    + "pick what to bring over, then import."
+            ) {
+                SettingsRow(title: "Raycast Export", subtitle: raycastFileSubtitle) {
                     Button("Choose…") { chooseRaycastFile() }
-                        .controlSize(.small)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Passphrase",
-                    subtitle: "The password you set when exporting from Raycast.",
-                    systemImage: "key",
-                    tint: .gray
-                ) {
+                SettingsRow(title: "Passphrase") {
                     SecureField("Passphrase", text: $passphrase)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 160)
+                        .frame(width: Theme.Size.passphraseField)
                         .onSubmit(runRaycastImport)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Import",
-                    subtitle: "Choose what to bring over, then import.",
-                    systemImage: "arrow.down.circle",
-                    tint: .indigo
-                ) {
+                SettingsRow(title: "Import") {
                     if importing {
                         ProgressView().controlSize(.small)
                     } else {
                         Button("Import") { runRaycastImport() }
-                            .controlSize(.small)
                             .disabled(format == nil || passphrase.isEmpty || selection.isEmpty)
                     }
                 }
@@ -114,7 +89,6 @@ struct BackupSettingsView: View {
                 tint: .orange
             ) {
                 Button("Quit Raycast") { BackupActions.quitRaycast() }
-                    .controlSize(.small)
             }
             .padding(.horizontal, Theme.Spacing.xl)
             .padding(.vertical, Theme.Spacing.lg)
@@ -133,13 +107,9 @@ struct BackupSettingsView: View {
     private func statusRow(_ status: Status) -> some View {
         switch status {
         case .success(let message):
-            SettingsRow(title: message, systemImage: "checkmark.circle.fill", tint: .green) {
-                EmptyView()
-            }
+            SettingsRow(title: message, statusDot: .green) { EmptyView() }
         case .failure(let message):
-            SettingsRow(title: message, systemImage: "exclamationmark.triangle.fill", tint: .orange) {
-                EmptyView()
-            }
+            SettingsRow(title: message, statusDot: .orange) { EmptyView() }
         }
     }
 

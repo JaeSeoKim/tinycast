@@ -9,10 +9,7 @@ struct CommandsSettingsView: View {
     @State private var pendingDeletion: CustomCommand?
 
     var body: some View {
-        SettingsPane(
-            title: "Commands",
-            subtitle: "Tinycast's built-in commands, plus your own shell commands."
-        ) {
+        SettingsPane {
             LauncherItemsCard(
                 kind: .command,
                 header: "Commands",
@@ -40,21 +37,14 @@ struct CommandsSettingsView: View {
         FeatureSwitchCard(
             header: "Custom Commands",
             enableTitle: "Enable custom commands",
-            enableSubtitle:
-                "Commands run with your user account in /bin/zsh, so use full executable paths.",
-            systemImage: CustomCommand.sfSymbol,
-            launcherSubtitle: "Find your commands in launcher search.",
+            footer: "Commands run with your user account in /bin/zsh, so use full executable paths. "
+                + "Showing them in the launcher makes them findable from search.",
             isEnabled: $settings.customCommandsEnabled,
             showsInLauncher: $settings.customCommandsShowInLauncher)
 
-        SettingsCard {
+        SettingsCard(footer: "Name a command, then give it a shortcut if you want one.") {
             if store.commands.isEmpty {
-                SettingsRow(
-                    title: "No custom commands",
-                    subtitle: "Add one to make it searchable from the launcher.",
-                    systemImage: CustomCommand.sfSymbol,
-                    tint: .secondary
-                ) {
+                SettingsRow(title: "No custom commands") {
                     EmptyView()
                 }
             } else {
@@ -68,18 +58,12 @@ struct CommandsSettingsView: View {
             }
             SettingsDivider()
 
-            SettingsRow(
-                title: "Add Custom Command",
-                subtitle: "Name it, then give it a shortcut if you want one.",
-                systemImage: "plus.circle",
-                tint: .green
-            ) {
+            SettingsRow(title: "Add Custom Command") {
                 Button("Add…") { editor = EditorTarget(command: nil) }
-                    .controlSize(.small)
             }
         }
         // Same dim as a hidden launcher category; the switch above stays live.
-        .opacity(settings.customCommandsEnabled ? 1 : 0.45)
+        .opacity(settings.customCommandsEnabled ? 1 : Theme.Opacity.disabled)
         .disabled(!settings.customCommandsEnabled)
     }
 
@@ -102,17 +86,12 @@ private struct CustomCommandSettingsRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Spacing.lg) {
-            Image(systemName: CustomCommand.sfSymbol)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.green)
-                .frame(width: Theme.Size.settingsRowIcon)
-
             VStack(alignment: .leading, spacing: Theme.Spacing.xs / 2) {
                 Text(command.name)
-                    .font(.body)
+                    .font(Theme.Typography.rowTitle)
                     .lineLimit(1)
                 Text(command.command)
-                    .font(.caption.monospaced())
+                    .font(Theme.Typography.rowSubtitle.monospaced())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)

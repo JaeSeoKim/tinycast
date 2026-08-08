@@ -9,21 +9,16 @@ struct MiscellaneousSettingsView: View {
     @State private var refreshFailed = false
 
     var body: some View {
-        SettingsPane(
-            title: "Miscellaneous",
-            subtitle: "Options that don't belong to a single feature."
-        ) {
+        SettingsPane {
             SettingsCard(header: "Calculator") {
                 SettingsRow(
                     title: "Currency Conversion",
                     subtitle: conversionStatus,
-                    systemImage: "dollarsign.arrow.circlepath",
-                    tint: .green,
                     statusDot: currencyRates.isEnabled ? .green : nil
                 ) {
                     // Not bound to the setting: flipping on opens the sheet, so it springs back.
-                    Toggle(
-                        "",
+                    SettingsSwitch(
+                        title: "Currency Conversion",
                         isOn: Binding(
                             get: { currencyRates.isEnabled },
                             set: { wantsOn in
@@ -32,21 +27,12 @@ struct MiscellaneousSettingsView: View {
                                 } else {
                                     currencyRates.setEnabled(false)
                                 }
-                            })
-                    )
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
+                            }))
                 }
 
                 if currencyRates.isEnabled {
                     SettingsDivider()
-                    SettingsRow(
-                        title: "Exchange Rates",
-                        subtitle: ratesStatus,
-                        systemImage: "clock.arrow.circlepath",
-                        tint: .gray
-                    ) {
+                    SettingsRow(title: "Exchange Rates", subtitle: ratesStatus) {
                         Button("Update Now") {
                             refreshing = true
                             Task {

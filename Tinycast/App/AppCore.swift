@@ -30,6 +30,7 @@ final class AppCore {
     let palette = PaletteState()
     let uninstall = UninstallSession()
     let quicklinkArguments = QuicklinkArgumentSession()
+    let settingsWindow = SettingsWindowPresenter()
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
     var pendingQuicklinkEdit: QuicklinkEditRequest?

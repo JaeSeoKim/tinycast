@@ -75,11 +75,17 @@ enum Theme {
         static let menuWidth: CGFloat = 276
         /// A menu row's glyph slot, sized so symbol and app-icon rows read the same.
         static let menuIcon: CGFloat = 20
-        /// Settings window: sidebar column width and the small icon used in setting rows.
-        static let settingsSidebar: CGFloat = 184
-        static let settingsRowIcon: CGFloat = 20
+        /// Settings window: sidebar column width, and the glyph slot its rows share with a callout.
+        static let settingsWindow = CGSize(width: 760, height: 620)
+        static let settingsSidebar: CGFloat = 200
+        static let settingsSidebarMax: CGFloat = 280
+        static let settingsGlyph: CGFloat = 20
+        /// The app picker, sized to show a handful of rows without becoming a second window.
+        static let appPicker = CGSize(width: 250, height: 260)
         /// The state indicator dot beside a settings row title.
         static let statusDot: CGFloat = 6
+        /// The Raycast import's passphrase field, kept narrow so the row reads as a setting.
+        static let passphraseField: CGFloat = 160
         /// Settings editor modals (Custom Commands, Snippets): fixed width, intrinsic height.
         static let editorSheetWidth: CGFloat = 480
         /// The multi-line box inside those modals; it scrolls rather than grows the sheet.
@@ -103,6 +109,11 @@ enum Theme {
         static let volumeReadout: CGFloat = 38
     }
 
+    enum Opacity {
+        /// A control that is off but still readable — the one dim the whole app uses.
+        static let disabled: Double = 0.45
+    }
+
     enum Duration {
         /// How long each HUD stays up; a sentence needs longer than a level does.
         static let messageHUD: TimeInterval = 2.4
@@ -121,6 +132,10 @@ enum Theme {
         static let rowTitle = Font.body
         static let rowTrailing = Font.callout
         static let sectionHeader = Font.subheadline.weight(.medium)
+        /// Settings: a card's header — the largest type a pane draws — and its footer.
+        static let cardHeader = Font.title3.weight(.semibold)
+        static let cardFooter = Font.caption
+        static let rowSubtitle = Font.caption
         /// The big value line on the calculator answer card (both source and target sides).
         static let calcResult = Font.title
         static let keyCap = Font.caption
@@ -148,8 +163,8 @@ enum Theme {
         static let border = Color.white.opacity(0.20)
         static let textSecondary = Color.white.opacity(0.60)
         static let textTertiary = Color.white.opacity(0.40)
-        /// The Settings card: a faint surface whose border doubles as the row divider.
-        static let cardFill = Color.white.opacity(0.05)
+        /// The Settings card: a faint surface, and the hairline that divides its rows.
+        static let cardFill = Color.white.opacity(0.06)
         static let cardStroke = Color.white.opacity(0.10)
         /// Tint layered into the floating controls, so the glass reads frosted, not clear.
         static let glassFrost = Color.white.opacity(0.05)

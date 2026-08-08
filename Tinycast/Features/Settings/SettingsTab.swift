@@ -1,13 +1,36 @@
-import SwiftUI
-
-enum SettingsTab: Int, CaseIterable, Identifiable {
-    // Declaration order is sidebar order: general, the categories, then the rest.
-    case general, applications, systemSettings, systemActions, commands, quicklinks, snippets,
-        windowManagement, clipboard, emoji, permissions, backup, miscellaneous, about
+enum SettingsTab: Int, CaseIterable, Identifiable, Hashable {
+    // Declaration order is sidebar order; `Group.tabs` slices it, so keep each group contiguous.
+    case general, permissions
+    case applications, systemSettings, systemActions, commands, quicklinks
+    case snippets, windowManagement, clipboard, emoji
+    case backup, miscellaneous, about
     var id: Int { rawValue }
 
-    /// The neighbouring pane in sidebar order, or nil at either end — arrows clamp, never wrap.
-    func stepping(_ delta: Int) -> SettingsTab? { SettingsTab(rawValue: rawValue + delta) }
+    /// A sidebar section, so fourteen panes read as four short lists rather than one long one.
+    enum Group: CaseIterable, Identifiable {
+        case general, sources, tools, app
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .general: return "General"
+            case .sources: return "Search Sources"
+            case .tools: return "Tools"
+            case .app: return "App"
+            }
+        }
+
+        var tabs: [SettingsTab] { SettingsTab.allCases.filter { $0.group == self } }
+    }
+
+    var group: Group {
+        switch self {
+        case .general, .permissions: return .general
+        case .applications, .systemSettings, .systemActions, .commands, .quicklinks: return .sources
+        case .snippets, .windowManagement, .clipboard, .emoji: return .tools
+        case .backup, .miscellaneous, .about: return .app
+        }
+    }
 
     var title: String {
         switch self {
@@ -44,26 +67,6 @@ enum SettingsTab: Int, CaseIterable, Identifiable {
         case .backup: return "arrow.up.arrow.down.circle"
         case .miscellaneous: return "ellipsis.circle"
         case .about: return "info.circle"
-        }
-    }
-
-    /// Colored icon tile, System Settings style — a small cue that makes the sidebar scannable.
-    var tint: Color {
-        switch self {
-        case .general: return .gray
-        case .applications: return .blue
-        case .systemSettings: return .indigo
-        case .systemActions: return .orange
-        case .commands: return .green
-        case .quicklinks: return .cyan
-        case .snippets: return .green
-        case .windowManagement: return .blue
-        case .clipboard: return .orange
-        case .emoji: return .yellow
-        case .permissions: return .blue
-        case .backup: return .teal
-        case .miscellaneous: return .purple
-        case .about: return .pink
         }
     }
 }

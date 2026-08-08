@@ -95,33 +95,18 @@ final class PaletteCoordinator {
         windowController.applyCollapsed(paletteIsCollapsed)
     }
 
-    /// Reopen: focus an open aux window, else summon the launcher.
+    /// Reopen: focus an open window, else summon the launcher.
     func handleReopen() {
+        if core.settingsWindow.focusExisting() { return }
         if auxWindows.focusExisting() { return }
         showPalette(mode: .launcher, restoreAnyMode: true)
     }
 
     // MARK: - Auxiliary windows
 
-    /// Settings in its own window; a fresh one mounts on `tab`, an open one switches.
+    /// Settings lives in a SwiftUI scene, not here; the presenter owns opening it.
     func showSettings(tab: SettingsTab = .general) {
-        let isNew = auxWindows.show(
-            id: "settings", title: "Settings", size: CGSize(width: 720, height: 550),
-            seamlessTitleBar: true
-        ) {
-            SettingsRootView(initialTab: tab)
-                .environment(self.core)
-                .environment(self.settings)
-                .environment(self.appIndex)
-                .environment(self.core.hotKeys)
-                .environment(self.core.visibility)
-                .environment(self.core.customCommands)
-                .environment(self.core.snippetsStore)
-                .environment(self.core.quicklinks)
-        }
-        if !isNew {
-            NotificationCenter.default.post(name: .tinycastSelectSettingsTab, object: tab)
-        }
+        core.settingsWindow.show(tab: tab)
     }
 
     func showBackupSettings() {

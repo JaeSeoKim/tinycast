@@ -36,33 +36,22 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         @Bindable var settings = settings
-        return SettingsPane(
-            title: "General",
-            subtitle: "Global shortcuts and startup behaviour."
-        ) {
-            SettingsCard(header: "Global Shortcuts") {
-                SettingsRow(
-                    title: "App Launcher",
-                    subtitle: "Summon the fuzzy app launcher.",
-                    systemImage: "magnifyingglass",
-                    tint: .blue
-                ) {
+        return SettingsPane {
+            SettingsCard(header: "Global Shortcuts", footer: "Summon the fuzzy app launcher.") {
+                SettingsRow(title: "App Launcher") {
                     ShortcutRecorder(action: .togglePalette)
                 }
             }
 
-            SettingsCard(header: "Search") {
-                SettingsRow(
-                    title: "Learned ranking",
-                    subtitle:
-                        "Tinycast privately learns which results you choose for each query. Reset all learned choices to restore the default order.",
-                    systemImage: "chart.line.uptrend.xyaxis",
-                    tint: .blue
-                ) {
+            SettingsCard(
+                header: "Search",
+                footer: "Tinycast privately learns which results you choose for each query. "
+                    + "Reset all learned choices to restore the default order."
+            ) {
+                SettingsRow(title: "Learned ranking") {
                     Button("Reset…", role: .destructive) {
                         confirmingRankingReset = true
                     }
-                    .controlSize(.small)
                     .disabled(launcherRanking.isEmpty)
                 }
             }
@@ -71,13 +60,10 @@ struct GeneralSettingsView: View {
                 SettingsRow(
                     title: "Hyper Key",
                     subtitle: hyperSubtitle,
-                    systemImage: "sparkle",
-                    tint: .purple,
                     statusDot: hyperStatusDot
                 ) {
                     if hyperTap.status == .needsAccessibility {
                         Button("Grant Access…") { Permissions.openAccessibilitySettings() }
-                            .controlSize(.small)
                     }
                     Picker("", selection: $settings.hyperKey) {
                         ForEach(HyperKeyPhysicalKey.allCases) { key in
@@ -97,9 +83,7 @@ struct GeneralSettingsView: View {
                     SettingsRow(
                         title: "Quick Press",
                         subtitle:
-                            "Select an action to perform when \(settings.hyperKey.title) is pressed without any other keys.",
-                        systemImage: "hand.tap",
-                        tint: .teal
+                            "Select an action to perform when \(settings.hyperKey.title) is pressed without any other keys."
                     ) {
                         Picker("", selection: $settings.hyperKeyQuickPress) {
                             Text("Does Nothing").tag(HyperKeyQuickPress.none)
@@ -113,97 +97,58 @@ struct GeneralSettingsView: View {
                     }
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Include Shift (⇧)",
-                    subtitle: "Hyper Key will remap to the \(hyperGlyphs) modifier keys.",
-                    systemImage: "shift",
-                    tint: .indigo
-                ) {
-                    Toggle("", isOn: $settings.hyperKeyIncludesShift)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        // Flipping it re-points recorded chords, so it needs a chord to mean.
-                        .disabled(settings.hyperKey == .none)
+                SettingsRow(title: "Include Shift (⇧)") {
+                    SettingsSwitch(
+                        title: "Include Shift", isOn: $settings.hyperKeyIncludesShift
+                    )
+                    // Flipping it re-points recorded chords, so it needs a chord to mean.
+                    .disabled(settings.hyperKey == .none)
                 }
-                .opacity(settings.hyperKey == .none ? 0.5 : 1)
+                .opacity(settings.hyperKey == .none ? Theme.Opacity.disabled : 1)
             }
 
-            SettingsCard(header: "Appearance") {
-                SettingsRow(
-                    title: "Compact mode",
-                    subtitle:
-                        "Open the launcher as a slim search bar that expands into the full list as you type.",
-                    systemImage: "macwindow",
-                    tint: .blue
-                ) {
-                    Toggle("", isOn: $settings.compactMode)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
+            SettingsCard(
+                header: "Appearance",
+                footer: "Compact mode opens the launcher as a slim search bar that expands into "
+                    + "the full list as you type, with favorite app icons pinned to its right "
+                    + "(⌘1–⌘5 to launch). Following the cursor opens it on whichever display the "
+                    + "pointer is on, rather than the one with the menu bar."
+            ) {
+                SettingsRow(title: "Compact mode") {
+                    SettingsSwitch(title: "Compact mode", isOn: $settings.compactMode)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Show favorites in compact mode",
-                    subtitle:
-                        "Pin favorite app icons to the right of the compact bar (⌘1–⌘5 to launch).",
-                    systemImage: "star",
-                    tint: .yellow
-                ) {
-                    Toggle("", isOn: $settings.showFavoritesInCompactMode)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .disabled(!settings.compactMode)
+                SettingsRow(title: "Show favorites in compact mode") {
+                    SettingsSwitch(
+                        title: "Show favorites in compact mode",
+                        isOn: $settings.showFavoritesInCompactMode
+                    )
+                    .disabled(!settings.compactMode)
                 }
-                .opacity(settings.compactMode ? 1 : 0.5)
+                .opacity(settings.compactMode ? 1 : Theme.Opacity.disabled)
                 SettingsDivider()
-                SettingsRow(
-                    title: "Follow the cursor across displays",
-                    subtitle:
-                        "Open the launcher on whichever display the pointer is on, rather than the one with the menu bar.",
-                    systemImage: "display.2",
-                    tint: .teal
-                ) {
-                    Toggle("", isOn: $settings.openOnCursorScreen)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
+                SettingsRow(title: "Follow the cursor across displays") {
+                    SettingsSwitch(
+                        title: "Follow the cursor across displays",
+                        isOn: $settings.openOnCursorScreen)
                 }
             }
 
-            SettingsCard(header: "General") {
-                SettingsRow(
-                    title: "Launch at login",
-                    subtitle: "Start Tinycast automatically when you log in.",
-                    systemImage: "power",
-                    tint: .green
-                ) {
-                    Toggle("", isOn: $settings.launchAtLogin)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
+            SettingsCard(
+                header: "General",
+                footer: "Tinycast can start automatically when you log in, and its shortcuts still "
+                    + "work with the menu bar icon hidden. Pop to Root Search resets the window to "
+                    + "the launcher that long after it closes."
+            ) {
+                SettingsRow(title: "Launch at login") {
+                    SettingsSwitch(title: "Launch at login", isOn: $settings.launchAtLogin)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Show in menu bar",
-                    subtitle:
-                        "Keep the Tinycast icon in the menu bar. Shortcuts still work when hidden.",
-                    systemImage: "menubar.arrow.up.rectangle",
-                    tint: .gray
-                ) {
-                    Toggle("", isOn: $showInMenuBar)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
+                SettingsRow(title: "Show in menu bar") {
+                    SettingsSwitch(title: "Show in menu bar", isOn: $showInMenuBar)
                 }
                 SettingsDivider()
-                SettingsRow(
-                    title: "Pop to Root Search",
-                    subtitle: "Reset to the launcher this long after the window closes.",
-                    systemImage: "arrow.uturn.backward",
-                    tint: .indigo
-                ) {
+                SettingsRow(title: "Pop to Root Search") {
                     Picker("", selection: $settings.popToRootTimeout) {
                         ForEach(PopToRootTimeout.allCases) { timeout in
                             Text(timeout.title).tag(timeout)
