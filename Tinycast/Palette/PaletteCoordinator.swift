@@ -30,7 +30,6 @@ final class PaletteCoordinator {
             ? windowController.previousApp : NSWorkspace.shared.frontmostApplication
     }
 
-    var previousApp: NSRunningApplication? { windowController.previousApp }
 
     func togglePalette() {
         if windowController.isVisible, palette.mode == .launcher {

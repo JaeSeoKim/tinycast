@@ -15,8 +15,6 @@ final class SettingsCoordinator {
             autosaveName: "SettingsWindow", activation: core.activationPolicy)
     }
 
-    var isOpen: Bool { window.isOpen }
-
     /// A fresh window mounts on `tab`; an open one switches to it in place.
     func showSettings(tab: SettingsTab = .general) {
         let isNew = window.show {
@@ -48,7 +46,6 @@ final class SettingsCoordinator {
         window.close()
     }
 
-    @discardableResult
     func focusExisting() -> Bool {
         window.focus()
     }

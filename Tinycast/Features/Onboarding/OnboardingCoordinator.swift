@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The first-run wizard's own window lifecycle, also re-runnable from Settings.
+/// The first-run wizard's own window lifecycle.
 @MainActor
 final class OnboardingCoordinator {
     private let window: AppWindowController
@@ -13,8 +13,6 @@ final class OnboardingCoordinator {
             title: "Welcome to Tinycast", contentSize: OnboardingView.windowSize,
             activation: core.activationPolicy)
     }
-
-    var isOpen: Bool { window.isOpen }
 
     func showOnboarding() {
         window.show {
@@ -31,7 +29,6 @@ final class OnboardingCoordinator {
         core.paletteCoordinator.showPalette(mode: .launcher)
     }
 
-    @discardableResult
     func focusExisting() -> Bool {
         window.focus()
     }

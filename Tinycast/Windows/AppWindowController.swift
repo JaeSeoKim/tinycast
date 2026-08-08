@@ -23,9 +23,6 @@ final class AppWindowController: NSObject, NSWindowDelegate {
         self.activation = activation
     }
 
-    /// Open, including while miniaturized — `NSWindow.isVisible` reads false in the Dock.
-    var isOpen: Bool { window != nil }
-
     /// Returns `true` when a window was built, `false` when an already-open one was re-raised.
     @discardableResult
     func show<Content: View>(@ViewBuilder content: () -> Content) -> Bool {
@@ -100,8 +97,9 @@ final class AppWindowController: NSObject, NSWindowDelegate {
         if window.isMiniaturized { window.deminiaturize(nil) }
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
-        // `NSApp.activate` is async, so re-assert key next turn to land it up front.
-        DispatchQueue.main.async {
+        // `NSApp.activate` is async, so re-assert next turn — never onto a window closed since.
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let window, self?.window === window else { return }
             window.makeKeyAndOrderFront(nil)
         }
     }
