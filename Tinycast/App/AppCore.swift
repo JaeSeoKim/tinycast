@@ -86,7 +86,6 @@ final class AppCore {
         calcHistory: calcHistory, paletteCoordinator: paletteCoordinator)
 
     @ObservationIgnored private lazy var windowController = PaletteWindowController(core: self)
-    @ObservationIgnored private lazy var mainMenu = MainMenuController(core: self)
     @ObservationIgnored private lazy var messageHUD = MessageHUDController(settings: settings)
     /// Every confirmation, report and prompt; it also stops a held hotkey stacking them.
     private let dialogs = DialogController()
@@ -113,8 +112,6 @@ final class AppCore {
             NSApp.setActivationPolicy(.accessory)
             // Force dark: the Liquid Glass material is tuned for a deep dark surface.
             NSApp.appearance = NSAppearance(named: .darkAqua)
-            // Replaces SwiftUI's, whose ⌘Q would terminate the agent from the Settings window.
-            mainMenu.install(appName: Bundle.main.appDisplayName)
 
             clipboardStore.maxAge = settings.clipboardRetention.maxAge
             // Defer the SQLite read + prune off the launch path; the palette fills in later.

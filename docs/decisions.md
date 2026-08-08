@@ -375,12 +375,15 @@ Settings; closing Settings never touches the palette. Neither coordinator can re
 
 Two consequences look wrong out of context:
 
-- **The app builds its own `NSApp.mainMenu`** (`App/MainMenuController.swift`), replacing the one SwiftUI
-  installs during `applicationWillFinishLaunching`. SwiftUI's carries a real `Quit ⌘Q`, so with Settings
-  focused — or even with just the palette up — ⌘Q terminated the background agent.
-- **⌘Q is "Close Settings", not Quit.** Quitting stays on the menu-bar extra and the launcher's Quit
-  Tinycast command. The item is titled for what it does, and `validateMenuItem` greys it out when no
-  Settings window is open.
+- **⌘Q is "Close Settings", not Quit**, and the app menu carries no Quit item at all. Quitting stays on
+  the menu-bar extra and the launcher's Quit Tinycast command. The menu-bar extra's Quit button
+  deliberately carries no ⌘Q either — two contradictory ⌘Qs is worse than none.
+- **The menu is declared with `.commands`, never assigned to `NSApp.mainMenu`.** SwiftUI's default menu
+  carries a real `Quit ⌘Q`, so with Settings focused — or even with just the palette up — ⌘Q terminated
+  the background agent. An imperative `NSApp.mainMenu = …` install *looks* like it fixes that and does
+  not: **SwiftUI rebuilds the menu on any scene change, and toggling Show in Menu Bar is one**, silently
+  restoring its own Quit. Only a `CommandGroup` survives, because it is the scene definition rather than
+  something racing it.
 
 **Why:** Tinycast is an agent that happens to have a settings window, not a windowed app. Every reflex
 that closes a window — ⌘Q, ⌘W, the red traffic light, the last window closing — has to leave the hotkeys,

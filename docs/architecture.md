@@ -107,8 +107,9 @@ imperatively from AppKit.
   by `SettingsCoordinator` and `OnboardingCoordinator`. SwiftUI `Settings` and `Window` scenes are
   unreliable for accessory apps, so this is deliberate. Their lifecycles are independent of the
   palette's in both directions — see [decisions.md](decisions.md) entry 32.
-- **The main menu** — built explicitly by `App/MainMenuController.swift`, replacing the one SwiftUI
-  installs. It is only ever on screen while a titled window is open, so it is Settings' menu bar.
+- **The main menu** — shaped by `TinycastApp`'s `.commands`, which rebinds ⌘Q to Close Settings. It is
+  only ever on screen while a titled window is open, so it is Settings' menu bar. It must stay
+  declarative — see [decisions.md](decisions.md) entry 32.
 - **Dialogs** — borderless `DialogPanel`s driven by `DialogController`, the app's only presenter for
   confirmations, failure reports and value prompts. Presentation is `async`, so nothing blocks the main
   actor, and the presenter refuses a second dialog while one is up — that, not a flag, is what stops a

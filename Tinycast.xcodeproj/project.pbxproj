@@ -77,7 +77,6 @@
 		555791AE6CDCF42ECA171B2C /* FavoritesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43F1080FB443A1D0616790E /* FavoritesStore.swift */; };
 		5770FB1A3FD29E27C25C944E /* SearchRelevance.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB9DB77DCE25C41D86BB955 /* SearchRelevance.swift */; };
 		57D7D94F9CB94B1152D44879 /* CursorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9163FDA8F7ADDEF49A62D72C /* CursorScreen.swift */; };
-		5872CEE462573158285A1FC9 /* MainMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8EFDE644AFF1CC213BF55B0 /* MainMenuController.swift */; };
 		58D369977E702AD66F070913 /* SnippetMarkdownSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3331A5E8F892CC257AD31B /* SnippetMarkdownSerializer.swift */; };
 		5B5BCDD482A9058D38C49314 /* CalcUnits.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC67BADEB6FEC76C88585361 /* CalcUnits.swift */; };
 		5C801A9043908577FB99A555 /* DialogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32733B27AE0BD75742D1394F /* DialogView.swift */; };
@@ -361,7 +360,6 @@
 		B6A96350EBE68EC79497FA2D /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
 		B6BE90FB09366A3518C2D4E5 /* EmojiData.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiData.generated.swift; sourceTree = "<group>"; };
 		B710F99B5B4E42FFB3EAA8FB /* EmojiCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiCatalog.swift; sourceTree = "<group>"; };
-		B8EFDE644AFF1CC213BF55B0 /* MainMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuController.swift; sourceTree = "<group>"; };
 		B97A8C3E88FEBCBBEADF415B /* LauncherScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherScreen.swift; sourceTree = "<group>"; };
 		BA9F3FA9925873D25EAF7D03 /* PalettePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePanel.swift; sourceTree = "<group>"; };
 		BDB241B179A08518424F7C1B /* DialogPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogPanel.swift; sourceTree = "<group>"; };
@@ -992,7 +990,6 @@
 			children = (
 				2BECF24B674F9458E4A876DA /* AppCore.swift */,
 				9C37CCD024267EB21876C7E9 /* AppDelegate.swift */,
-				B8EFDE644AFF1CC213BF55B0 /* MainMenuController.swift */,
 				2B629EC3B716FEE881BB0075 /* TinycastApp.swift */,
 			);
 			path = App;
@@ -1334,7 +1331,6 @@
 				633DCA2F00A274C375EB4423 /* LauncherRankingStore.swift in Sources */,
 				7FF6A0A4702E1C1365F2D76A /* LauncherScreen.swift in Sources */,
 				E7DCBF503DDEF223C6BE71E5 /* LegacyHotKeyRecords.swift in Sources */,
-				5872CEE462573158285A1FC9 /* MainMenuController.swift in Sources */,
 				AAFD2C9276D38719E85B675F /* Memo.swift in Sources */,
 				43DBCE7B5A84D0D6322124F5 /* MessageHUDController.swift in Sources */,
 				8D529C8F3AB579941067FE98 /* MessageHUDView.swift in Sources */,
