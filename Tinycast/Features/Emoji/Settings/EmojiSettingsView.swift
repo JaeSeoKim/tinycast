@@ -6,19 +6,20 @@ struct EmojiSettingsView: View {
     var body: some View {
         @Bindable var settings = settings
         return SettingsPane {
-            SettingsCard(
-                header: "Global Shortcuts", footer: "Summon the emoji and symbols palette."
-            ) {
-                SettingsRow(title: "Emoji & Symbols") {
+            SettingsCard(header: "Global Shortcuts") {
+                SettingsRow(
+                    title: "Emoji & Symbols",
+                    subtitle: "Summon the emoji and symbols palette."
+                ) {
                     ShortcutRecorder(action: .toggleEmoji)
                 }
             }
 
-            SettingsCard(
-                header: "Appearance",
-                footer: "Applied when an emoji supports skin tones; pastes use it too."
-            ) {
-                SettingsRow(title: "Emoji Skin Tone") {
+            SettingsCard(header: "Appearance") {
+                SettingsRow(
+                    title: "Emoji Skin Tone",
+                    subtitle: "Applied when an emoji supports skin tones; pastes use it too."
+                ) {
                     // A hand per tone, quicker to scan than a dropdown of tone names.
                     Picker("", selection: $settings.emojiSkinTone) {
                         ForEach(EmojiSkinTone.allCases) { tone in

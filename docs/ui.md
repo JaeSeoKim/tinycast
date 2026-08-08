@@ -117,8 +117,10 @@ size, leading on weight, as System Settings' group headers do), `cardFooter` (`.
 | `textTertiary`   | white 0.40     | placeholders, trailing kind labels               |
 | `cardFill`       | white 0.06     | settings/calc card fill                          |
 | `cardStroke`     | white 0.10     | calc card border, Settings inset row dividers    |
-| `accent`         | system accent  | Settings sidebar glyphs + selected-row fill      |
 | `glassFrost`     | white 0.05     | whitish tint layered into the floating glass     |
+
+The Settings sidebar's glyph tint and selection fill are the *system accent*, drawn by AppKit's own
+`List(.sidebar)`. There is no token for it — don't add one, and don't try to restyle it.
 
 Beyond these, `.secondary`/`.tertiary` foreground styles are fine for SF Symbols (they resolve against
 the forced-dark environment). **Selection always beats hover** when a row is both.
@@ -335,23 +337,27 @@ Source: `DesignSystem/SettingsComponents.swift`.
 
 Settings is the app's one **scene-owned** window — a SwiftUI `Window` declared in `TinycastApp` and
 opened by `SettingsWindowPresenter`. That is load-bearing, not incidental: only a scene makes
-`NavigationSplitView`'s sidebar a real `NSSplitViewItem`, which is what places the toolbar's
-back/forward capsule at the detail column's leading edge and insets the traffic lights over the
-sidebar. Build the same view in a hand-made `NSWindow` and those items pin themselves beside the
-traffic lights at every toolbar style — verified against `.automatic`, `.expanded`, `.preference`,
-`.unified` and `.unifiedCompact`. Default size **900 × 720**, resizable down to `settingsWindowMin`.
+`NavigationSplitView`'s sidebar a real `NSSplitViewItem`, which is what insets the traffic lights over
+the sidebar and lets AppKit draw the split divider under the titlebar. Default size **900 × 720**,
+resizable down to `settingsWindowMin`.
 
-The scene comes with two behaviours that have to be opted out of, both verified by driving a window
-open and closed rather than by inspection:
+Three things about the scene, all of them load-bearing:
 
 - **SwiftUI terminates the app when the scene's last window closes**, even while the app is already
   `.accessory` — so `AppDelegate.applicationShouldTerminateAfterLastWindowClosed` returns `false`.
   A menu-bar app outlives its windows; without this, closing Settings quits Tinycast.
-- **SwiftUI keeps a closed scene's window *and* view tree alive**, and builds the tree at launch even
-  if Settings is never opened. So `SettingsWindowPresenter.isOpen` gates the content: the panes mount
-  on open and deallocate on close, and `SettingsRootView(initialTab:)` — not the notification — picks
-  the pane for a fresh mount. The notification only switches an already-open window. Because the
-  window outlives its close, "is Settings open?" is `window.isVisible`, never `window != nil`.
+- **The tree is never gated.** `SettingsScreen` builds `SettingsRootView` unconditionally, so the
+  window is only ever ordered in with its content already mounted. Gating on an observable flag and
+  then calling `openWindow` in the same turn shows the window a frame before the split view exists,
+  and the sidebar visibly pops in. SwiftUI keeps the tree alive after a close; that is the point.
+- **The presenter owns the selected pane.** `SettingsWindowPresenter.tab` is the single source of
+  truth, injected through `@Environment` and bound straight to the sidebar's selection, so opening on
+  a pane is a plain assignment whether the window is up or not. There is no notification and no
+  "initial tab" — both existed only to reach across a gate that is gone.
+
+"Is Settings open?" is `isVisible || isMiniaturized`. A miniaturized window is not `isVisible` but is
+still in the Dock, and treating it as closed strands it: the presenter would open a second-guessed
+fresh window and `DockPresence` would drop the icon out from under it.
 
 The shell is stock AppKit, so don't re-implement any of it:
 
@@ -360,21 +366,19 @@ The shell is stock AppKit, so don't re-implement any of it:
   sidebar row, no `onKeyPress`, no `@FocusState`. `.toolbar(removing: .sidebarToggle)` hides the toggle;
   `.toolbarBackgroundVisibility(.hidden, for: .windowToolbar)` is what removes the hairline under the
   titlebar.
-- **Back/forward** are two `ToolbarItem(placement: .navigation)` buttons — macOS draws the capsule
-  itself. `SettingsHistory` (pure, `Settings/`, pinned by `settings-history-test`) is the cursor behind
-  them, with browser semantics: revisiting the current pane is a no-op, and visiting from mid-history
-  discards the branch ahead. Every route into a pane — list selection, `.tinycastSelectSettingsTab` —
-  goes through `visit(_:)`, so nothing changes the pane behind history's back.
+- **No back/forward.** Fourteen flat panes, every one of them a click away in a sidebar that can't be
+  collapsed — a history cursor re-reaches what is already on screen. Don't add one back; the depth
+  System Settings navigates (Network › Wi-Fi › Details) doesn't exist here, and `detail` is a `switch`
+  that never pushes.
 - **`SettingsPane`**: no title. The toolbar names the pane, so a card's `header` is the largest type a
   pane draws; a second copy in the content is the duplication a grouped `Form` avoids. Scrollable
   content, `xxl` inset all four sides, the native `.overlayScroller()`.
-- **`SettingsSwitch`** is the only switch: `.controlSize(.small)`, with the row's title as its
-  accessibility label, so no call site can drift on size or lose its label. Buttons and pickers stay at
-  the default control size.
+- **`SettingsSwitch`** is the only switch, carrying the row's title as its accessibility label so no
+  call site can lose it. Default control size, like every button and picker it shares a row with.
 - **`SettingsCard`**: rounded `card 10` container, `cardFill` (white 0.06) fill, **no border** — the fill carries the group; a stroke reads as a web card. Content is clipped to the corner radius, so a row's own hover fill rounds correctly. Optional `header` above it (`cardHeader` — 13pt semibold, the row titles' size at a heavier weight) and optional `footer` below it (`cardFooter`, secondary), both indented `xs`.
 - **`SettingsRow`**: **no leading glyph** — a decorated row reads as a list item, not a setting. Title + optional caption subtitle + optional `statusDot`, trailing control, fixed `.horizontal xl / .vertical xl` rhythm. `SettingsDivider` splits rows with a hairline inset `xl`, aligned to the label.
-- **One explanation per card, not per row.** Generic prose belongs in the card's `footer`. A row keeps its own `subtitle` only when the text is dynamic (the Hyper Key status line) or row-specific (a quicklink's URL, a command's shell line, a scope's path).
-- **Sidebar grouping**: four `Section`s from `SettingsTab.Group`, each a `Label(tab.title, systemImage:)`. `SettingsTab`'s declaration order is sidebar order and `Group.tabs` slices it, so a pane left out of a group vanishes from the window — `settings-history-test` pins that.
+- **An explanation sits next to the control it explains.** A row's `subtitle` is the default: it keeps the text beside its switch and, unlike a footer, VoiceOver reads it with the control. A card's `footer` is only for prose that genuinely covers the whole group — a list's rule (`SearchScopesCard`), a multi-step flow (the Raycast import), or `FeatureSwitchCard`'s shared rationale for its two switches. One footer explaining three separate switches is the thing to avoid.
+- **Sidebar grouping**: four `Section`s from `SettingsTab.Group`, each a `Label(tab.title, systemImage:)`. `SettingsTab`'s declaration order is sidebar order and `Group.tabs` filters `allCases`, so groups have to stay contiguous or the sidebar reorders — `settings-tabs-test` pins that.
 - **Identity graphics survive the icon rule.** Real app icons (`LauncherItemRow`, `DisabledAppRow`), a quicklink's user-chosen `SymbolImage`, a window command's layout glyph (it diagrams the result, so the name alone doesn't convey it), the About links' brand marks and `SettingsCallout`'s notice glyph all stay — rendered `.secondary`, never tinted. Only *decorative* symbols were removed.
 - **One dim.** `Theme.Opacity.disabled` is the only "off but readable" opacity in the app.
 

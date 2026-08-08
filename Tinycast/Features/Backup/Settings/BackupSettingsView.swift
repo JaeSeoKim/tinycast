@@ -29,17 +29,20 @@ struct BackupSettingsView: View {
 
     var body: some View {
         SettingsPane {
-            SettingsCard(
-                header: "Tinycast",
-                footer: "Exporting saves your shortcuts, custom commands, favorites and "
-                    + "preferences to JSON. Importing restores from a Tinycast backup, changing "
-                    + "only the values the file contains."
-            ) {
-                SettingsRow(title: "Export Settings") {
+            SettingsCard(header: "Tinycast") {
+                SettingsRow(
+                    title: "Export Settings",
+                    subtitle:
+                        "Save your shortcuts, custom commands, favorites and preferences to JSON."
+                ) {
                     Button("Export…") { Task { await BackupActions.exportSettings(core: core) } }
                 }
                 SettingsDivider()
-                SettingsRow(title: "Import Settings") {
+                SettingsRow(
+                    title: "Import Settings",
+                    subtitle:
+                        "Restore from a Tinycast backup, changing only the values the file contains."
+                ) {
                     Button("Import…") { Task { await BackupActions.importSettings(core: core) } }
                 }
             }

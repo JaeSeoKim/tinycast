@@ -20,19 +20,23 @@ struct AppPickerPopover: View {
     }
 
     var body: some View {
+        // Both read once: `candidates` fuzzy-matches the whole index on every body pass.
+        let apps = candidates
+        let clearRow = query.isEmpty ? clearTitle : nil
         VStack(spacing: Theme.Spacing.sm) {
             SettingsSearchField(prompt: "Search apps…", query: $query)
             ScrollView {
                 LazyVStack(spacing: 1) {
-                    if let clearTitle, query.isEmpty {
-                        AppPickerRow(title: clearTitle, icon: nil) { onSelect(nil) }
+                    if let clearRow {
+                        AppPickerRow(title: clearRow, icon: nil) { onSelect(nil) }
                     }
-                    ForEach(candidates) { app in
+                    ForEach(apps) { app in
                         AppPickerRow(title: app.name, icon: app.icon) {
                             if let id = app.bundleID { onSelect(id) }
                         }
                     }
-                    if candidates.isEmpty, clearTitle == nil {
+                    // Keyed on what is actually drawn: an empty popover reads as a broken one.
+                    if apps.isEmpty, clearRow == nil {
                         Text(query.isEmpty ? "No apps left to add." : "No apps match “\(query)”.")
                             .font(Theme.Typography.rowSubtitle)
                             .foregroundStyle(.secondary)

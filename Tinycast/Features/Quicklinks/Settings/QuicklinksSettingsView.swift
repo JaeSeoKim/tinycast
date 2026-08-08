@@ -92,18 +92,20 @@ struct QuicklinksSettingsView: View {
 
     private var behaviour: some View {
         @Bindable var settings = settings
-        return SettingsCard(
-            header: "Behaviour",
-            footer: "A new window is asked of the handler instead of reusing its frontmost tab; "
-                + "only apps that accept a new-window argument can honour it. The fallback covers "
-                + "what {selection} does when the app in front exposes nothing to read."
-        ) {
-            SettingsRow(title: "Open in a new window") {
+        return SettingsCard(header: "Behaviour") {
+            SettingsRow(
+                title: "Open in a new window",
+                subtitle: "Ask the handler for a new window instead of reusing its frontmost tab. "
+                    + "Only apps that accept a new-window argument can honour it."
+            ) {
                 SettingsSwitch(
                     title: "Open in a new window", isOn: $settings.quicklinkOpensNewWindow)
             }
             SettingsDivider()
-            SettingsRow(title: "When there's no selected text") {
+            SettingsRow(
+                title: "When there's no selected text",
+                subtitle: "What {selection} does when the app in front exposes nothing to read."
+            ) {
                 Picker("", selection: $settings.quicklinkSelectionFallback) {
                     ForEach(QuicklinkSelectionFallback.allCases) { option in
                         Text(option.title).tag(option)
@@ -122,16 +124,18 @@ struct QuicklinksSettingsView: View {
     }
 
     private var transfer: some View {
-        SettingsCard(
-            header: "Import & Export",
-            footer: "Importing adds quicklinks from a JSON file, skipping any you already have. "
-                + "Exporting writes your whole library to one."
-        ) {
-            SettingsRow(title: "Import quicklinks") {
+        SettingsCard(header: "Import & Export") {
+            SettingsRow(
+                title: "Import quicklinks",
+                subtitle: "Add quicklinks from a JSON file, skipping any you already have."
+            ) {
                 Button("Import…") { Task { await core.quicklinkCoordinator.importQuicklinks() } }
             }
             SettingsDivider()
-            SettingsRow(title: "Export quicklinks") {
+            SettingsRow(
+                title: "Export quicklinks",
+                subtitle: "Write your whole library to a JSON file."
+            ) {
                 Button("Export…") { Task { await core.quicklinkCoordinator.exportQuicklinks() } }
                     .disabled(store.quicklinks.isEmpty)
             }

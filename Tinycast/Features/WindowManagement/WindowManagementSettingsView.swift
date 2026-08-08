@@ -27,20 +27,22 @@ struct WindowManagementSettingsView: View {
 
     private var optionsCard: some View {
         @Bindable var settings = settings
-        return SettingsCard(
-            header: "Options",
-            footer: "Triggering a half again steps it through a third and two thirds before "
-                + "returning. The gap is the points left between tiled windows and around the "
-                + "screen edge."
-        ) {
-            SettingsRow(title: "Cycle sizes on repeat") {
+        return SettingsCard(header: "Options") {
+            SettingsRow(
+                title: "Cycle sizes on repeat",
+                subtitle:
+                    "Triggering a half again steps it through a third and two thirds before returning."
+            ) {
                 SettingsSwitch(
                     title: "Cycle sizes on repeat", isOn: $settings.windowCycleOnRepeat)
             }
 
             SettingsDivider()
 
-            SettingsRow(title: "Gap between windows") {
+            SettingsRow(
+                title: "Gap between windows",
+                subtitle: "Points left between tiled windows and around the screen edge."
+            ) {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text("\(settings.windowGap) pt")
                         .font(Theme.Typography.rowTitle.monospacedDigit())

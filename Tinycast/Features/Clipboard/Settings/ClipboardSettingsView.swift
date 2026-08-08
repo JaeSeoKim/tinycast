@@ -10,17 +10,20 @@ struct ClipboardSettingsView: View {
     var body: some View {
         @Bindable var settings = settings
         return SettingsPane {
-            SettingsCard(header: "Shortcut", footer: "Open the clipboard history browser.") {
-                SettingsRow(title: "Clipboard History") {
+            SettingsCard(header: "Shortcut") {
+                SettingsRow(
+                    title: "Clipboard History",
+                    subtitle: "Open the clipboard history browser."
+                ) {
                     ShortcutRecorder(action: .toggleClipboard)
                 }
             }
 
-            SettingsCard(
-                header: "History",
-                footer: "Entries older than this are deleted automatically."
-            ) {
-                SettingsRow(title: "Keep history for") {
+            SettingsCard(header: "History") {
+                SettingsRow(
+                    title: "Keep history for",
+                    subtitle: "Entries older than this are deleted automatically."
+                ) {
                     Picker("", selection: $settings.clipboardRetention) {
                         ForEach(ClipboardRetention.allCases) { retention in
                             Text(retention.title).tag(retention)
@@ -61,11 +64,11 @@ struct ClipboardSettingsView: View {
                 }
             }
 
-            SettingsCard(
-                header: "Danger Zone",
-                footer: "Permanently remove every saved clip and image."
-            ) {
-                SettingsRow(title: "Clear history") {
+            SettingsCard(header: "Danger Zone") {
+                SettingsRow(
+                    title: "Clear history",
+                    subtitle: "Permanently remove every saved clip and image."
+                ) {
                     Button("Clear…", role: .destructive) { confirmingClear = true }
                 }
             }

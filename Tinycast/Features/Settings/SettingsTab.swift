@@ -1,5 +1,5 @@
 enum SettingsTab: CaseIterable, Identifiable, Hashable {
-    // Declaration order is sidebar order; `Group.tabs` slices it, so keep each group contiguous.
+    // Declaration order is sidebar order; `Group.tabs` filters it, so keep each group contiguous.
     case general, permissions
     case applications, systemSettings, systemActions, commands, quicklinks
     case snippets, windowManagement, clipboard, emoji

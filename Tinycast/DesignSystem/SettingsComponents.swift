@@ -56,7 +56,7 @@ struct SettingsCard<Content: View>: View {
     }
 }
 
-/// Every settings switch: one size, and its title as the label, so no call site can drift.
+/// Every settings switch: the row's title as its label, at the size buttons and pickers use.
 struct SettingsSwitch: View {
     let title: String
     @Binding var isOn: Bool
@@ -65,7 +65,6 @@ struct SettingsSwitch: View {
         Toggle(title, isOn: $isOn)
             .labelsHidden()
             .toggleStyle(.switch)
-            .controlSize(.small)
     }
 }
 

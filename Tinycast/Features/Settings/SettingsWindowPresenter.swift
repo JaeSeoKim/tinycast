@@ -1,21 +1,25 @@
 import AppKit
 import SwiftUI
 
-/// Opens the Settings scene and gates its content; docs/ui.md#settings covers both.
+/// Opens the Settings scene and owns which pane it shows; docs/ui.md#settings covers both.
 @MainActor
 @Observable
 final class SettingsWindowPresenter {
     nonisolated static let windowID = "settings"
 
-    /// Drives the scene's content. False means the panes are not in memory.
-    private(set) var isOpen = false
-    /// The pane a fresh mount starts on; the tree is rebuilt on every open.
-    private(set) var initialTab: SettingsTab = .general
+    /// The pane on screen. The sidebar binds straight to it, so opening on a pane is an assignment.
+    var tab: SettingsTab = .general
 
     @ObservationIgnored private var openWindow: OpenWindowAction?
-    /// Weak: SwiftUI owns this window's lifetime, and a closed one must not read as open.
+    /// Weak: SwiftUI owns the scene's window, and it outlives every close.
     @ObservationIgnored private weak var window: NSWindow?
     @ObservationIgnored private var closeObserver: NotificationToken?
+
+    /// Miniaturized is not `isVisible`, but the window is still open — and still in the Dock.
+    private var isOpen: Bool {
+        guard let window else { return false }
+        return window.isVisible || window.isMiniaturized
+    }
 
     func adopt(_ action: OpenWindowAction) {
         openWindow = action
@@ -28,43 +32,42 @@ final class SettingsWindowPresenter {
         let token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.windowDidClose() }
+            Task { @MainActor in
+                guard let window = self?.window else { return }
+                DockPresence.syncAfterClose(of: window)
+            }
         }
         closeObserver = NotificationToken(token, center: .default)
     }
 
-    private func windowDidClose() {
-        isOpen = false
-        guard let window else { return }
-        DockPresence.syncAfterClose(of: window)
-    }
-
     /// Opens Settings on `tab`, or switches an already-open window to it.
     func show(tab: SettingsTab) {
+        // Without a route to the scene there is no window to own; promoting would strand the icon.
+        guard let openWindow else { return }
+        self.tab = tab
         DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
-
-        if let window, window.isVisible {
-            window.makeKeyAndOrderFront(nil)
-            NotificationCenter.default.post(name: .tinycastSelectSettingsTab, object: tab)
-            return
+        if isOpen {
+            raise()
+        } else {
+            openWindow(id: Self.windowID)
         }
-
-        // Mount the panes before the window exists, so the fresh tree starts on `tab`.
-        initialTab = tab
-        isOpen = true
-        openWindow?(id: Self.windowID)
-        // Only a reopen has a window to raise: SwiftUI leaves a closed scene's window alive.
-        window?.makeKeyAndOrderFront(nil)
     }
 
     /// Re-raise an open Settings window, or false when there isn't one.
     @discardableResult
     func focusExisting() -> Bool {
-        guard let window, window.isVisible else { return false }
+        guard isOpen else { return false }
         DockPresence.promote()
         NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        raise()
         return true
+    }
+
+    /// Deminiaturize first: a window in the Dock ignores `makeKeyAndOrderFront`.
+    private func raise() {
+        guard let window else { return }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.makeKeyAndOrderFront(nil)
     }
 }

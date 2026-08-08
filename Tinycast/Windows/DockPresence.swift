@@ -7,10 +7,11 @@ enum DockPresence {
         NSApp.setActivationPolicy(.regular)
     }
 
-    /// `closing` is excluded by identity: on `willClose` it is still listed and still visible.
+    /// `closing` is still listed on `willClose`; miniaturized still counts, it holds the Dock icon.
     static func syncAfterClose(of closing: NSWindow) {
         let titled = NSApp.windows.contains {
-            $0 !== closing && $0.isVisible && $0.styleMask.contains(.titled)
+            $0 !== closing && $0.styleMask.contains(.titled)
+                && ($0.isVisible || $0.isMiniaturized)
         }
         if !titled { NSApp.setActivationPolicy(.accessory) }
     }

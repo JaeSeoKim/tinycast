@@ -17,7 +17,9 @@ enum Paster {
         _ item: ClipboardItem, store: ClipboardStore, previousApp: NSRunningApplication?
     ) -> Bool {
         guard write(item, store: store) else { return false }
-        previousApp?.activate()
+        // Summoned over our own window there is nothing to paste into, and ⌘V would land on us.
+        guard let previousApp else { return true }
+        previousApp.activate()
         DispatchQueue.main.asyncAfter(deadline: .now() + activationDelay) {
             postCommandV()
         }
@@ -43,7 +45,8 @@ enum Paster {
     @MainActor
     static func pasteString(_ text: String, previousApp: NSRunningApplication?) {
         writeString(text)
-        previousApp?.activate()
+        guard let previousApp else { return }
+        previousApp.activate()
         DispatchQueue.main.asyncAfter(deadline: .now() + activationDelay) {
             postCommandV()
         }

@@ -1,22 +1,14 @@
 import SwiftUI
 
-extension Notification.Name {
-    /// Switch an already-open Settings window to a pane (object: the target `SettingsTab`).
-    static let tinycastSelectSettingsTab = Notification.Name("TinycastSelectSettingsTab")
-}
-
 /// The Settings shell: a stock `NavigationSplitView`, so its chrome is all AppKit's.
 struct SettingsRootView: View {
-    @State private var history: SettingsHistory
+    @Environment(SettingsWindowPresenter.self) private var presenter
 
-    init(initialTab: SettingsTab = .general) {
-        _history = State(initialValue: SettingsHistory(initialTab))
-    }
-
+    /// The sidebar clears its selection on ⌘-click; the detail column always needs a pane.
     private var selection: Binding<SettingsTab?> {
         Binding(
-            get: { history.current },
-            set: { if let tab = $0 { history.visit(tab) } })
+            get: { presenter.tab },
+            set: { presenter.tab = $0 ?? presenter.tab })
     }
 
     var body: some View {
@@ -39,41 +31,17 @@ struct SettingsRootView: View {
                 min: Theme.Size.settingsSidebar, ideal: Theme.Size.settingsSidebar,
                 max: Theme.Size.settingsSidebarMax)
         } detail: {
-            NavigationStack {
-                detail
-                    .navigationTitle(history.current.title)
-                    .toolbar {
-                        // Two adjacent bordered `.navigation` items: AppKit draws the capsule.
-                        ToolbarItem(placement: .navigation) {
-                            Button { history.goBack() } label: {
-                                Image(systemName: "chevron.backward")
-                            }
-                            .help("Back")
-                            .accessibilityLabel("Back")
-                            .disabled(!history.canGoBack)
-                        }
-                        ToolbarItem(placement: .navigation) {
-                            Button { history.goForward() } label: {
-                                Image(systemName: "chevron.forward")
-                            }
-                            .help("Forward")
-                            .accessibilityLabel("Forward")
-                            .disabled(!history.canGoForward)
-                        }
-                    }
-            }
+            detail
+                .navigationTitle(presenter.tab.title)
         }
         .navigationSplitViewStyle(.balanced)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-        .onReceive(NotificationCenter.default.publisher(for: .tinycastSelectSettingsTab)) { note in
-            if let target = note.object as? SettingsTab { history.visit(target) }
-        }
     }
 
     // Not a `TabView`: `NSTabView` re-hosts on selection and breaks the recorder.
     @ViewBuilder
     private var detail: some View {
-        switch history.current {
+        switch presenter.tab {
         case .general: GeneralSettingsView()
         case .applications: ApplicationsSettingsView()
         case .systemSettings: SystemSettingsSettingsView()

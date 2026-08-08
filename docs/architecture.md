@@ -110,13 +110,14 @@ imperatively from AppKit.
   over the sidebar. A hand-built `NSWindow` pins those items beside the traffic lights at any toolbar
   style. The SwiftUI `Settings` scene remains unusable here — it never materialises in an accessory
   app — so `Window(id:)` plus an `OpenWindowAction` captured from `MenuBarExtra`'s label is the route.
-  The presenter binds the scene's `NSWindow` (a scene window has no delegate to hook) and gates the
-  panes on `isOpen`, so closing Settings gives its memory back. See [ui.md](ui.md#settings).
-- **Window lifetimes are not shared.** The palette panel is built once and kept for the process's
-  life, so a summon is instant; Settings is torn down and rebuilt on every open. Neither reaches into
-  the other: `DockPresence` owns the activation policy from the titled windows alone, so the
-  borderless palette can never move the Dock icon, and `PaletteWindowController` restores focus only
-  to an app it actually displaced — never to a stale one, which would bury Settings.
+  The presenter owns the selected pane, binds the scene's `NSWindow` (a scene window has no delegate
+  to hook) and never gates the content — the window is only ordered in with its tree already built.
+  See [ui.md](ui.md#settings).
+- **Window lifetimes are not shared.** Both the palette panel and the Settings scene are built once
+  and kept for the process's life, so neither pays a mount cost on a second open. They don't reach
+  into each other either: `DockPresence` owns the activation policy from the titled windows alone, so
+  the borderless palette can never move the Dock icon, and `PaletteWindowController` restores focus
+  only to an app it actually displaced — never to a stale one, which would bury Settings.
 - **About / Onboarding** — plain `NSWindow`s via `Windows/AuxWindowController.swift`. (About is a
   Settings pane; the controller hosts only Onboarding now.)
 - **Dialogs** — borderless `DialogPanel`s driven by `DialogController`, the app's only presenter for
@@ -193,8 +194,9 @@ Tinycast/
         Service/    effects — stores, monitors, runners, AppKit glue
         UI/         screens, views, and the feature's coordinator
         Settings/   the feature's own panes
-    Settings/       the Settings shell only: SettingsRootView, SettingsTab, SettingsHistory,
-                    AppSettings, AppSettingsKey, and Panes/ for the two panes no feature owns
+    Settings/       the Settings shell only: SettingsRootView, SettingsWindowPresenter,
+                    SettingsTab, AppSettings, AppSettingsKey, and Panes/ for the two panes
+                    no feature owns
 Tests/              the standalone harnesses, one Swift file each
 Scripts/            run-tests.sh, the two data generators, packaging, formatting, editor setup
 ```
@@ -208,4 +210,5 @@ Every `SettingsTab` maps to one `…SettingsView` built on the `SettingsPane` / 
 (General, Permissions) lives in `Settings/Panes/`. The four launcher-category panes — Applications,
 System Settings, System Actions, Commands — are thin wrappers over the shared `LauncherItemsCard`.
 `SettingsTab.Group` sections the sidebar; its declaration order **is** sidebar order, so `Group.tabs`
-slices `allCases` and each group has to stay contiguous. Nothing persists a tab, so the enum is raw-less.
+filters `allCases` and each group has to stay contiguous. Nothing persists a tab, so the enum is
+raw-less.

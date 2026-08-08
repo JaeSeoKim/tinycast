@@ -51,24 +51,18 @@ private struct MenuBarLabel: View {
     }
 }
 
-/// Settings' content. Gated on `isOpen`: SwiftUI keeps a closed scene's tree alive otherwise.
+/// Settings' content. Built with the window, so it never mounts over one already on screen.
 private struct SettingsScreen: View {
     private let core = AppCore.shared
-    private var presenter: SettingsWindowPresenter { core.settingsWindow }
 
     var body: some View {
-        ZStack {
-            if presenter.isOpen { panes }
-        }
-        .frame(
-            minWidth: Theme.Size.settingsWindowMin.width,
-            minHeight: Theme.Size.settingsWindowMin.height)
-        .background(WindowBinder { presenter.bind($0) })
-    }
-
-    private var panes: some View {
-        SettingsRootView(initialTab: presenter.initialTab)
+        SettingsRootView()
+            .frame(
+                minWidth: Theme.Size.settingsWindowMin.width,
+                minHeight: Theme.Size.settingsWindowMin.height)
+            .background(WindowBinder { core.settingsWindow.bind($0) })
             .environment(core)
+            .environment(core.settingsWindow)
             .environment(core.settings)
             .environment(core.appIndex)
             .environment(core.hotKeys)

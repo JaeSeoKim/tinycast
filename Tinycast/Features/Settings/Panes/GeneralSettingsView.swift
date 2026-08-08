@@ -37,18 +37,21 @@ struct GeneralSettingsView: View {
     var body: some View {
         @Bindable var settings = settings
         return SettingsPane {
-            SettingsCard(header: "Global Shortcuts", footer: "Summon the fuzzy app launcher.") {
-                SettingsRow(title: "App Launcher") {
+            SettingsCard(header: "Global Shortcuts") {
+                SettingsRow(
+                    title: "App Launcher",
+                    subtitle: "Summon the fuzzy app launcher."
+                ) {
                     ShortcutRecorder(action: .togglePalette)
                 }
             }
 
-            SettingsCard(
-                header: "Search",
-                footer: "Tinycast privately learns which results you choose for each query. "
-                    + "Reset all learned choices to restore the default order."
-            ) {
-                SettingsRow(title: "Learned ranking") {
+            SettingsCard(header: "Search") {
+                SettingsRow(
+                    title: "Learned ranking",
+                    subtitle: "Tinycast privately learns which results you choose for each query. "
+                        + "Reset all learned choices to restore the default order."
+                ) {
                     Button("Reset…", role: .destructive) {
                         confirmingRankingReset = true
                     }
@@ -107,18 +110,19 @@ struct GeneralSettingsView: View {
                 .opacity(settings.hyperKey == .none ? Theme.Opacity.disabled : 1)
             }
 
-            SettingsCard(
-                header: "Appearance",
-                footer: "Compact mode opens the launcher as a slim search bar that expands into "
-                    + "the full list as you type, with favorite app icons pinned to its right "
-                    + "(⌘1–⌘5 to launch). Following the cursor opens it on whichever display the "
-                    + "pointer is on, rather than the one with the menu bar."
-            ) {
-                SettingsRow(title: "Compact mode") {
+            SettingsCard(header: "Appearance") {
+                SettingsRow(
+                    title: "Compact mode",
+                    subtitle:
+                        "Open the launcher as a slim search bar that expands into the full list as you type."
+                ) {
                     SettingsSwitch(title: "Compact mode", isOn: $settings.compactMode)
                 }
                 SettingsDivider()
-                SettingsRow(title: "Show favorites in compact mode") {
+                SettingsRow(
+                    title: "Show favorites in compact mode",
+                    subtitle: "Pin favorite app icons to the right of the compact bar (⌘1–⌘5 to launch)."
+                ) {
                     SettingsSwitch(
                         title: "Show favorites in compact mode",
                         isOn: $settings.showFavoritesInCompactMode
@@ -127,28 +131,36 @@ struct GeneralSettingsView: View {
                 }
                 .opacity(settings.compactMode ? 1 : Theme.Opacity.disabled)
                 SettingsDivider()
-                SettingsRow(title: "Follow the cursor across displays") {
+                SettingsRow(
+                    title: "Follow the cursor across displays",
+                    subtitle:
+                        "Open the launcher on whichever display the pointer is on, rather than the one with the menu bar."
+                ) {
                     SettingsSwitch(
                         title: "Follow the cursor across displays",
                         isOn: $settings.openOnCursorScreen)
                 }
             }
 
-            SettingsCard(
-                header: "General",
-                footer: "Tinycast can start automatically when you log in, and its shortcuts still "
-                    + "work with the menu bar icon hidden. Pop to Root Search resets the window to "
-                    + "the launcher that long after it closes."
-            ) {
-                SettingsRow(title: "Launch at login") {
+            SettingsCard(header: "General") {
+                SettingsRow(
+                    title: "Launch at login",
+                    subtitle: "Start Tinycast automatically when you log in."
+                ) {
                     SettingsSwitch(title: "Launch at login", isOn: $settings.launchAtLogin)
                 }
                 SettingsDivider()
-                SettingsRow(title: "Show in menu bar") {
+                SettingsRow(
+                    title: "Show in menu bar",
+                    subtitle: "Keep the Tinycast icon in the menu bar. Shortcuts still work when hidden."
+                ) {
                     SettingsSwitch(title: "Show in menu bar", isOn: $showInMenuBar)
                 }
                 SettingsDivider()
-                SettingsRow(title: "Pop to Root Search") {
+                SettingsRow(
+                    title: "Pop to Root Search",
+                    subtitle: "Reset to the launcher this long after the window closes."
+                ) {
                     Picker("", selection: $settings.popToRootTimeout) {
                         ForEach(PopToRootTimeout.allCases) { timeout in
                             Text(timeout.title).tag(timeout)

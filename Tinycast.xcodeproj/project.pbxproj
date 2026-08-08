@@ -20,7 +20,6 @@
 		0FC4608F65D69D465EFBBCE0 /* CalcFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E582B93EFB1A2AA85B048A87 /* CalcFormatter.swift */; };
 		106AF34CEAEB08CBCC924118 /* VolumeLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273827EB5CC04F1951C40387 /* VolumeLevel.swift */; };
 		11C3F9D5C786EF1D11787E0C /* CustomCommandCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE41DC04958D7C2FF8C47F62 /* CustomCommandCoordinator.swift */; };
-		11EF7061ED64616FFB13423F /* SettingsHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C504229760FFFFA9D8A7799 /* SettingsHistory.swift */; };
 		122CA8786B58966376B27DC1 /* HyperKeyTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1868F87E31E20A4775C84E6A /* HyperKeyTap.swift */; };
 		137A3474D4734DF43E6412D2 /* CalculatorCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72DF1178CD8AD726AC6F9874 /* CalculatorCardView.swift */; };
 		14D056C9DA105D9D89A9691E /* HealthTicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB023D167225228757CC4B2 /* HealthTicker.swift */; };
@@ -259,7 +258,6 @@
 		38A97022BE0F95B5D19F0C26 /* CalcDateTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcDateTime.swift; sourceTree = "<group>"; };
 		3AA3385A84985A52E2DA3596 /* Quicklink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quicklink.swift; sourceTree = "<group>"; };
 		3BA9F5F7226AD5A91835AF5C /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
-		3C504229760FFFFA9D8A7799 /* SettingsHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHistory.swift; sourceTree = "<group>"; };
 		3E16AEF81320A101E384098E /* KeyShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyShortcut.swift; sourceTree = "<group>"; };
 		3E4A7E45F7D1CC5FB8868715 /* SearchScopes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScopes.swift; sourceTree = "<group>"; };
 		418DA899A1546F3B4AC44777 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
@@ -1077,7 +1075,6 @@
 				87EA838A362AAB1D1B5665E0 /* Panes */,
 				7F64F4362989516482853CDB /* AppSettings.swift */,
 				384485BD1794D25503534525 /* AppSettingsKey.swift */,
-				3C504229760FFFFA9D8A7799 /* SettingsHistory.swift */,
 				68952539C0BD045BA175CBB6 /* SettingsRootView.swift */,
 				4AA61A2FAF4E49E466DA8F37 /* SettingsTab.swift */,
 				A78B83C4ABCE3CEDBED05247 /* SettingsWindowPresenter.swift */,
@@ -1383,7 +1380,6 @@
 				A769FFB50D3ED9E458028255 /* SettingsBackup.swift in Sources */,
 				7CC503824FDF49F788C85BB3 /* SettingsBackupCoverage.swift in Sources */,
 				FD49FAFAA34FC1A41AFAC10F /* SettingsComponents.swift in Sources */,
-				11EF7061ED64616FFB13423F /* SettingsHistory.swift in Sources */,
 				8CFF2D2BF36F60659C8570A3 /* SettingsPaneScanner.swift in Sources */,
 				CFB516312C4694DDFD99DBCA /* SettingsRootView.swift in Sources */,
 				26DB736F18280E1BE6C6B8BE /* SettingsTab.swift in Sources */,
