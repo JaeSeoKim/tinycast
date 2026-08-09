@@ -42,10 +42,15 @@ struct ClipboardScreen: PaletteScreen {
         return true
     }
 
-    /// ⌘⌫ — the screen owns the chord whether or not a row sits under the selection.
+    /// ⌘⌫ / ⌃X — the screen owns the chord whether or not a row sits under the selection.
     func delete(at selection: Int) {
         guard let item = item(at: selection) else { return }
         store.remove(item)
+    }
+
+    /// ⌃⇧X — mirrors the Actions row; pinned entries go with the rest, as the row does.
+    func deleteAll() {
+        store.clearAll()
     }
 
     /// Follow a row the store moved; with a query typed the highlight stays put.
@@ -147,12 +152,15 @@ enum ClipboardActionsMenu {
                 })
         }
         items.append(
-            PopoverMenuItem(title: "Delete Entry", systemImage: "trash", isDestructive: true) {
+            PopoverMenuItem(
+                title: "Delete Entry", systemImage: "trash", shortcut: "⌃X", isDestructive: true
+            ) {
                 store.remove(item)
             })
         items.append(
             PopoverMenuItem(
-                title: "Delete All Entries", systemImage: "trash.fill", isDestructive: true
+                title: "Delete All Entries", systemImage: "trash", shortcut: "⌃⇧X",
+                isDestructive: true
             ) {
                 store.clearAll()
             })
