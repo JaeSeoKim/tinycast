@@ -262,8 +262,7 @@ struct RootPaletteView: View {
             let screen = screen
             let selection = selection(in: screen)
             if command { return screen.secondary(at: selection) ? .handled : .ignored }
-            guard let emoji = screen as? EmojiScreen else { return .ignored }
-            return emoji.pasteKeepingWindowOpen(at: selection) ? .handled : .ignored
+            return screen.pasteKeepingWindowOpen(at: selection) ? .handled : .ignored
         }
         .onKeyPress(.escape) {
             if showActions || showAppMenu {
