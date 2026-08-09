@@ -55,9 +55,9 @@ struct ClipboardScreen: PaletteScreen {
         store.remove(item)
     }
 
-    /// ⌃⇧X — mirrors the Actions row; pinned entries go with the rest, as the row does.
+    /// ⌃⇧X — mirrors the Actions row, confirmation included; pinned entries go with the rest.
     func deleteAll() {
-        store.clearAll()
+        Task { await core.clipboardCoordinator.deleteAllClips() }
     }
 
     /// Follow a row the store moved; with a query typed the highlight stays put.
@@ -170,7 +170,7 @@ enum ClipboardActionsMenu {
                 title: "Delete All Entries", systemImage: "trash", shortcut: "⌃⇧X",
                 isDestructive: true
             ) {
-                store.clearAll()
+                Task { await core.clipboardCoordinator.deleteAllClips() }
             })
         return PopoverMenuContent(header: headerText(item), items: items)
     }

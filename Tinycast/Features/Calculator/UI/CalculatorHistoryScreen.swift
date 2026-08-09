@@ -86,9 +86,9 @@ struct CalculatorHistoryScreen: PaletteScreen {
         history.remove(entry)
     }
 
-    /// ⌃⇧X — mirrors the Actions row; the inline card survives, being a live answer, not history.
+    /// ⌃⇧X — mirrors the Actions row, confirmation included; the live inline card isn't history.
     func deleteAll() {
-        history.clearAll()
+        Task { await core.calculatorCoordinator.deleteAllHistory() }
     }
 
     func body(selection: Int, scroll: ScrollIntent) -> AnyView {
@@ -159,7 +159,7 @@ enum CalcHistoryActionsMenu {
                     title: "Delete All Entries", systemImage: "trash", shortcut: "⌃⇧X",
                     isDestructive: true
                 ) {
-                    calcHistory.clearAll()
+                    Task { await core.calculatorCoordinator.deleteAllHistory() }
                 }
             ]
         )
