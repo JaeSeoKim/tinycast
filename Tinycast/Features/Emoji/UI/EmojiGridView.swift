@@ -203,6 +203,7 @@ private struct EmojiGridRowView: View {
                 hoveredColumn = nil
             }
         }
+        .onChange(of: palette.hoverDisarmToken) { hoveredColumn = nil }
     }
 
     /// Point → column; exact, as cells split the width evenly. Trailing slots resolve to nil.
