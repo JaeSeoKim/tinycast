@@ -85,10 +85,15 @@ private struct SelectionFollowing: ViewModifier {
     }
 
     private func align() {
-        guard following, let row, let selection else { return }
+        guard following, let row else { return }
         if atOrigin {
             following = false
             return proxy.scrollToOrigin()
+        }
+        // Scrolled far enough by hand and the lazy stack has dropped the selected row, leaving
+        // nothing to measure: bring it back by id, then re-check once it reports its frame.
+        guard let selection else {
+            return proxy.scrollTo(row, anchor: nil)
         }
         guard
             let edge = SelectionReveal.edge(
