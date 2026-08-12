@@ -7,6 +7,8 @@ final class PaletteState {
     var mode: PaletteMode = .launcher
     var query: String = ""
     var selection: Int = 0
+    /// The clipboard screen's type filter, reset with the rest of the screen state on each summon.
+    var clipboardFilter: ClipboardFilter = .all
     /// Changes every time the palette is shown so the search field can re-focus.
     var focusToken = UUID()
     /// Bumped only by `prepare`, so lists snap to the top even when nothing else changed.
@@ -35,6 +37,7 @@ final class PaletteState {
         self.mode = mode
         query = ""
         selection = 0
+        clipboardFilter = .all
         forceExpanded = false
         dropHoverHighlight()
         menuOpen = false
