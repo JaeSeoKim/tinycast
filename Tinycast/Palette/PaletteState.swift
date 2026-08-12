@@ -15,6 +15,9 @@ final class PaletteState {
     var resetToken = UUID()
     /// Bumped when an action reorders the list, so the highlight scrolls back into view.
     var followToken = UUID()
+    /// Bumped when the panel intercepts ⌘.. AppKit binds that chord to `cancelOperation:`, so the
+    /// field editor eats it before `onKeyPress`; the screen still owns which row it pins.
+    private(set) var pinChordToken = UUID()
     /// Set by the compact bar's overflow to expand without a query; cleared by `prepare`.
     var forceExpanded = false
     /// The paste target, mirrored on every show; `prepare` resets the screen, not this.
@@ -43,6 +46,10 @@ final class PaletteState {
         menuOpen = false
         focusToken = UUID()
         resetToken = UUID()
+    }
+
+    func notePinChord() {
+        pinChordToken = UUID()
     }
 
     /// The pointer moved, which re-lights the highlight once it has cleared the arming slop.

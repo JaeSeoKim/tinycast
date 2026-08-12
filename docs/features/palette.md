@@ -220,6 +220,22 @@ frozen instead:
   force-casts its field editor to a private subclass, so vending a custom one crashes — only the
   existing one can be tuned.
 
+## Chords `onKeyPress` never sees
+
+Most ⌘/⌃ chords reach SwiftUI's `onKeyPress` fine. Three kinds do not, and all of them are handled in
+`PalettePanel.sendEvent` before `super` hands the event to the responder chain:
+
+- **A bare backspace** — the field editor consumes it as an edit (`onBareBackspace`).
+- **Chords with no main menu item** — ⌘, and ⌘w, which an app with a menu bar would never see here.
+- **Chords AppKit has already bound to a selector.** `⌘.` is the one that bites: AppKit binds it to
+  `cancelOperation:` alongside Escape, so `interpretKeyEvents` hands it to the field editor and
+  `onKeyPress(keys: ["."])` never fires. Pin (⌘.) therefore arrives through `onCommandShortcut`,
+  which bumps `PaletteState.pinChordToken`; `RootPaletteView` observes that and resolves the row
+  through the current screen, so **which** row gets pinned still comes from `screen.rows` alone.
+
+Adding a chord that "does nothing" is almost always one of these three — check `sendEvent` before
+assuming the handler is wrong.
+
 ## Emacs navigation chords
 
 ⌃N/⌃P and ⌃F/⌃B navigate exactly as ↓/↑ and →/← do — on the emoji grid all four step the selection,

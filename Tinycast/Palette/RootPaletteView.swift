@@ -222,6 +222,8 @@ struct RootPaletteView: View {
         .onChange(of: vm.resetToken) {
             scroll = ScrollIntent(kind: .top)
         }
+        // ⌘. arrives as a token rather than a key press. See `PaletteState.pinChordToken`.
+        .onChange(of: vm.pinChordToken) { pinSelection() }
         // One optional makes "exactly one menu" structural; this only mirrors it for the panel.
         .onChange(of: openMenu) {
             vm.menuOpen = menuOpen
@@ -361,19 +363,6 @@ struct RootPaletteView: View {
             guard !isCollapsed, vm.mode == .clipboard else { return .ignored }
             toggleClipboardFilter()
             return .handled
-        }
-        // ⌘. mirrors the Actions row, and works while that menu is open like the rest.
-        .onKeyPress(keys: ["."], phases: .down) { press in
-            guard press.modifiers.contains(.command) else { return .ignored }
-            let screen = screen
-            let selection = selection(in: screen)
-            if let clipboard = screen as? ClipboardScreen {
-                return clipboard.pin(at: selection) ? .handled : .ignored
-            }
-            if let quicklinks = screen as? QuicklinkListScreen {
-                return quicklinks.pin(at: selection) ? .handled : .ignored
-            }
-            return .ignored
         }
         // Both cases, Shift uppercasing the key; the compact bar shows no target.
         .onKeyPress(keys: ["q", "Q"], phases: .down) { press in
@@ -631,6 +620,17 @@ struct RootPaletteView: View {
         guard let items = menuContent?.items, items.indices.contains(index) else { return }
         items[index].action()
         closeMenus()
+    }
+
+    /// ⌘. — mirrors the Actions row, and works while that menu is open like the rest.
+    private func pinSelection() {
+        let screen = screen
+        let selection = selection(in: screen)
+        if let clipboard = screen as? ClipboardScreen {
+            _ = clipboard.pin(at: selection)
+        } else if let quicklinks = screen as? QuicklinkListScreen {
+            _ = quicklinks.pin(at: selection)
+        }
     }
 
     /// Tab flips launcher↔clipboard; Calculator History exits rather than joining.

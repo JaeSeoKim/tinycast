@@ -7,7 +7,7 @@ struct ClipboardFilterButton: View {
     let action: () -> Void
 
     var body: some View {
-        BarButton(action: action) {
+        BarButton(chrome: .menu, action: action) {
             HStack(spacing: Theme.Spacing.sm) {
                 Image(systemName: filter.systemImage)
                     .font(Theme.Typography.bar)
