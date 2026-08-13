@@ -3,18 +3,22 @@
 `Features/Calculator/Model/` is a **Foundation-only** engine (no AppKit / SwiftUI imports) fronted by
 `CalcMemo`, a one-deep memo mirroring `AppIndex`'s. It must stay Foundation-only because the
 `Tests/calc-test.swift` harness compiles the real engine sources — including `CalcDateTime`. It is
-also **pure**: the one input it can't compute, the FX rate table, is passed in (see Currency below).
+also **pure**: the inputs it can't compute — the FX rate table and the Mac's own currency — are passed
+in (see Currency below).
 
 ## Invariants
 
 - **`Model/` (including `CalcDateTime`) stays Foundation-only *and pure*** — no AppKit or SwiftUI, no
-  clock read, no network. `calc-test` compiles the real engine sources. Both externally-sourced inputs
-  are injected: the clock via `now`/`calendar`, the FX table via `rates`.
+  clock read, no network, **no `Locale`**. `calc-test` compiles the real engine sources. Every
+  externally-sourced input is injected: the clock via `now`/`calendar`, the FX table via `rates`, and
+  the Mac's own currency via `region`, which `RegionCurrency` reads and `CalcMemo` passes down.
 - **`CalcEngine.evaluate` never fetches** — it takes a finished `CurrencyRates?`, nil meaning no
-  snapshot has landed yet. `CurrencyRateStore` owns the fetch and the cacheless `.ephemeral` session.
+  snapshot has landed yet. `CurrencyRateStore` owns the fetch and the cacheless `.ephemeral` session,
+  and `CurrencyFeed` — pure, so the harness covers it — turns the payloads into that snapshot.
 - **`CurrencyData.generated.swift` is emitted by `node Scripts/gen-currencies.js`** and never hand-edited.
-  The only hand-maintained currency data is `CalcCurrency.contested`, the nouns several currencies share
-  (`dollars`, `pounds`). Do not add slang or synonyms there — no source of truth, so they rot.
+  Two currency tables are hand-maintained, both in `CalcCurrency`: `contested`, the nouns several
+  currencies share (`dollars`, `pounds`), and `crypto`, which no standards body names. Do not add slang
+  or synonyms to either — no source of truth, so they rot.
 
 ## Evaluation pipeline
 
@@ -27,8 +31,9 @@ also **pure**: the one input it can't compute, the FX rate table, is passed in (
 4. Complete-prefix evaluation for a trailing binary operator (`10kg +` → `10 kg`)
 5. Base conversion
 6. Explicit unit conversion (`10km to mi`)
-7. **Typed quantity arithmetic** (`10kg + 500g`, `$10 + €5`, `(1hr + 30min) to s`)
-8. **Currency conversion** (`1 euro to dollars`, `€20 to GBP`)
+7. **Typed quantity arithmetic** (`10kg + 500g`, `$10 + €5`, `(1hr + 30min) to s`), which also
+   answers a bare amount (`1 usd`, `1 btc`) in the Mac's own currency
+8. **Currency conversion** (`1 euro to dollars`, `€20 to GBP`, `1 btc to eur`)
 9. **Bare-unit auto-conversion** (`1m` → feet + inches, `1hr` → 60 min, via
    `CalcUnits.parseBareConversion` + the `autoTargets` map)
 10. Plain arithmetic
@@ -127,16 +132,22 @@ echoes the typed text (`10km to mi ×`) rather than the conversion's own shorten
 `expr from (to|in|->) to` token shape, so `eur to usd` implies an amount of 1 exactly like `m to ft`.
 A leading sign is swapped back into amount-first order, so `€20 to GBP` and `20€ to GBP` parse alike.
 
-The table is **generated except for the judgement calls**. `node Scripts/gen-currencies.js` joins two
+The table is **generated except for the judgement calls**. `node Scripts/gen-currencies.js` joins three
 sources on the ISO code and emits `CurrencyData.generated.swift`:
 
-- **Frankfurter** decides which currencies exist — the same feed the rates come from, so the table
-  can never list something the app can't price. 165 codes.
+- **The fiat rate feed** decides which currencies exist — the same feed the rates come from, so the
+  table can never list something the app can't price.
+- **CLDR's supplemental currency data** decides which of those are still spent. The feed carries no
+  retirement metadata and happily quotes codes their countries abandoned years ago, so a code CLDR
+  marks live in some region is kept, a code CLDR retired everywhere is dropped, and a code CLDR never
+  mentions is also kept — absence of evidence is not retirement, and that distinction is what
+  preserves `CNH`, the metals, `XDR` and the Crown Dependencies' pounds, none of which are any
+  region's tender. 159 codes survive.
 - **CLDR** (`en`) decides what humans call them: display name, currency sign, singular/plural noun.
   Read from the pinned `cldr-json` checkout, not the host's `Intl`, whose output shifts with the
   local ICU version.
 
-Only _unambiguous_ CLDR data is emitted — 26 signs and 128 nouns. CLDR itself supplies the sign
+Only _unambiguous_ CLDR data is emitted — 26 signs and 130 nouns. CLDR itself supplies the sign
 tie-break: it writes every dollar but USD as `CA$`/`A$`/`NT$`, so plain `$` is claimed by exactly one
 currency. Bare Latin letters CLDR lists as symbols (`P` for BWP, `L` for HNL) are dropped, since a
 letter is indistinguishable from a word to the tokenizer. Accented nouns are emitted both as written
@@ -152,6 +163,20 @@ are assigned to nobody — `krona` is both SEK and ISK, so it produces no card. 
 (`quid`, `bucks`, `rmb`) are deliberately _not_ carried: they'd be hand-maintained data with no
 source of truth.
 
+### Crypto
+
+`CalcCurrency.crypto` is the second hand-written table, and the only one with no external source at
+all: no standards body names a coin, and the feed silently omits any symbol it can't price, so it
+can't even report which exist. The list is therefore a product choice — and it is also the symbol
+list the fetch asks for, since `CurrencyRateStore` builds its request from `cryptoCodes`. The two
+cannot drift apart. A symbol the feed drops reports `No exchange rate for <CODE>.`, exactly like an
+unquoted fiat code, and starts working again on its own if the feed picks it back up.
+
+Coins join the same `byName` table as `CurrencyDef`s, so every existing path — the sign tokenizer,
+the `BTC1K` prefix split, `parseConversion`, typed arithmetic — works on them unchanged. They are
+inserted **after** the generated nouns, so a ticker outranks one: `1 sol` is Solana while `soles` and
+`pen` still reach the Peruvian sol. That is the only word the two tables both claim.
+
 Order is the whole disambiguation story. Currency runs **after** the unit path, so a query both sides
 of which are compatible units stays a measurement: `10 pounds to kg` is weight, `10 pounds to euros`
 is money, and `1 cup to ml` stays volume even though `CUP` is the Cuban peso. A currency on one side
@@ -163,28 +188,47 @@ therefore deterministic: `$10 + €5` converts the left operand into euros when 
 the same last-unit-typed rule the measurements follow. Bare prefix and suffix signs (`$10`, `10$`)
 are accepted, and a conversion suffix applies to the whole expression.
 
+### The Mac's own currency
+
+An amount with no target answers in the region currency: on a machine set to Bangladesh, `1 usd`
+reads `122.84 BDT`, badged `US Dollar → Bangladeshi Taka`, and `1 btc` follows the same rule. The
+region comes from `RegionCurrency`, one `Locale.current.currency` read — a preference, so nothing
+ever asks for location, and a `Model/` file never performs it.
+
+The target only applies where there is genuinely nothing else to say. An operator keeps the currency
+written (`$10 + €5` stays euros), an explicit target overrides everything, a trailing operator holds
+the typed currency while the expression is still being written (`$10 +`), and a lone code with no
+amount is still an app search. Where the region names no currency, names one the table doesn't carry,
+names the currency already written, or names one the snapshot doesn't quote, the amount answers in
+the currency written rather than erroring about a code the user never typed.
+
 ### Exchange rates
 
 The fetch runs on a private **cacheless** `URLSession` (`.ephemeral`, `urlCache = nil`) rather than
-`URLSession.shared`, so `currency-rates.json` stays the only copy on disk. The provider serves the
-table `Cache-Control: public, max-age=…`, so the shared session would keep a second copy in the
-on-disk `URLCache` that deleting the snapshot doesn't touch.
+`URLSession.shared`, so `currency-rates.json` stays the only copy on disk. The feed serves the table
+`Cache-Control: public, max-age=…`, so the shared session would keep a second copy in the on-disk
+`URLCache` that deleting the snapshot doesn't touch.
 
-Rates come from `CurrencyRateStore` (`Calculator/Service/`, owned by `AppCore`), which reads
-[Frankfurter](https://frankfurter.dev) — open source, no key, no account, no quota, rates blended
-from 84 central banks. One `GET api.frankfurter.dev/v2/rates?base=USD`, ~1.4 KB gzipped. v2 answers
-with one flat `{date, base, quote, rate}` row per pair rather than a keyed table, and omits the
-base's own row — the store folds both into the `[code: rate]` shape `CurrencyRates` stores.
+Rates come from `CurrencyRateStore` (`Calculator/Service/`, owned by `AppCore`), which issues two
+requests concurrently: the fiat table, keyed `<base><code>` with the base's own row omitted, and the
+coin table, which quotes the **inverse** — one coin priced in the base. `CurrencyFeed` folds both
+into the single units-per-base map `CurrencyRates` stores, inverting the coins on the way in and
+merging them last so a symbol both feeds quote takes the coin feed's own price. One flat table means
+`convert(_:from:to:)` cross-rates fiat against crypto with no special case anywhere downstream.
 
-The table is cached at `~/Library/Caches/<bundle-id>/currency-rates.json`, refreshed every 24h with a
-15-minute retry after a failure. The feed republishes about once a day, so a tighter interval would
-cost requests without returning newer numbers. Age is measured from the persisted `fetchedAt`, not
-from launch, so relaunching Tinycast never re-fetches a snapshot that is still fresh — a cold start
-with a same-day cache makes zero requests. Offline, the last snapshot keeps answering; with no snapshot at all
-the card says so rather than guessing, and a currency the feed doesn't quote reports
-`No exchange rate for <CODE>.` The store hands `CalcEngine.evaluate` a finished `CurrencyRates`
-value — the engine never fetches, which is what keeps it Foundation-only and testable. `CalcMemo`
-keys its memo on the snapshot's `fetchedAt`, so a fresh table re-evaluates without diffing every rate.
+The fiat half is required; the coins are best-effort. A run that misses them still answers for the
+session but is **not** written to disk, and retries in **30 minutes** rather than waiting out the
+day — so the next launch re-fetches rather than serving a coin-less snapshot as if it were whole.
+
+The table is cached at `~/Library/Caches/<bundle-id>/currency-rates.json` and refreshed every 24h.
+The feed republishes about once a day, so a tighter interval would cost requests without returning
+newer numbers. Age is measured from the persisted `fetchedAt`, not from launch, so relaunching
+Tinycast never re-fetches a snapshot that is still fresh — a cold start with a same-day cache makes
+zero requests. Offline, the last snapshot keeps answering; with no snapshot at all the card says so
+rather than guessing, and a currency the feed doesn't quote reports `No exchange rate for <CODE>.`
+The store hands `CalcEngine.evaluate` a finished `CurrencyRates` value — the engine never fetches,
+which is what keeps it Foundation-only and testable. `CalcMemo` keys its memo on the snapshot's
+`fetchedAt` and the region currency, so either changing re-evaluates without diffing every rate.
 
 Money rounds to two decimals (`CalcFormatter.currency`), widening to four significant digits below a
 cent — in _plain_ notation, deliberately not `%g`, so `1 IDR to USD` reads `0.00005539 USD` rather

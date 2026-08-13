@@ -113,18 +113,56 @@ enum CalcCurrency {
         "SAR": ["riyal", "riyals"]  // 2
     ]
 
+    /// The crypto the feed is asked for. No standards body names these, so it is the second and
+    /// last hand-written currency table. docs/features/calculator.md
+    static let crypto: [(code: String, name: String, aliases: [String])] = [
+        ("ADA", "Cardano", ["cardano"]),
+        ("AVAX", "Avalanche", ["avalanche"]),
+        ("BCH", "Bitcoin Cash", []),
+        ("BNB", "BNB", ["binance"]),
+        ("BSV", "Bitcoin SV", []),
+        ("BTC", "Bitcoin", ["bitcoin"]),
+        ("DASH", "Dash", []),
+        ("DOGE", "Dogecoin", ["dogecoin"]),
+        ("DOT", "Polkadot", ["polkadot"]),
+        ("EOS", "EOS", []),
+        ("ETC", "Ethereum Classic", []),
+        ("ETH", "Ethereum", ["ethereum", "ether"]),
+        ("LTC", "Litecoin", ["litecoin"]),
+        ("LUNA", "Terra", ["terra"]),
+        ("NEO", "Neo", []),
+        ("POL", "Polygon", ["polygon"]),
+        ("SHIB", "Shiba Inu", ["shiba"]),
+        ("SOL", "Solana", ["solana"]),
+        ("TRX", "TRON", ["tron"]),
+        ("USDT", "Tether", ["tether"]),
+        ("XLM", "Stellar", ["stellar"]),
+        ("XMR", "Monero", ["monero"]),
+        ("XRP", "XRP", ["ripple"])
+    ]
+
+    /// `CurrencyRateStore` builds its request from this, so the two lists cannot drift apart.
+    static let cryptoCodes: [String] = crypto.map(\.code)
+
     /// Lookup by lowercased ident, generated data first so `contested` above is applied last.
     static let byName: [String: CurrencyDef] = {
         var defs: [String: CurrencyDef] = [:]
         var table: [String: CurrencyDef] = [:]
-        defs.reserveCapacity(CurrencyData.all.count)
-        table.reserveCapacity(CurrencyData.all.count + CurrencyData.aliases.count)
+        defs.reserveCapacity(CurrencyData.all.count + crypto.count)
+        table.reserveCapacity(CurrencyData.all.count + CurrencyData.aliases.count + crypto.count)
         for entry in CurrencyData.all {
             let def = CurrencyDef(code: entry.code, name: entry.name)
             defs[entry.code] = def
             table[entry.code.lowercased()] = def
         }
         for (word, code) in CurrencyData.aliases { table[word] = defs[code] }
+        // After the generated nouns, so a ticker beats one: `sol` is Solana, `soles` stays PEN.
+        for entry in crypto {
+            let def = CurrencyDef(code: entry.code, name: entry.name)
+            defs[entry.code] = def
+            table[entry.code.lowercased()] = def
+            for word in entry.aliases { table[word] = def }
+        }
         for (code, words) in contested {
             guard let def = defs[code] else { continue }
             for word in words { table[word] = def }

@@ -4,13 +4,16 @@ import Foundation
 @MainActor
 @Observable
 final class CurrencyRateStore {
-    /// Frankfurter: no key, no quota, and the same feed `CurrencyData.generated.swift` comes from.
-    private nonisolated static let endpoint = URL(
-        string: "https://api.frankfurter.dev/v2/rates?base=USD")!
+    private nonisolated static let fiatEndpoint = URL(
+        string: "https://backend.raycast.com/api/v1/currencies")!
+    /// Asked for by the app's own crypto table, so the request and the table cannot drift apart.
+    private nonisolated static let cryptoEndpoint = URL(
+        string: "https://backend.raycast.com/api/v1/currencies/crypto?symbols="
+            + CalcCurrency.cryptoCodes.joined(separator: ","))!
     /// Daily, measured from the persisted snapshot, so relaunching never re-fetches a fresh one.
     private static let refreshInterval: TimeInterval = 24 * 3600
     /// Shorter retry, so a machine offline at launch picks rates up soon after it reconnects.
-    private static let retryInterval: TimeInterval = 15 * 60
+    private static let retryInterval: TimeInterval = 30 * 60
 
     /// The newest snapshot, nil until the first one lands.
     private(set) var rates: CurrencyRates?
@@ -20,8 +23,11 @@ final class CurrencyRateStore {
 
     init() {
         fileURL = AppPaths.caches().appendingPathComponent("currency-rates.json")
-        guard let data = try? Data(contentsOf: fileURL) else { return }
-        rates = try? JSONDecoder().decode(CurrencyRates.self, from: data)
+        guard let data = try? Data(contentsOf: fileURL),
+            let cached = try? JSONDecoder().decode(CurrencyRates.self, from: data),
+            CurrencyFeed.pricesCoins(cached)
+        else { return }
+        rates = cached
     }
 
     func start() {
@@ -42,12 +48,13 @@ final class CurrencyRateStore {
     }
 
     private func fetchAndStore() async -> Bool {
-        guard let fetched = try? await Self.fetch() else { return false }
-        rates = fetched
-        if let data = try? JSONEncoder().encode(fetched) {
+        guard let result = await Self.fetch() else { return false }
+        rates = result.rates
+        // A coin-less snapshot answers this run but isn't persisted, so the next launch refetches.
+        if result.complete, let data = try? JSONEncoder().encode(result.rates) {
             try? data.write(to: fileURL, options: .atomic)
         }
-        return true
+        return result.complete
     }
 
     /// Cacheless, never `URLSession.shared`, so the snapshot on disk stays the only copy.
@@ -58,30 +65,21 @@ final class CurrencyRateStore {
     }()
 
     /// Off-main via `URLSession`; only the plain-value `CurrencyRates` crosses back.
-    private nonisolated static func fetch() async throws -> CurrencyRates {
-        let request = URLRequest(url: endpoint, timeoutInterval: 20)
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
+    private nonisolated static func fetch() async -> (rates: CurrencyRates, complete: Bool)? {
+        async let fiat = body(of: fiatEndpoint)
+        async let crypto = body(of: cryptoEndpoint)
+        let (fiatData, cryptoData) = await (fiat, crypto)
 
-        // Frankfurter v2 answers with one flat row per pair rather than a keyed table.
-        let rows = try JSONDecoder().decode([RateRow].self, from: data)
-        guard let base = rows.first?.base else { throw URLError(.cannotParseResponse) }
-        var rates: [String: Double] = [:]
-        rates.reserveCapacity(rows.count + 1)
-        for row in rows where row.rate > 0 && row.rate.isFinite && row.base == base {
-            rates[row.quote] = row.rate
-        }
-        guard !rates.isEmpty else { throw URLError(.cannotParseResponse) }
-        rates[base] = 1
-
-        return CurrencyRates(base: base, rates: rates, fetchedAt: Date())
+        // Coins are optional: fiat alone prices most queries, and the retry is 30 minutes away.
+        guard let fiatData else { return nil }
+        return try? CurrencyFeed.snapshot(fiat: fiatData, crypto: cryptoData, now: Date())
     }
 
-    private struct RateRow: Decodable {
-        let base: String
-        let quote: String
-        let rate: Double
+    private nonisolated static func body(of url: URL) async -> Data? {
+        let request = URLRequest(url: url, timeoutInterval: 20)
+        guard let (data, response) = try? await session.data(for: request),
+            let http = response as? HTTPURLResponse, http.statusCode == 200
+        else { return nil }
+        return data
     }
 }

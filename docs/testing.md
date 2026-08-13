@@ -274,6 +274,9 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - In Calculator History, ⌃X deletes a row and ⌃⇧X clears the history behind a confirmation
 - A currency query answers from the cached snapshot; with the cache cleared and no network it reports
   rates unavailable rather than guessing
+- A bare amount (`1 usd`) answers in the Mac's region currency, and follows a change to
+  System Settings ▸ General ▸ Language & Region without a relaunch — and nothing prompts for location
+- A crypto query (`1 btc`, `0.5 sol to eur`) answers, and `1 usd to btc` stays in plain notation
 
 ### System actions and window management
 

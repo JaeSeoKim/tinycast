@@ -3,7 +3,7 @@ import Foundation
 /// Typed arithmetic for measurements and currencies.
 enum CalcQuantity {
     static func evaluate(
-        _ tokens: [CalcToken], query: String, rates: CurrencyRates?,
+        _ tokens: [CalcToken], query: String, rates: CurrencyRates?, region: String? = nil,
         preserveStandaloneUnit: Bool = false
     ) -> CalcResult? {
         let split = splitConversion(tokens)
@@ -59,13 +59,30 @@ enum CalcQuantity {
             return measurementResult(
                 value.amount, unit: unit, expression: expressionText(split.expressionTokens))
         case .currency(let definition):
+            guard parser.operationCount == 0 else {
+                return currencyResult(
+                    value.amount, definition: definition,
+                    expression: expressionText(split.expressionTokens))
+            }
+            let expression = "\(CalcFormatter.display(value.amount)) \(definition.code)"
+            // A bare amount names no target, so the Mac's own currency becomes one — but not while
+            // the expression is still being typed, the rule the standalone unit above follows too.
+            guard !preserveStandaloneUnit, let target = regionTarget(region, from: definition),
+                let output = rates?.convert(value.amount, from: definition.code, to: target.code)
+            else {
+                return currencyResult(value.amount, definition: definition, expression: expression)
+            }
             return currencyResult(
-                value.amount, definition: definition,
-                expression:
-                    parser.operationCount == 0
-                    ? "\(CalcFormatter.display(value.amount)) \(definition.code)"
-                    : expressionText(split.expressionTokens))
+                output, definition: target, expression: expression, sourceBadge: definition.name)
         }
+    }
+
+    /// Nil where converting says nothing: no region, an unknown one, or the currency already typed.
+    private static func regionTarget(_ region: String?, from: CurrencyDef) -> CurrencyDef? {
+        guard let target = region.flatMap({ CalcCurrency.byName[$0.lowercased()] }),
+            target.code != from.code
+        else { return nil }
+        return target
     }
 
     private static func convertedResult(
@@ -133,12 +150,13 @@ enum CalcQuantity {
     }
 
     private static func currencyResult(
-        _ amount: Double, definition: CurrencyDef, expression: String
+        _ amount: Double, definition: CurrencyDef, expression: String,
+        sourceBadge: String = "Expression"
     ) -> CalcResult {
         let formatted = CalcFormatter.currency(amount)
         return CalcResult(
             expression: expression,
-            sourceBadge: "Expression", targetBadge: definition.name,
+            sourceBadge: sourceBadge, targetBadge: definition.name,
             payload: .value(
                 display: "\(CalcFormatter.grouped(formatted)) \(definition.code)",
                 copyText: "\(formatted) \(definition.code)"))

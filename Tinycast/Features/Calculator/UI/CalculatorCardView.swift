@@ -6,17 +6,19 @@ enum CalcMemo {
     private struct Cache {
         let query: String
         let stamp: Date?
+        let region: String?
         let result: CalcResult?
     }
 
     private static var cache: Cache?
 
     static func evaluate(_ query: String, rates: CurrencyRates?) -> CalcResult? {
-        if let cache, cache.query == query, cache.stamp == rates?.fetchedAt {
+        let region = RegionCurrency.code
+        if let cache, cache.query == query, cache.stamp == rates?.fetchedAt, cache.region == region {
             return cache.result
         }
-        let result = CalcEngine.evaluate(query, rates: rates)
-        cache = Cache(query: query, stamp: rates?.fetchedAt, result: result)
+        let result = CalcEngine.evaluate(query, rates: rates, region: region)
+        cache = Cache(query: query, stamp: rates?.fetchedAt, region: region, result: result)
         return result
     }
 }
