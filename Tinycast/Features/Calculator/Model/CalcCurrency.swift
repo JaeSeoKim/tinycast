@@ -26,12 +26,6 @@ struct CurrencyRates: Codable, Equatable, Sendable {
     }
 }
 
-/// The consent gate as a type; `.off` ships by default. See docs/features/calculator.md#consent.
-enum CurrencySource: Equatable, Sendable {
-    case off
-    case on(CurrencyRates?)
-}
-
 enum CalcCurrency {
     enum ConversionParse: Equatable {
         case value(input: Double, from: CurrencyDef, to: CurrencyDef, output: Double)
@@ -47,9 +41,7 @@ enum CalcCurrency {
     static let categoryName = "Currency"
 
     /// `expr currency (to|in|->) currency`, shaped like `CalcUnits.parseConversion`, run after it.
-    static func parseConversion(_ tokens: [CalcToken], source: CurrencySource) -> ConversionParse? {
-        // The consent gate, before any parsing: without it the feature does not exist.
-        guard case .on(let rates) = source else { return nil }
+    static func parseConversion(_ tokens: [CalcToken], rates: CurrencyRates?) -> ConversionParse? {
         let tokens = amountFirst(tokens)
         guard tokens.count >= 3, CalcUnits.isConnector(tokens[tokens.count - 2]),
             case .ident(let toName) = tokens[tokens.count - 1],

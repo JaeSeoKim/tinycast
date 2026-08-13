@@ -1,33 +1,22 @@
 import SwiftUI
 
-/// One-deep memo over `CalcEngine.evaluate`, keyed on consent plus the snapshot's `fetchedAt`.
+/// One-deep memo over `CalcEngine.evaluate`, keyed on the rate snapshot's `fetchedAt`.
 @MainActor
 enum CalcMemo {
     private struct Cache {
         let query: String
-        let enabled: Bool
         let stamp: Date?
         let result: CalcResult?
     }
 
     private static var cache: Cache?
 
-    static func evaluate(_ query: String, currency: CurrencySource) -> CalcResult? {
-        let enabled: Bool
-        let stamp: Date?
-        switch currency {
-        case .off:
-            enabled = false
-            stamp = nil
-        case .on(let rates):
-            enabled = true
-            stamp = rates?.fetchedAt
-        }
-        if let cache, cache.query == query, cache.enabled == enabled, cache.stamp == stamp {
+    static func evaluate(_ query: String, rates: CurrencyRates?) -> CalcResult? {
+        if let cache, cache.query == query, cache.stamp == rates?.fetchedAt {
             return cache.result
         }
-        let result = CalcEngine.evaluate(query, currency: currency)
-        cache = Cache(query: query, enabled: enabled, stamp: stamp, result: result)
+        let result = CalcEngine.evaluate(query, rates: rates)
+        cache = Cache(query: query, stamp: rates?.fetchedAt, result: result)
         return result
     }
 }

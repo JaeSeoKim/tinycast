@@ -214,7 +214,6 @@
 		EA89498DA03BDFA3858144BF /* AppActionsMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C045C66BB654E4CB407A673 /* AppActionsMenu.swift */; };
 		EBCDF88CD59A4B6F21F945C6 /* Quicklink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA3385A84985A52E2DA3596 /* Quicklink.swift */; };
 		EDD7861202ECC1B0FA3B278E /* FileSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7420F642776452B469182D0 /* FileSearchResult.swift */; };
-		F226F68554B1FBDDC1893C42 /* MiscellaneousSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A954E3DF28F609AAA3BEE216 /* MiscellaneousSettingsView.swift */; };
 		F85CE4CDCF7589ACAEF2CA20 /* AppIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E23F92F4B4DEEE55077C7C /* AppIconView.swift */; };
 		F8D69CE2A8C04DEEC1810A1F /* UninstallRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D134673CB1B563A3758FC37 /* UninstallRunner.swift */; };
 		F8EC987B884BD2ED6A6690A9 /* SnippetKeywordListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 301BA9123035D6BFB808F763 /* SnippetKeywordListener.swift */; };
@@ -383,7 +382,6 @@
 		A5DFA4E0FDAC12379F2D38B5 /* CalloutPlacement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalloutPlacement.swift; sourceTree = "<group>"; };
 		A80495AE6BF7CE22BD6B20EE /* SnippetArgumentsPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetArgumentsPrompt.swift; sourceTree = "<group>"; };
 		A90559D7DB9F6F3874CAFCDE /* VolumeHUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeHUDView.swift; sourceTree = "<group>"; };
-		A954E3DF28F609AAA3BEE216 /* MiscellaneousSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiscellaneousSettingsView.swift; sourceTree = "<group>"; };
 		AA7B3EB88881CEEFCE71448D /* Permissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Permissions.swift; sourceTree = "<group>"; };
 		AA99178E0DCF6CBB521FB098 /* WindowMover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMover.swift; sourceTree = "<group>"; };
 		AAD838940E655559E32BE8EA /* UninstallPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallPlan.swift; sourceTree = "<group>"; };
@@ -637,7 +635,6 @@
 			children = (
 				106B33C0ABA57694D12D02EC /* Model */,
 				0F27EAD6217BA0F1BCA8DD78 /* Service */,
-				7F5E5C2ED2F2125CE73A336A /* Settings */,
 				9262C41AED795D978F925FE9 /* UI */,
 			);
 			path = Calculator;
@@ -864,14 +861,6 @@
 				3EAF30E6AF6D472336F4236C /* UI */,
 			);
 			path = Launcher;
-			sourceTree = "<group>";
-		};
-		7F5E5C2ED2F2125CE73A336A /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				A954E3DF28F609AAA3BEE216 /* MiscellaneousSettingsView.swift */,
-			);
-			path = Settings;
 			sourceTree = "<group>";
 		};
 		83DF8416682FC5121DD7FD6E /* Dialog */ = {
@@ -1458,7 +1447,6 @@
 				AAFD2C9276D38719E85B675F /* Memo.swift in Sources */,
 				43DBCE7B5A84D0D6322124F5 /* MessageHUDController.swift in Sources */,
 				8D529C8F3AB579941067FE98 /* MessageHUDView.swift in Sources */,
-				F226F68554B1FBDDC1893C42 /* MiscellaneousSettingsView.swift in Sources */,
 				613827876C48EF88F2162C10 /* NotificationToken.swift in Sources */,
 				E268D74F0DEFFA598E2D02AA /* OnboardingCard.swift in Sources */,
 				E6E8E3E2ECD0CD9A982115F3 /* OnboardingCoordinator.swift in Sources */,
