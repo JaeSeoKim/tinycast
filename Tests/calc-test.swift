@@ -650,9 +650,8 @@ struct CalcTests {
 
     // MARK: - Fixed exchange rates so currency answers are deterministic
 
-    /// NPR, ZMW, AFN and SHIB are deliberately absent: the table recognizes them (they're in the
-    /// generated list), so a query for one must reach "no exchange rate" rather than no card at all.
-    /// Coins are stored inverted, exactly as `CurrencyFeed` merges them: 1 BTC = 60,000 USD.
+    /// NPR, ZMW, AFN and SHIB are deliberately absent: the table recognizes them, so a query for one
+    /// must reach "no exchange rate" rather than no card. Coins are inverted, as the store stores them.
     static let fx = CurrencyRates(
         base: "USD",
         rates: [

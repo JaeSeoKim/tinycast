@@ -113,8 +113,7 @@ enum CalcCurrency {
         "SAR": ["riyal", "riyals"]  // 2
     ]
 
-    /// The crypto the feed is asked for. No standards body names these, so it is the second and
-    /// last hand-written currency table. docs/features/calculator.md
+    /// Hand-written because no standards body names a coin. docs/features/calculator.md
     static let crypto: [(code: String, name: String, aliases: [String])] = [
         ("ADA", "Cardano", ["cardano"]),
         ("AVAX", "Avalanche", ["avalanche"]),

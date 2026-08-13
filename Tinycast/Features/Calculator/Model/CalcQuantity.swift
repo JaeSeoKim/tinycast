@@ -65,8 +65,7 @@ enum CalcQuantity {
                     expression: expressionText(split.expressionTokens))
             }
             let expression = "\(CalcFormatter.display(value.amount)) \(definition.code)"
-            // A bare amount names no target, so the Mac's own currency becomes one — but not while
-            // the expression is still being typed, the rule the standalone unit above follows too.
+            // A bare amount names no target, so the Mac's own currency becomes one once it's typed.
             guard !preserveStandaloneUnit, let target = regionTarget(region, from: definition),
                 let output = rates?.convert(value.amount, from: definition.code, to: target.code)
             else {

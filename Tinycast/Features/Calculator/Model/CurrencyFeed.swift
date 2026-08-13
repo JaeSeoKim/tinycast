@@ -16,7 +16,7 @@ enum CurrencyFeed {
         let rates: [String: Double]
     }
 
-    /// One units-per-base table from both feeds. `complete` is false when the coins didn't land.
+    /// One units-per-base table from both feeds; `complete` is false when the coins didn't land.
     static func snapshot(
         fiat: Data, crypto: Data?, now: Date
     ) throws -> (rates: CurrencyRates, complete: Bool) {
@@ -47,8 +47,7 @@ enum CurrencyFeed {
         return (CurrencyRates(base: base, rates: rates, fetchedAt: now), coins > 0)
     }
 
-    /// Only a coin-bearing snapshot is ever written, so one that isn't predates the coins entirely
-    /// and has to be refetched however fresh its `fetchedAt` claims to be.
+    /// Only whole snapshots are persisted, so a cached one pricing no coin predates them entirely.
     static func pricesCoins(_ snapshot: CurrencyRates) -> Bool {
         CalcCurrency.cryptoCodes.contains { snapshot.rates[$0] != nil }
     }

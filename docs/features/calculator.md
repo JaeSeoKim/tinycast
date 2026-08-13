@@ -217,8 +217,15 @@ merging them last so a symbol both feeds quote takes the coin feed's own price. 
 `convert(_:from:to:)` cross-rates fiat against crypto with no special case anywhere downstream.
 
 The fiat half is required; the coins are best-effort. A run that misses them still answers for the
-session but is **not** written to disk, and retries in **30 minutes** rather than waiting out the
-day — so the next launch re-fetches rather than serving a coin-less snapshot as if it were whole.
+session but is **not** written to disk, and retries in **30 minutes** rather than waiting out the day.
+Both halves of that follow from the store scheduling off the newest _whole_ snapshot rather than off
+whatever `rates` currently holds: a partial one answers without resetting the clock, so it can neither
+park the loop for a day nor be reloaded at launch as though it were complete.
+
+The same rule absorbs a cached snapshot written before crypto existed. It still prices fiat, so it is
+served rather than discarded — but it counts as no age at all, so the store re-fetches immediately
+instead of trusting a `fetchedAt` that says the table is hours fresh. `CurrencyFeed.pricesCoins` is
+that test, and it is sound only because a partial snapshot is never persisted.
 
 The table is cached at `~/Library/Caches/<bundle-id>/currency-rates.json` and refreshed every 24h.
 The feed republishes about once a day, so a tighter interval would cost requests without returning
