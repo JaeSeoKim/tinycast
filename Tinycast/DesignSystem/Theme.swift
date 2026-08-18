@@ -187,8 +187,7 @@ enum Theme {
             adaptive(dark: .srgbInk(1, alpha: dark), light: .srgbInk(0, alpha: light))
         }
 
-        /// The panel's surface tint over the behind-window material — the ramp's inverse, since the
-        /// scrim darkens the dark surface and lightens the light one.
+        /// The ramp's inverse: the scrim darkens the dark surface and lightens the light one.
         static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
         /// Selection fill, shared by every list so they look identical.
         static let selection = ramp(dark: 0.10, light: 0.09)
@@ -200,20 +199,18 @@ enum Theme {
         static let controlSurface = ramp(dark: 0.10, light: 0.08)
         /// Control borders: outlined kbd chips.
         static let border = ramp(dark: 0.20, light: 0.18)
-        /// Full-strength ink: the search field's text and caret, the volume slider's fill.
+        /// Alpha 1, so a call site can dim it with `.opacity` and land on the value it replaced.
         static let textPrimary = ramp(dark: 1.0, light: 1.0)
         static let textSecondary = ramp(dark: 0.60, light: 0.60)
         static let textTertiary = ramp(dark: 0.40, light: 0.42)
         static let noteText = ramp(dark: 0.90, light: 0.85)
-        /// The empty tile a row paints while its real icon decodes.
         static let iconPlaceholder = ramp(dark: 0.06, light: 0.06)
         /// The faint wash behind the Onboarding header.
         static let sheen = ramp(dark: 0.04, light: 0.04)
         /// The Settings card: a faint surface whose border doubles as the row divider.
         static let cardFill = ramp(dark: 0.05, light: 0.04)
         static let cardStroke = ramp(dark: 0.10, light: 0.10)
-        /// Tint layered into the floating controls, so the glass reads frosted, not clear. White in
-        /// both, but light glass needs more of it before it stops reading as clear.
+        /// White in both: the frost brightens glass, and light glass needs more of it to read at all.
         static let glassFrost = adaptive(dark: .srgbInk(1, alpha: 0.05), light: .srgbInk(1, alpha: 0.25))
         /// The violet of the app mark, used only to tint the About support callout.
         static let brand = Color(red: 0.525, green: 0.231, blue: 1.0)

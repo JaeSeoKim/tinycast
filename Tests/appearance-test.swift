@@ -1,11 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Pins the rule `AGENTS.md` states: **Dark is the baseline and a token's dark branch is the literal
-/// the forced-dark build shipped.** Each `expected` below is written exactly as it stood before
-/// `Theme.Colors` became appearance-resolved, so this is a literal-vs-literal comparison against the
-/// real `Theme` (compiled in, not copied). Retuning a light branch is free; changing a dark one fails
-/// here, which is the whole point.
+/// Pins the rule in `AGENTS.md`: a token's dark branch is the literal the forced-dark build shipped.
+/// Each `expected` is written as it stood before `Theme.Colors` became appearance-resolved, against
+/// the real `Theme` — so retuning a light branch is free and changing a dark one fails here.
 @main
 @MainActor
 struct AppearanceTests {
@@ -21,10 +19,8 @@ struct AppearanceTests {
         }
     }
 
-    /// Quantized to 8 bits — the precision that actually reaches the framebuffer. Comparing raw
-    /// `CGFloat`s instead would fail on `Color(nsColor:).opacity(0.85)`, which carries Float error
-    /// (0.85000002) where a `Color.white.opacity(0.85)` literal stays Double. Two stops as close as
-    /// 0.045 and 0.05 still land on different bytes, so this keeps every distinction that matters.
+    /// Quantized to the 8 bits that reach the framebuffer: raw `CGFloat`s would fail on
+    /// `Color(nsColor:).opacity(0.85)`, whose Float error a literal `Color.white.opacity` lacks.
     static func components(_ color: Color, _ name: NSAppearance.Name) -> [Int] {
         var out: [Int] = []
         NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
@@ -35,14 +31,13 @@ struct AppearanceTests {
         return out
     }
 
-    /// The dark branch must still be the exact pixel the literal produced.
     static func dark(_ label: String, _ token: Color, is expected: Color) {
         let actual = components(token, .darkAqua)
         let wanted = components(expected, .darkAqua)
         check("dark \(label)", actual == wanted, "\(actual) != \(wanted)")
     }
 
-    /// And the token has to actually resolve differently, or it never adapted at all.
+    /// A token that resolves identically in both never adapted at all.
     static func adapts(_ label: String, _ token: Color) {
         check(
             "\(label) adapts", components(token, .darkAqua) != components(token, .aqua),

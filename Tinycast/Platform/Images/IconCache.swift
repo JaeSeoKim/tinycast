@@ -14,9 +14,8 @@ struct IconCacheGeneration {
     }
 }
 
-/// What an icon view keys its fetch on. SwiftUI tracks any `@Observable` property read while a body
-/// runs, so folding `generation` into a `.task(id:)` is the whole subscription — no injection, and
-/// so no surface that draws an icon can be missed.
+/// What an icon view keys its fetch on. SwiftUI tracks any `@Observable` read during `body`, so
+/// carrying `generation` in an id is the whole subscription.
 @MainActor
 @Observable
 final class IconStyleSignal {
@@ -25,8 +24,7 @@ final class IconStyleSignal {
     fileprivate func bump() { generation &+= 1 }
 }
 
-/// What identifies one icon fetch: whatever the view keys on, plus the generation. Constructing it
-/// in a `body` is what subscribes that view, so a restyle re-runs the `.task` that carries it.
+/// A view's own icon key plus the generation. Building one in `body` is what subscribes the view.
 struct IconRequest<Key: Hashable>: Hashable {
     let key: Key
     let generation: Int
@@ -85,8 +83,7 @@ enum IconCache {
     /// whatever appearance that thread happens to see, so the surface is carried explicitly.
     private static let darkSurface = Mutex(true)
 
-    /// Only a real change invalidates: this is called with `.initial` at launch and on every
-    /// `effectiveAppearance` notification, most of which do not move the surface.
+    /// Only a real change invalidates: most `effectiveAppearance` notifications do not move it.
     @MainActor static func setDarkSurface(_ isDark: Bool) {
         let changed = darkSurface.withLock { surface -> Bool in
             defer { surface = isDark }
@@ -95,24 +92,19 @@ enum IconCache {
         if changed { invalidateStyled() }
     }
 
-    /// Read wherever an icon is drawn — SwiftUI tracks it, so a restyle re-runs the fetch. Reaching
-    /// it through `IconCache` rather than an injected object is deliberate: an icon is drawn in
-    /// menus, popovers and every list, and a missed injection would be a runtime trap.
+    /// Global rather than injected: icons are drawn in menus, popovers and every list, where a
+    /// missed injection would be silent staleness.
     @MainActor static let style = IconStyleSignal()
 
     /// The same count, readable off-main because every cache key carries it.
     private static let styleGeneration = Mutex(0)
 
-    /// Subscribes the calling view to restyles, for the few sites that draw an icon synchronously in
-    /// a `body` and so have no `.task` id to fold an `IconRequest` into. Reading the property is the
-    /// subscription — this is not a no-op.
+    /// For the sites that resolve an icon synchronously in `body`, with no `.task` id to carry an
+    /// `IconRequest`. The read *is* the subscription, so this is not a no-op.
     @MainActor static func observeStyle() { _ = style.generation }
 
-    /// Every cached bitmap depends on two things outside the app: the surface Tinycast draws its own
-    /// symbol tiles for, and the system icon style macOS draws app icons for (System Settings →
-    /// Appearance → Icon & widget style). Either moving stales the lot. Clearing frees them;
-    /// carrying the count in the key is what makes it *correct* — a decode already in flight writes
-    /// under the old key rather than landing a pre-restyle icon just after the cache was emptied.
+    /// A tile is drawn for a surface and an app icon for a system icon style, so either moving
+    /// stales every bitmap. Clearing frees them; the generation in each key is what makes it correct.
     @MainActor static func invalidateStyled() {
         styleGeneration.withLock { $0 &+= 1 }
         cache.removeAllObjects()
@@ -120,8 +112,8 @@ enum IconCache {
         style.bump()
     }
 
-    /// Every key carries the generation, so a bitmap drawn under the previous style or surface can
-    /// never be served — not even one a decode still in flight writes back after the purge.
+    /// The generation is in every key, so even a decode still in flight writes somewhere unreachable
+    /// rather than repopulating the cache it was purged from.
     private static func key(_ body: String) -> NSString {
         "\(styleGeneration.withLock { $0 }):\(body)" as NSString
     }

@@ -21,7 +21,6 @@ final class AppCore {
     let windowMover = WindowMover()
     let settings: AppSettings
     @ObservationIgnored private var appearanceObservation: NSKeyValueObservation?
-    // Registers on construction; it invalidates `IconCache` when the system icon style changes.
     @ObservationIgnored private let iconStyle = IconStyleMonitor()
     let favorites = FavoritesStore()
     let visibility = VisibilityStore()
@@ -316,8 +315,7 @@ final class AppCore {
     /// Covers our own assignment and a macOS change alike, which is why `IconCache` is told here
     /// rather than from `applyAppearance()` — under `.system` that one never fires.
     private func observeEffectiveAppearance() {
-        // AppKit posts this on main, and staying synchronous is what stops a row caching a tile
-        // under the outgoing appearance's key.
+        // Synchronous on main, so no row can cache a tile under the outgoing appearance's key.
         appearanceObservation = NSApp.observe(\.effectiveAppearance, options: [.initial]) { app, _ in
             MainActor.assumeIsolated { IconCache.setDarkSurface(app.effectiveAppearance.isDark) }
         }

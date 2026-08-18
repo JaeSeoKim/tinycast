@@ -36,8 +36,7 @@ struct IconCacheTests {
 
     static func bitmap(_ image: NSImage) -> Data? { image.tiffRepresentation }
 
-    /// macOS restyles the icons `NSWorkspace` hands out when Icon & widget style changes, so a
-    /// restyle has to both drop what is cached and move the generation views key their fetch on.
+    /// A restyle has to both drop what is cached and move the generation views key their fetch on.
     static func restyling() {
         let before = IconCache.style.generation
         let warm = IconCache.symbolIcon(named: "star")
@@ -46,11 +45,10 @@ struct IconCacheTests {
         IconCache.invalidateStyled()
         expect(IconCache.style.generation == before + 1, "a restyle moves the generation")
         expect(IconCache.cachedSymbol(named: "star") == nil, "a restyle drops what was cached")
-        // The id every icon view keys on, so a restyle re-runs the `.task` that carries it.
         expect(IconRequest("star").generation == IconCache.style.generation, "a request carries it")
         expect(IconRequest("star") != IconRequest("moon"), "the view's own key still separates them")
 
-        // The surface only invalidates when it actually moves; `.initial` and every repeat must not.
+        // `.initial` and every repeat notification must not invalidate; only a real move may.
         let settled = IconCache.style.generation
         IconCache.setDarkSurface(true)
         expect(IconCache.style.generation == settled, "re-asserting the same surface is free")
