@@ -139,8 +139,11 @@ private struct FileIconView: View {
                     .fill(Theme.Colors.iconPlaceholder)
             }
         }
-        .task(id: path) {
-            guard image == nil else { return }
+        .task(id: IconRequest(path)) {
+            if let warm = IconCache.cachedFitted(forFile: path) {
+                image = warm
+                return
+            }
             image = await IconCache.loadFittedAsync(forFile: path)
         }
     }

@@ -21,6 +21,8 @@ final class AppCore {
     let windowMover = WindowMover()
     let settings: AppSettings
     @ObservationIgnored private var appearanceObservation: NSKeyValueObservation?
+    // Registers on construction; it invalidates `IconCache` when the system icon style changes.
+    @ObservationIgnored private let iconStyle = IconStyleMonitor()
     let favorites = FavoritesStore()
     let visibility = VisibilityStore()
     let aliases = AliasStore()

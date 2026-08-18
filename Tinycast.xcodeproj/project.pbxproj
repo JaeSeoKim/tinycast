@@ -83,6 +83,7 @@
 		3B02D6CE68E0E488955A19B5 /* SnippetTemplateEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F58E564E6181EB15497E51CD /* SnippetTemplateEngine.swift */; };
 		3BC6CC35889FFC77D640C7CA /* SnippetsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC2EF66267B0141279A43613 /* SnippetsSettingsView.swift */; };
 		3E2E0C5B564C828D7ECA2759 /* RegionCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB0BD36800F3B1AC765F514 /* RegionCurrency.swift */; };
+		3E2E2CFAD5C5731A5F059AD5 /* IconStyleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C39345D0335ACA895133ABD /* IconStyleMonitor.swift */; };
 		4109B5CF37DCA4BCDAE46412 /* ShellCommandRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBFE3C41897391C14DB5A55C /* ShellCommandRunner.swift */; };
 		410F1B5FFAA44378AC9EC2DB /* SystemSettingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 951E746BA1AD25D167A1775F /* SystemSettingsSettingsView.swift */; };
 		43885792945F28AF3CDE30BC /* WindowCommandCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06125F7DDE68BB4D52065C06 /* WindowCommandCoordinator.swift */; };
@@ -460,6 +461,7 @@
 		88499DF2F503F2A3A19DEF07 /* OverflowFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverflowFade.swift; sourceTree = "<group>"; };
 		8AC2CD86BAA6567B66B2B4DB /* FileSearchSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSettingsView.swift; sourceTree = "<group>"; };
 		8AFD491421DFE25892C0FC37 /* RaycastV1Decoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaycastV1Decoder.swift; sourceTree = "<group>"; };
+		8C39345D0335ACA895133ABD /* IconStyleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconStyleMonitor.swift; sourceTree = "<group>"; };
 		8CBD6D8BC6951A482BDF6169 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
 		8E58EBB08450BA3426DF0565 /* AppIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIndex.swift; sourceTree = "<group>"; };
 		8E5F9675F2090C3AA9EEBF65 /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
@@ -1437,6 +1439,7 @@
 			isa = PBXGroup;
 			children = (
 				E5CBCCE63360E4590CF5884A /* IconCache.swift */,
+				8C39345D0335ACA895133ABD /* IconStyleMonitor.swift */,
 				36C6775BBA0FC6F134296606 /* ImageThumbnail.swift */,
 			);
 			path = Images;
@@ -1786,6 +1789,7 @@
 				85B372E9A8F8D00D3A5FA260 /* HyperKey.swift in Sources */,
 				122CA8786B58966376B27DC1 /* HyperKeyTap.swift in Sources */,
 				CA6BA9C381351D0B2CADFB9D /* IconCache.swift in Sources */,
+				3E2E2CFAD5C5731A5F059AD5 /* IconStyleMonitor.swift in Sources */,
 				CB95B0CBF0DFEDFCEA837053 /* ImageThumbnail.swift in Sources */,
 				8855C67C7EE196E3F9EDE778 /* KeyCapChip.swift in Sources */,
 				AE3144FCC55FADC48955D17A /* KeyShortcut.swift in Sources */,

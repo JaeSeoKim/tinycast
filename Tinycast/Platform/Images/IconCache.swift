@@ -14,6 +14,30 @@ struct IconCacheGeneration {
     }
 }
 
+/// What an icon view keys its fetch on. SwiftUI tracks any `@Observable` property read while a body
+/// runs, so folding `generation` into a `.task(id:)` is the whole subscription — no injection, and
+/// so no surface that draws an icon can be missed.
+@MainActor
+@Observable
+final class IconStyleSignal {
+    private(set) var generation = 0
+
+    fileprivate func bump() { generation &+= 1 }
+}
+
+/// What identifies one icon fetch: whatever the view keys on, plus the generation. Constructing it
+/// in a `body` is what subscribes that view, so a restyle re-runs the `.task` that carries it.
+struct IconRequest<Key: Hashable>: Hashable {
+    let key: Key
+    let generation: Int
+
+    @MainActor
+    init(_ key: Key) {
+        self.key = key
+        self.generation = IconCache.style.generation
+    }
+}
+
 /// A tile's fill and the key naming it, so `IconCache` needn't know who chose the colour.
 struct SymbolTint: Hashable, Sendable {
     let key: String
@@ -52,7 +76,7 @@ enum IconCache {
     private static let fittedGeneration = Mutex(IconCacheGeneration())
 
     /// Cache-only lookups (never decode) so a row can paint an already-warm icon on the same frame.
-    static func cached(forFile path: String) -> NSImage? { cache.object(forKey: path as NSString) }
+    static func cached(forFile path: String) -> NSImage? { cache.object(forKey: fileKey(path)) }
     static func cachedSymbol(named name: String, tint: SymbolTint? = nil) -> NSImage? {
         cache.object(forKey: symbolKey(name, tint))
     }
@@ -61,14 +85,50 @@ enum IconCache {
     /// whatever appearance that thread happens to see, so the surface is carried explicitly.
     private static let darkSurface = Mutex(true)
 
-    static func setDarkSurface(_ isDark: Bool) {
-        darkSurface.withLock { $0 = isDark }
+    /// Only a real change invalidates: this is called with `.initial` at launch and on every
+    /// `effectiveAppearance` notification, most of which do not move the surface.
+    @MainActor static func setDarkSurface(_ isDark: Bool) {
+        let changed = darkSurface.withLock { surface -> Bool in
+            defer { surface = isDark }
+            return surface != isDark
+        }
+        if changed { invalidateStyled() }
     }
 
-    /// The surface is part of the key, so a tile drawn for the other appearance is never served.
+    /// Read wherever an icon is drawn — SwiftUI tracks it, so a restyle re-runs the fetch. Reaching
+    /// it through `IconCache` rather than an injected object is deliberate: an icon is drawn in
+    /// menus, popovers and every list, and a missed injection would be a runtime trap.
+    @MainActor static let style = IconStyleSignal()
+
+    /// The same count, readable off-main because every cache key carries it.
+    private static let styleGeneration = Mutex(0)
+
+    /// Subscribes the calling view to restyles, for the few sites that draw an icon synchronously in
+    /// a `body` and so have no `.task` id to fold an `IconRequest` into. Reading the property is the
+    /// subscription — this is not a no-op.
+    @MainActor static func observeStyle() { _ = style.generation }
+
+    /// Every cached bitmap depends on two things outside the app: the surface Tinycast draws its own
+    /// symbol tiles for, and the system icon style macOS draws app icons for (System Settings →
+    /// Appearance → Icon & widget style). Either moving stales the lot. Clearing frees them;
+    /// carrying the count in the key is what makes it *correct* — a decode already in flight writes
+    /// under the old key rather than landing a pre-restyle icon just after the cache was emptied.
+    @MainActor static func invalidateStyled() {
+        styleGeneration.withLock { $0 &+= 1 }
+        cache.removeAllObjects()
+        purgeFitted()
+        style.bump()
+    }
+
+    /// Every key carries the generation, so a bitmap drawn under the previous style or surface can
+    /// never be served — not even one a decode still in flight writes back after the purge.
+    private static func key(_ body: String) -> NSString {
+        "\(styleGeneration.withLock { $0 }):\(body)" as NSString
+    }
+
     private static func symbolKey(_ name: String, _ tint: SymbolTint?) -> NSString {
         let surface = darkSurface.withLock { $0 } ? "dark" : "light"
-        return "symbol:\(surface):\(tint?.key ?? "plain"):\(name)" as NSString
+        return key("symbol:\(surface):\(tint?.key ?? "plain"):\(name)")
     }
 
     /// A freshly-decoded, thereafter-immutable `NSImage` is safe to move across the actor boundary.
@@ -98,7 +158,7 @@ enum IconCache {
     }
 
     static func icon(forFile path: String) -> NSImage {
-        let key = path as NSString
+        let key = fileKey(path)
         if let cached = cache.object(forKey: key) { return cached }
         let (icon, cost) = downsampled(NSWorkspace.shared.icon(forFile: path))
         cache.setObject(icon, forKey: key, cost: cost)
@@ -190,7 +250,7 @@ enum IconCache {
     }
 
     private static func artworkKey(_ path: String, _ extent: CGFloat) -> NSString {
-        "artwork:\(extent):\(path)" as NSString
+        key("artwork:\(extent):\(path)")
     }
 
     // MARK: - Drawing an `EntryIcon`
@@ -257,7 +317,8 @@ enum IconCache {
         }
     }
 
-    private static func fittedKey(_ path: String) -> NSString { ("fit:" + path) as NSString }
+    private static func fileKey(_ path: String) -> NSString { key("file:" + path) }
+    private static func fittedKey(_ path: String) -> NSString { key("fit:" + path) }
 
     private static func fittedIcon(forFile path: String) -> Decoded {
         let (icon, cost) = fittedToArtwork(NSWorkspace.shared.icon(forFile: path))

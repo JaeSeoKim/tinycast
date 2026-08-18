@@ -30,7 +30,7 @@ struct AppIconView: View {
             }
         }
         // Keyed on the icon, not the entry: re-skinning an extension leaves `id` untouched.
-        .task(id: app.iconKey) {
+        .task(id: IconRequest(app.iconKey)) {
             if let warm = Self.cached(app) {
                 image = warm
                 return
