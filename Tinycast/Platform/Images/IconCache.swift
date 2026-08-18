@@ -14,8 +14,7 @@ struct IconCacheGeneration {
     }
 }
 
-/// What an icon view keys its fetch on. SwiftUI tracks any `@Observable` read during `body`, so
-/// carrying `generation` in an id is the whole subscription.
+/// SwiftUI tracks any `@Observable` read in `body`, so carrying this in an id is the subscription.
 @MainActor
 @Observable
 final class IconStyleSignal {
@@ -79,8 +78,7 @@ enum IconCache {
         cache.object(forKey: symbolKey(name, tint))
     }
 
-    /// Tiles are rasterized off the main thread, where a dynamic `NSColor` would resolve against
-    /// whatever appearance that thread happens to see, so the surface is carried explicitly.
+    /// Tiles rasterize off-main, where a dynamic `NSColor` resolves wrong, so carry the surface.
     private static let darkSurface = Mutex(true)
 
     /// Only a real change invalidates: most `effectiveAppearance` notifications do not move it.
@@ -92,19 +90,16 @@ enum IconCache {
         if changed { invalidateStyled() }
     }
 
-    /// Global rather than injected: icons are drawn in menus, popovers and every list, where a
-    /// missed injection would be silent staleness.
+    /// Global rather than injected: a missed injection in a menu or list would be silent staleness.
     @MainActor static let style = IconStyleSignal()
 
     /// The same count, readable off-main because every cache key carries it.
     private static let styleGeneration = Mutex(0)
 
-    /// For the sites that resolve an icon synchronously in `body`, with no `.task` id to carry an
-    /// `IconRequest`. The read *is* the subscription, so this is not a no-op.
+    /// For icons resolved synchronously in `body`: the read *is* the subscription, so not a no-op.
     @MainActor static func observeStyle() { _ = style.generation }
 
-    /// A tile is drawn for a surface and an app icon for a system icon style, so either moving
-    /// stales every bitmap. Clearing frees them; the generation in each key is what makes it correct.
+    /// A surface or icon-style move stales every bitmap; the generation in each key fixes it.
     @MainActor static func invalidateStyled() {
         styleGeneration.withLock { $0 &+= 1 }
         cache.removeAllObjects()
@@ -112,8 +107,28 @@ enum IconCache {
         style.bump()
     }
 
-    /// The generation is in every key, so even a decode still in flight writes somewhere unreachable
-    /// rather than repopulating the cache it was purged from.
+    /// macOS restyles `NSWorkspace`'s images in place, so these bytes are the only proof it landed.
+    static func styleFingerprint() -> Data? {
+        let side = 32
+        guard
+            let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
+                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                bytesPerRow: 0, bitsPerPixel: 0),
+            let ctx = NSGraphicsContext(bitmapImageRep: rep)
+        else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        NSWorkspace.shared.icon(forFile: styleProbePath)
+            .draw(in: NSRect(x: 0, y: 0, width: side, height: side))
+        NSGraphicsContext.restoreGraphicsState()
+        guard let bytes = rep.bitmapData else { return nil }
+        return Data(bytes: bytes, count: rep.bytesPerRow * rep.pixelsHigh)
+    }
+
+    private static let styleProbePath = "/System/Library/CoreServices/Finder.app"
+
+    /// In every key, so an in-flight decode writes somewhere unreachable instead of repopulating.
     private static func key(_ body: String) -> NSString {
         "\(styleGeneration.withLock { $0 }):\(body)" as NSString
     }

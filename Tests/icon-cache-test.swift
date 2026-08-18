@@ -56,6 +56,13 @@ struct IconCacheTests {
         expect(IconCache.style.generation == settled + 1, "a changed surface invalidates once")
     }
 
+    /// A probe that rendered nothing would strand every restyle until the settle deadline expired.
+    static func styleFingerprint() {
+        let first = IconCache.styleFingerprint()
+        expect(first != nil, "the style probe renders")
+        expect(first == IconCache.styleFingerprint(), "an unchanged style renders identically")
+    }
+
     static func main() {
         var generation = IconCacheGeneration()
         let captured = generation.value
@@ -71,6 +78,7 @@ struct IconCacheTests {
 
         tintedTiles()
         restyling()
+        styleFingerprint()
 
         print(failures == 0 ? "Icon cache tests passed" : "\(failures) tests failed")
         exit(failures == 0 ? 0 : 1)
