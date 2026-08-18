@@ -57,8 +57,18 @@ enum IconCache {
         cache.object(forKey: symbolKey(name, tint))
     }
 
+    /// Tiles are rasterized off the main thread, where a dynamic `NSColor` would resolve against
+    /// whatever appearance that thread happens to see, so the surface is carried explicitly.
+    private static let darkSurface = Mutex(true)
+
+    static func setDarkSurface(_ isDark: Bool) {
+        darkSurface.withLock { $0 = isDark }
+    }
+
+    /// The surface is part of the key, so a tile drawn for the other appearance is never served.
     private static func symbolKey(_ name: String, _ tint: SymbolTint?) -> NSString {
-        "symbol:\(tint?.key ?? "plain"):\(name)" as NSString
+        let surface = darkSurface.withLock { $0 } ? "dark" : "light"
+        return "symbol:\(surface):\(tint?.key ?? "plain"):\(name)" as NSString
     }
 
     /// A freshly-decoded, thereafter-immutable `NSImage` is safe to move across the actor boundary.
@@ -101,13 +111,16 @@ enum IconCache {
         if let cached = cache.object(forKey: key) { return cached }
 
         let side = displayPixel
+        let isDark = darkSurface.withLock { $0 }
+        let plainInk: CGFloat = isDark ? 1 : 0
         let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { _ in
             // Tile inset mirrors the margin macOS app icons carry inside their canvas.
             let tile = NSRect(x: 0, y: 0, width: side, height: side).insetBy(dx: 4, dy: 4)
-            (tint?.color ?? NSColor.white.withAlphaComponent(0.09)).setFill()
+            (tint?.color ?? .srgbInk(plainInk, alpha: 0.09)).setFill()
             NSBezierPath(roundedRect: tile, xRadius: 9, yRadius: 9).fill()
 
-            let ink = tint == nil ? NSColor.white.withAlphaComponent(0.85) : NSColor.white
+            // A tinted tile keeps white ink in both appearances; the tint carries the contrast.
+            let ink = tint == nil ? NSColor.srgbInk(plainInk, alpha: 0.85) : .white
             guard let symbol = glyph(named: name, tint: ink)
             else { return true }
             let size = symbol.size
