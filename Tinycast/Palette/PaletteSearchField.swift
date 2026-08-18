@@ -91,6 +91,10 @@ struct PaletteSearchField: NSViewRepresentable {
         }
     }
 
+    /// What AppKit's own field editor pads by: the caret is centred on the insertion point, so
+    /// column 0 loses half of it to the clip view without this.
+    private static let fieldEditorPadding: CGFloat = 2
+
     private static func configure(_ textView: PaletteSearchTextView) {
         textView.isFieldEditor = true
         textView.isRichText = false
@@ -105,7 +109,7 @@ struct PaletteSearchField: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = false
         textView.textContainer?.size = NSSize(
             width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.lineFragmentPadding = fieldEditorPadding
         textView.font = Theme.Typography.searchFieldNSFont
         textView.textColor = .white
         textView.insertionPointColor = .white

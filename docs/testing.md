@@ -194,6 +194,7 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
   old field-editor step showed
 - Clicking anywhere in the field, including well past the last glyph, lands the caret
 - A query longer than the field scrolls horizontally and keeps the caret visible
+- The caret is the same thickness on an empty query as it is mid-word, and stays so after deleting back
 - With a CJK IME: the placeholder clears as soon as composition starts, the composing text never
   overlaps it, and the list filters only once the candidate is committed
 - Typing filters instantly; ↑/↓ move the highlight and scroll it into view without yanking the list

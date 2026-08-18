@@ -196,6 +196,13 @@ on commit and a half-typed romanisation never reaches a search.
 bounds. One number, one owner. The field still fills the header row's height so `topDragStrip` meets it
 with no gap.
 
+**`lineFragmentPadding` is `fieldEditorPadding`, not zero.** macOS draws the caret as an
+`NSTextInsertionIndicator` layer 2pt wide **centred** on the insertion point, so a text box flush with
+its clip view loses the caret's left half at column 0 — it renders 1pt until the first glyph pushes it
+clear. AppKit's own `NSTextField` field editor pads by exactly this for the same reason (a bare
+`NSTextView` uses 5). **Do not set it to zero to simplify the placeholder origin**: that origin adds
+the padding back, which is what keeps the two aligned.
+
 **Keys.** `doCommand(by:)` hands ↑ ↓ ← → ↵ ⇥ and Escape to `RootPaletteView.handleSearchKey` first and
 falls through to the caret on `false` — that is what keeps ← and → stepping the emoji grid while they
 stay with the caret everywhere else. The matching `onKeyPress` handlers are still on the root view and
