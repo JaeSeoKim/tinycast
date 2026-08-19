@@ -182,6 +182,17 @@ struct LauncherScreen: PaletteScreen {
         return true
     }
 
+    /// ⌘1–⌘9/⌘0 — launch a favorite by position, in either palette size.
+    func launchFavorite(at index: Int) -> Bool {
+        guard let app = pinnedFavorites.dropFirst(index).first else { return false }
+        core.launcherCoordinator.launch(app)
+        return true
+    }
+
+    /// The favorites the chords address and the compact strip draws from. Empty while a query is
+    /// typed, which is also the only state in which the section isn't on screen.
+    private var pinnedFavorites: ArraySlice<AppEntry> { results.prefix(favoriteCount) }
+
     /// ⌥⌘↑/↓ — swap with the neighbouring favorite; the ends of the section have nowhere to go.
     func moveFavorite(_ delta: Int, at selection: Int) -> Bool {
         guard let app = entry(at: selection), let index = favoriteIndex(of: app) else { return false }
@@ -194,7 +205,9 @@ struct LauncherScreen: PaletteScreen {
 
     /// The favorites rows the Actions menu offers for an entry; the ends drop the move they can't
     /// run, and both rows call straight back here so a row can't drift from its chord.
-    private func favoriteActions(for app: AppEntry, at selection: Int)
+    private func favoriteActions(
+        for app: AppEntry, at selection: Int
+    )
         -> AppActionsMenu.FavoriteActions
     {
         let index = favoriteIndex(of: app)
@@ -240,14 +253,11 @@ struct LauncherScreen: PaletteScreen {
         return core.runningApps.isRunning(app)
     }
 
-    /// The compact bar's favorite slots: 5 apps, or 4 plus an overflow that expands.
-    var compactFavoriteSlots: [CompactFavoriteSlot] {
-        let ordered = appIndex.orderedResults(
-            query: "", visibility: visibility, favorites: favorites)
-        let favs = ordered.prefix(while: favorites.isFavorite)
-        if favs.count <= 5 { return favs.map(CompactFavoriteSlot.app) }
-        return favs.prefix(4).map(CompactFavoriteSlot.app) + [.more]
-    }
+    /// The compact bar's icons: the first five favorites. The "…" that follows them is not one.
+    var compactFavorites: [AppEntry] { Array(pinnedFavorites.prefix(5)) }
+
+    /// Whether the compact bar's "…" has anything to reveal.
+    var hasUnshownFavorites: Bool { favoriteCount > compactFavorites.count }
 
     func body(selection: Int, scroll: ScrollIntent) -> AnyView {
         AnyView(content(selection: selection, scroll: scroll))

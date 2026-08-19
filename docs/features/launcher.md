@@ -276,6 +276,28 @@ highlight lands differs on purpose: a **move** follows the entry, since the poin
 where that entry now sits, while a **toggle** stays with the section rather than chasing an entry
 across the list — the top of Favorites on add, the neighbour above the one that left on remove.
 
+### ⌘-digit slots
+
+`FavoriteSlots` (`Launcher/Model/FavoriteSlots.swift`) is the whole rule: **⌘1…⌘9 then ⌘0 for the
+tenth**, ten digit keys being the physical ceiling — there is no ⌘10. The eleventh favorite is still
+listed and reorderable, and simply has no chord and no number. Three places read that table — the key
+handler, the row's number, the compact tooltip — so none of them can invent an eleventh slot.
+
+Both palette sizes serve the chords from the same prefix, because `paletteIsCollapsed` already
+requires an empty query: **compact implies empty implies `favoriteCount` is the pinned prefix**. That
+is why `LauncherScreen.pinnedFavorites` feeds the strip, the chords and the numbered rows alike,
+rather than the compact bar re-deriving an empty-query order of its own. In compact the strip draws
+the first five; ⌘6–⌘0 still launch favorites it has no room for, and the "…" is a button after them
+rather than a slot, so no favorite loses its digit to the overflow.
+
+Holding ⌘ swaps each numbered row's kind label for its chord. `PalettePanel` publishes the modifier
+into `PaletteState.commandHeld` from `.flagsChanged` and clears it in `resignKey` — not in `prepare`,
+which a re-show that preserves state skips entirely. **`AppRow` observes that flag itself**: reading
+it any higher would attach it to `RootPaletteView`'s body and rebuild the whole palette on every ⌘
+press, where a row-level read re-runs only the handful of rows the `LazyVStack` has realized. The
+digit each row shows is carried on its `Row` case from the section build, so no row searches for its
+own position.
+
 ## Reveal in Finder
 
 Application and System Settings results expose **Show in Finder** in their ⌘K Actions menu and on
