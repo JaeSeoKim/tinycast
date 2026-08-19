@@ -195,6 +195,19 @@ explicit `accessibilityLabel` because the prompt used to supply it.
 
 This is the same class of bug as the freeze below — both come from the cell/field-editor swap.
 
+### IME composition
+
+A hand-drawn placeholder has one cost the real prompt does not. An IME composes into the field
+editor's own storage, so the bound `query` stays empty for the whole romanisation and the placeholder
+would sit under the in-flight pinyin. `PalettePanel` publishes the editor's `hasMarkedText()` as
+`PaletteState.isComposing`, and the placeholder is gated on `query.isEmpty && !isComposing`.
+
+The observation follows first responder, since SwiftUI hands the window's one field editor to
+whichever field holds focus, and it watches `NSTextView.didChangeSelectionNotification`. Measured,
+that is the **only** notification a marked-text change posts: `NSText.didChangeNotification` fires on
+the commit alone, which is the whole composition too late. `prepare(mode:)` clears the flag with the
+rest of the screen state.
+
 ## The panel settles the pointer itself
 
 `PalettePanel.applyCursorPolicy` sets the cursor after every mouse event: the I-beam inside the search

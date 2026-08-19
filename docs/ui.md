@@ -484,7 +484,9 @@ The calculator's inline `CalculatorCard` reuses this card language (`cardFill` +
 
 Its placeholder is drawn by Tinycast, not by the field's `prompt` — an `NSTextField` renders a prompt
 through either its cell or its (one point taller) field editor, so a real prompt steps vertically when
-focus moves. Don't reintroduce `prompt:` on that field. See
+focus moves. Don't reintroduce `prompt:` on that field. Drawing it costs one thing the real prompt
+gets free: it must be gated on `PaletteState.isComposing` as well as an empty query, or it sits under
+an IME's marked text. See
 [features/palette.md](features/palette.md#the-placeholder-is-tinycasts-not-the-fields).
 
 ## Rules for agents working on the UI

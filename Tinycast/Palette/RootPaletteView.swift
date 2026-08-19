@@ -532,7 +532,8 @@ struct RootPaletteView: View {
             // Fills the row's height, so there's no gap above it for topDragStrip to meet.
             .frame(maxHeight: .infinity)
             .background(alignment: .leading) {
-                if vm.query.isEmpty {
+                // An IME's marked text leaves `query` empty, so the placeholder would overlap it.
+                if vm.query.isEmpty, !vm.isComposing {
                     Text(searchPrompt)
                         .font(Theme.Typography.searchField)
                         .foregroundStyle(Theme.Colors.textTertiary)

@@ -23,10 +23,33 @@ final class PalettePanel: NSPanel {
     /// SwiftUI's text fields all edit through the window's one shared field editor.
     private var fieldEditor: NSTextView? { firstResponder as? NSTextView }
 
+    /// Mirrors the field editor's marked text. docs/features/palette.md#ime-composition
+    private var compositionObserver: NotificationToken?
+
     override func makeFirstResponder(_ responder: NSResponder?) -> Bool {
         guard super.makeFirstResponder(responder) else { return false }
+        observeComposition()
         if let context = fieldEditorContext { onFieldEditorFocused?(context) }
         return true
+    }
+
+    /// Selection is the only notification a marked-text change posts; `didChange` waits for commit.
+    private func observeComposition() {
+        guard let editor = fieldEditor else {
+            compositionObserver = nil
+            paletteState?.isComposing = false
+            return
+        }
+        paletteState?.isComposing = editor.hasMarkedText()
+        let center = NotificationCenter.default
+        let token = center.addObserver(
+            forName: NSTextView.didChangeSelectionNotification, object: editor, queue: .main
+        ) { [weak self, weak editor] _ in
+            MainActor.assumeIsolated {
+                self?.paletteState?.isComposing = editor?.hasMarkedText() ?? false
+            }
+        }
+        compositionObserver = NotificationToken(token, center: center)
     }
 
     /// Keys driving an open menu; they reach `onKeyPress` even while editing is frozen.
