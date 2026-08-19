@@ -249,6 +249,33 @@ paths; see the command in `development.md`.
 Launcher icons use a persistent 32 MB cost-capped `NSCache`. Fitted file-row icons use a separate
 transient 8 MB cache that is purged when its palette list disappears (`IconCache`).
 
+## Favorites
+
+`FavoritesStore.keys` is the order — the array *is* the ranking, and it only shows while the query is
+empty, where `AppIndex.orderedResults` pins it as a prefix of the results. `LauncherScreen` resolves
+that prefix once in `init` (`favoriteCount`), and the list, the reorder rows and the chord guards all
+read that one number, so the visible section and what a move acts on can't disagree.
+
+The ⌘K menu carries **Add / Remove from Favorites** (⇧⌘F) plus **Move Favorite Up / Down** (⌥⌘↑ /
+⌥⌘↓). A move row is only built in a direction that exists, so the first favorite has no Up row and
+the last has no Down.
+
+**Every one of those rows runs the same call its chord does** — the menu is handed an
+`AppActionsMenu.FavoriteActions` built by `LauncherScreen` and never touches `FavoritesStore` itself.
+A row that mutates the store directly looks identical on screen and then behaves differently from its
+chord, because the store knows nothing about where the highlight should land.
+
+`FavoritesStore.exchange` swaps two stored positions rather than removing and re-inserting. `keys`
+retains entries that `VisibilityStore` hides or that aren't currently indexed — `ordered(_:)` drops
+them with `compactMap` and never prunes them, which is how a favorite survives an unmounted volume —
+so exchanging the two *visible* keys leaves every such key on its own slot.
+
+Both actions re-ask `orderedResults` afterwards and restate `vm.selection` against it; the mutation
+already invalidated the memo, so that call warms the exact key the next render reads. Where the
+highlight lands differs on purpose: a **move** follows the entry, since the point of the action is
+where that entry now sits, while a **toggle** stays with the section rather than chasing an entry
+across the list — the top of Favorites on add, the neighbour above the one that left on remove.
+
 ## Reveal in Finder
 
 Application and System Settings results expose **Show in Finder** in their ⌘K Actions menu and on

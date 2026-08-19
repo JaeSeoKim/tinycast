@@ -40,7 +40,8 @@ struct RootPaletteView: View {
             return LauncherScreen(
                 appIndex: appIndex, favorites: favorites, visibility: visibility,
                 currencyRates: currencyRates, core: core, vm: vm, running: selectionIsRunning,
-                openActions: openActions)
+                openActions: openActions,
+                scrollToFollow: { scroll = ScrollIntent(kind: .follow) })
         case .uninstall:
             return UninstallScreen(
                 session: uninstall, core: core, vm: vm, openActions: openActions)
@@ -281,7 +282,9 @@ struct RootPaletteView: View {
             }
             return .handled
         }
-        .onKeyPress(.downArrow) {
+        // Repeat included: holding the key must keep stepping, as the bare-key form does by default.
+        .onKeyPress(keys: [.downArrow], phases: [.down, .repeat]) { press in
+            if let reorder = moveFavorite(1, modifiers: press.modifiers) { return reorder }
             if isCollapsed {
                 // The compact bar shows no selection, so Down reveals the list's first row.
                 vm.selection = 0
@@ -295,7 +298,8 @@ struct RootPaletteView: View {
             moveVertically(1)
             return .handled
         }
-        .onKeyPress(.upArrow) {
+        .onKeyPress(keys: [.upArrow], phases: [.down, .repeat]) { press in
+            if let reorder = moveFavorite(-1, modifiers: press.modifiers) { return reorder }
             if isCollapsed { return .ignored }
             if menuOpen {
                 moveMenu(-1)
@@ -401,6 +405,15 @@ struct RootPaletteView: View {
             guard press.modifiers.contains(.command) else { return .ignored }
             guard !isCollapsed, vm.mode == .clipboard else { return .ignored }
             toggleClipboardFilter()
+            return .handled
+        }
+        // ⇧⌘F mirrors the Add/Remove Favorites row, closing an open menu the way that row does.
+        .onKeyPress(keys: ["f", "F"], phases: .down) { press in
+            guard press.modifiers.contains(.command), press.modifiers.contains(.shift),
+                !isCollapsed, let launcher = screen as? LauncherScreen
+            else { return .ignored }
+            guard launcher.toggleFavorite(at: selection(in: launcher)) else { return .ignored }
+            if menuOpen { closeMenus() }
             return .handled
         }
         // Both cases, Shift uppercasing the key; the compact bar shows no target.
@@ -687,6 +700,16 @@ struct RootPaletteView: View {
         vm.selection = next
         scroll = ScrollIntent(kind: .follow)
         return true
+    }
+
+    /// ⌥⌘↑/↓ — reorder the Favorites section, mirroring its rows. Claimed whole on the launcher, so
+    /// a press at an end of the section can't fall through to the caret; nil leaves ↑/↓ their own.
+    private func moveFavorite(_ delta: Int, modifiers: EventModifiers) -> KeyPress.Result? {
+        guard modifiers.contains(.command), modifiers.contains(.option), !isCollapsed,
+            let launcher = screen as? LauncherScreen
+        else { return nil }
+        if launcher.moveFavorite(delta, at: selection(in: launcher)), menuOpen { closeMenus() }
+        return .handled
     }
 
     /// Move the open menu's highlight, clamped at the ends (no wrap — consistent with `move`).

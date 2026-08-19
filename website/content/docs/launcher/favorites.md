@@ -7,7 +7,20 @@ A favorite is pinned above everything else when the launcher opens with an empty
 
 ## Adding one
 
-Select an entry and press <kbd>⌘</kbd><kbd>K</kbd> → **Add to Favorites**. The same menu removes it.
+Select an entry and press <kbd>⌘</kbd><kbd>K</kbd> → **Add to Favorites**, or press
+<kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd> on the selected row. The same menu and the same chord remove it.
+
+Adding leaves the highlight on the first favorite; removing leaves it on the favorite above the one
+you just took out, so the section stays under your fingers either way.
+
+## Reordering
+
+Favorites sit in the order you put them in. With an empty query, select one and use
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>↑</kbd> / <kbd>⌥</kbd><kbd>⌘</kbd><kbd>↓</kbd>, or
+<kbd>⌘</kbd><kbd>K</kbd> → **Move Favorite Up** / **Move Favorite Down**.
+
+The first favorite offers no Move Up and the last offers no Move Down. The chords keep the entry
+selected as it moves, so holding one walks it to where you want it.
 
 ## In compact mode
 
