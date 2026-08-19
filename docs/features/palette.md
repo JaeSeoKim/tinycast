@@ -205,8 +205,12 @@ would sit under the in-flight pinyin. `PalettePanel` publishes the editor's `has
 The observation follows first responder, since SwiftUI hands the window's one field editor to
 whichever field holds focus, and it watches `NSTextView.didChangeSelectionNotification`. Measured,
 that is the **only** notification a marked-text change posts: `NSText.didChangeNotification` fires on
-the commit alone, which is the whole composition too late. `prepare(mode:)` clears the flag with the
-rest of the screen state.
+the commit alone, which is the whole composition too late.
+
+`trackComposition()` re-reads the editor rather than assuming, and `windowDidBecomeKey` calls it as
+well as `makeFirstResponder`: a key transition can commit or drop marked text without posting
+anything, and a re-summon inside the Pop to Root window skips `prepare(mode:)` and never moves first
+responder, so neither of the other two paths would fire.
 
 ## The panel settles the pointer itself
 

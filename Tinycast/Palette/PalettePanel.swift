@@ -28,13 +28,13 @@ final class PalettePanel: NSPanel {
 
     override func makeFirstResponder(_ responder: NSResponder?) -> Bool {
         guard super.makeFirstResponder(responder) else { return false }
-        observeComposition()
+        trackComposition()
         if let context = fieldEditorContext { onFieldEditorFocused?(context) }
         return true
     }
 
     /// Selection is the only notification a marked-text change posts; `didChange` waits for commit.
-    private func observeComposition() {
+    func trackComposition() {
         guard let editor = fieldEditor else {
             compositionObserver = nil
             paletteState?.isComposing = false

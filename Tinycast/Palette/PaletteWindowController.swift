@@ -138,7 +138,8 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             core.palette.focusToken = UUID()
-            // A re-summon leaves first responder where it was, so no focus event would apply it.
+            // A re-summon leaves first responder where it was, so neither of these gets an event.
+            panel?.trackComposition()
             if let context = panel?.fieldEditorContext {
                 core.inputSourceSwitcher.applySession(to: context)
             }
