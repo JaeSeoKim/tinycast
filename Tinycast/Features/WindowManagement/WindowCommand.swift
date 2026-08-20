@@ -32,9 +32,11 @@ struct WindowCommand: Identifiable, Hashable, Sendable {
         case nextDisplay = "next-display"
         case previousDisplay = "previous-display"
         case toggleFullscreen = "toggle-fullscreen"
+        case switchToPreviousSpace = "switch-to-previous-space"
+        case switchToNextSpace = "switch-to-next-space"
     }
 
-    /// What the mover has to do, so its dispatch stays exhaustive over the catalog.
+    /// What running the command takes, so the dispatch that routes it stays exhaustive.
     enum Kind: String, Sendable {
         /// Resolve a target frame from the screen and write it.
         case geometry
@@ -42,6 +44,8 @@ struct WindowCommand: Identifiable, Hashable, Sendable {
         case restore
         /// No geometry at all — the native `AXFullScreen` toggle.
         case fullscreen
+        /// No window at all: it moves the user, so the coordinator runs it instead of the mover.
+        case space
     }
 
     /// The launcher section a command belongs to, and the order the Settings panel lists them in.
@@ -52,6 +56,7 @@ struct WindowCommand: Identifiable, Hashable, Sendable {
         case sizing
         case moving
         case fullscreen
+        case spaces
 
         var title: String {
             switch self {
@@ -61,6 +66,7 @@ struct WindowCommand: Identifiable, Hashable, Sendable {
             case .sizing: return "Sizing"
             case .moving: return "Moving"
             case .fullscreen: return "Fullscreen"
+            case .spaces: return "Spaces"
             }
         }
     }
@@ -140,6 +146,8 @@ enum WindowCommandCatalog {
         case .nextDisplay: return "Move to Next Display"
         case .previousDisplay: return "Move to Previous Display"
         case .toggleFullscreen: return "Toggle Fullscreen"
+        case .switchToPreviousSpace: return "Switch to Previous Space"
+        case .switchToNextSpace: return "Switch to Next Space"
         }
     }
 
@@ -173,6 +181,8 @@ enum WindowCommandCatalog {
         case .nextDisplay: return "rectangle.on.rectangle.angled"
         case .previousDisplay: return "rectangle.on.rectangle.angled"
         case .toggleFullscreen: return "arrow.up.left.and.arrow.down.right.square"
+        case .switchToPreviousSpace: return "arrow.left.square"
+        case .switchToNextSpace: return "arrow.right.square"
         }
     }
 
@@ -180,6 +190,7 @@ enum WindowCommandCatalog {
         switch id {
         case .restore: return .restore
         case .toggleFullscreen: return .fullscreen
+        case .switchToPreviousSpace, .switchToNextSpace: return .space
         default: return .geometry
         }
     }
@@ -199,6 +210,8 @@ enum WindowCommandCatalog {
             return .moving
         case .toggleFullscreen:
             return .fullscreen
+        case .switchToPreviousSpace, .switchToNextSpace:
+            return .spaces
         }
     }
 }

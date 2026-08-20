@@ -71,7 +71,7 @@ struct WindowCommandTests {
 
     static func testCatalog() {
         let commands = WindowCommandCatalog.all
-        expect(commands.count == 30, "catalog contains all 30 agreed commands")
+        expect(commands.count == 32, "catalog contains all 32 agreed commands")
         expect(commands.map(\.id) == WindowCommand.ID.allCases, "catalog covers every ID once")
         expect(
             Set(commands.map { $0.name.lowercased() }).count == commands.count, "names are unique")
@@ -110,6 +110,10 @@ struct WindowCommandTests {
         expect(
             Set(commands.filter { $0.kind == .restore }.map(\.id)) == [.restore],
             "only Restore is a restore command")
+        expect(
+            Set(commands.filter { $0.kind == .space }.map(\.id))
+                == [.switchToPreviousSpace, .switchToNextSpace],
+            "only the two Space commands leave every window alone")
 
         // Grouping drives the Settings list; every command must land in exactly one group.
         let grouped = WindowCommandCatalog.grouped()
@@ -123,6 +127,7 @@ struct WindowCommandTests {
         expect(grouped.first { $0.group == .thirds }?.commands.count == 5, "five thirds")
         expect(grouped.first { $0.group == .sizing }?.commands.count == 10, "ten sizing commands")
         expect(grouped.first { $0.group == .moving }?.commands.count == 6, "six moving commands")
+        expect(grouped.first { $0.group == .spaces }?.commands.count == 2, "two Space commands")
 
         expect(
             WindowLayout.isTileCommand(.leftHalf) && WindowLayout.isTileCommand(.centerHalf),
@@ -133,6 +138,9 @@ struct WindowCommandTests {
 
         // Fullscreen has no geometry at all — the mover branches before ever asking for a placement.
         expect(frame(.toggleFullscreen) == nil, "Toggle Fullscreen produces no placement")
+        expect(
+            frame(.switchToPreviousSpace) == nil && frame(.switchToNextSpace) == nil,
+            "the Space commands produce no placement")
     }
 
     // MARK: - Convention lock

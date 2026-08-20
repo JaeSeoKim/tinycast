@@ -1,6 +1,6 @@
 ---
 title: Window management
-description: 30 tiling commands — halves, quarters, thirds, nudges and display moves.
+description: 32 commands — halves, quarters, thirds, nudges, display moves and instant Space switching.
 ---
 
 Move and resize the window you were last in, without installing anything else.
@@ -25,6 +25,8 @@ Center · Center Half · Make Larger · Make Smaller · Restore
 **Moving** — Left · Right · Up · Down · Next Display · Previous Display
 
 **Fullscreen** — Toggle Fullscreen
+
+**Spaces** — Switch to Previous Space · Switch to Next Space
 
 ## Settings
 
@@ -82,6 +84,23 @@ There is deliberately no synthetic <kbd>⌃</kbd><kbd>⌘</kbd><kbd>F</kbd> atte
 and firing an unrelated menu command would be worse than doing nothing.
 
 It clears the cycle chain but keeps the restore point.
+
+## Spaces
+
+**Switch to Previous Space** and **Switch to Next Space** move you to the neighbouring Space with
+**no sliding transition** — the switch is there when your finger leaves the key. macOS normally
+animates the slide, and its duration scales with your display's refresh rate, so the higher the
+refresh rate the longer the wait.
+
+Tinycast does not simulate <kbd>⌃</kbd><kbd>←</kbd> / <kbd>⌃</kbd><kbd>→</kbd>: that still plays the
+animation, and it stops working the moment you rebind the Mission Control shortcuts. It synthesises
+the trackpad's own Space swipe instead, reported as already finished, which leaves nothing to animate.
+
+These two are the one pair that touches no window — they move **you**, not what you were last in, so
+none of the geometry, cycling or restore behaviour applies. They work with regular desktop Spaces and
+with full-screen apps, follow the Space order of the display you are on, and can be held down to move
+several Spaces. At the first or last Space you get macOS's usual bounce, exactly as a real trackpad
+swipe would give you.
 
 ## Failing quietly
 

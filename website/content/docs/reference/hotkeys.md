@@ -13,7 +13,7 @@ description: Recording global shortcuts, double-tap modifiers, and the Hyper key
 - Every application, and every System Settings pane
 - Every quicklink, custom command and extension command
 - All 31 [system actions](/docs/launcher/system-actions)
-- All 30 [window commands](/docs/features/window-management)
+- All 32 [window commands](/docs/features/window-management)
 
 A built-in command's shortcut appears in two panes — Settings → Commands and its own feature pane —
 but it is **one binding, not two settings**.

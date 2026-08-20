@@ -1,8 +1,9 @@
 # Window Management
 
-Rectangle-style window actions — halves, quarters, thirds, sizing, nudging, display moves and native
-fullscreen — searchable in the palette and bindable to global shortcuts. 30 commands, no new
-dependencies and no new permission: they reuse the Accessibility grant clipboard paste already needs.
+Rectangle-style window actions — halves, quarters, thirds, sizing, nudging, display moves, native
+fullscreen and instant Space switching — searchable in the palette and bindable to global shortcuts.
+32 commands, no new dependencies and no new permission: they reuse the Accessibility grant clipboard
+paste already needs.
 
 Ships **off**. Settings › Window Management is the switch, and while it is off there are no launcher
 entries and a still-registered shortcut moves nothing.
@@ -18,6 +19,9 @@ entries and a still-registered shortcut moves nothing.
 - **`WindowCommand.swift`, `WindowLayout.swift` and `WindowActionMemory.swift` stay Foundation +
   CoreGraphics and pure** — no AX, no `NSScreen`, no clock (`WindowActionMemory` takes `now` as a
   parameter). Every `AXUIElement` call and the Cocoa↔AX flip live in `WindowMover.swift`.
+- **`SpaceSwitcher.swift` is the only file that knows the Dock gesture's undocumented
+  `CGEventField` numbers**, and the only command kind that never reaches `WindowMover`. A `.space`
+  command has no target window, so the coordinator routes it before the mover is asked for anything.
 
 ## Layout
 
@@ -27,6 +31,7 @@ entries and a still-registered shortcut moves nothing.
 | `Features/WindowManagement/WindowLayout.swift`       | Foundation + CoreGraphics    | **Pure.** Every frame the commands produce                          |
 | `Features/WindowManagement/WindowActionMemory.swift` | Foundation + CoreGraphics    | **Pure.** Per-window cycle position and restore point               |
 | `Features/WindowManagement/WindowMover.swift`        | AppKit + ApplicationServices | `@MainActor`. Every `AXUIElement` call and the coordinate flip      |
+| `Features/WindowManagement/SpaceSwitcher.swift`       | CoreGraphics                 | `@MainActor`. The synthetic Dock swipe, and nothing else            |
 
 The first three compile into `Tests/window-command-test.swift`, so they must not gain an AppKit,
 SwiftUI or `NSScreen` dependency, and must stay pure — `WindowActionMemory` takes `now` as a parameter
@@ -35,7 +40,7 @@ lives in that overlay rather than in Foundation.
 
 Adding a command is four edits in `WindowCommand.swift` (a case in `ID`, plus `name`, `symbol` and
 `group` arms), an arm in `WindowLayout.placement` or `tileFractions`, and bumping
-`commands.count == 30` in the harness.
+`commands.count == 32` in the harness.
 
 ## Coordinate space
 
@@ -168,6 +173,24 @@ some apps reinterpret frame writes while it is on — but never while VoiceOver 
 break the screen reader. **This mitigation is inherited convention and unverified on macOS 26**; if a
 stock Electron app tiles correctly without it, delete the helper rather than keep it.
 
+## Switching Space
+
+Switch to Previous/Next Space are the one pair that moves the **user** rather than a window, which is
+why they are their own `Kind` and their own `Group` and why `WindowLayout` never sees them.
+
+`SpaceSwitcher` posts three phases of a horizontal Dock swipe — began, changed, ended — whose progress
+field is already at its terminal value, so the window server treats the gesture as finished on arrival
+and cuts straight to the neighbouring Space with nothing left to animate. Two phases leave the Dock
+mid-gesture and the switch never lands, so all three are load-bearing. The field numbers are
+undocumented and named as constants in that file alone; `CGEventField` is an `enum_extensibility(open)`
+C enum, which is what lets those raw values import at all.
+
+Synthesising ⌃← / ⌃→ was rejected twice over: it plays the full slide, whose duration scales with the
+display's refresh rate, and it rides a Mission Control shortcut the user is free to rebind or switch
+off. Nothing here reads Space bounds or caches an index, so at the first or last Space macOS answers
+with its own rubber-band bounce — the same answer a real trackpad swipe gets, and the reason a held
+hotkey needs nothing invalidated between repeats.
+
 ## Wiring
 
 - **`AppEntry.Kind.windowCommand`** — entries are `window-command:<id>`, published by
@@ -179,7 +202,9 @@ stock Electron app tiles correctly without it, delete the helper rather than kee
   custom commands there is no bound-ID index to maintain: the catalog is fixed, so `HotKeyManager.start`
   and `conflictOwner` iterate `WindowCommand.ID.allCases` and `register` no-ops on an unbound command.
 - **`WindowCommandCoordinator.runWindowCommand(id:)`** is the one funnel for both palette activation and the global
-  hotkey, so the feature switch cannot be bypassed by either.
+  hotkey, so the feature switch cannot be bypassed by either. It is also where `.space` splits off from
+  the mover, and the one place that hides the palette with `restoreFocus: false` — there is no window
+  to act on, so refocusing the previous app would only risk following it back to its own Space.
 - **Settings** — `windowManagementEnabled` (off), `windowManagementShowInLauncher` (on), `windowGap`
   (0) and `windowCycleOnRepeat` (off). All four ride in settings backups: unlike `snippetsEnabled` they
   grant no permission class of their own.
@@ -190,15 +215,15 @@ stock Electron app tiles correctly without it, delete the helper rather than kee
 
 ## Testing
 
-`Tests/window-command-test.swift` (319 assertions) covers the catalog, the AX-space convention lock,
+`Tests/window-command-test.swift` (325 assertions) covers the catalog, the AX-space convention lock,
 tiling on divisible and non-divisible screens, off-origin and negative-coordinate displays, gap
 arithmetic including degenerate values, sizing, the Make Larger/Smaller round trip, nudges, display
 moves and wrapping, restore recovery, every `WindowActionMemory` rule, and a fuzz sweep over every
 command × gap × screen × degenerate window frame checking for non-finite output, negative dimensions,
 off-screen results, non-determinism and drift on repeat.
 
-Everything runs headless because the layer is pure. `WindowMover` is not compiled into the harness and
-has no automated coverage — the AX paths need manual verification, particularly:
+Everything runs headless because the layer is pure. `WindowMover` and `SpaceSwitcher` are not compiled
+into the harness and have no automated coverage — their paths need manual verification, particularly:
 
 1. A non-resizable window (System Information) must fail silently, left untouched rather than
    half-moved.
@@ -207,3 +232,5 @@ has no automated coverage — the AX paths need manual verification, particularl
 3. Toggle Fullscreen on a window that accepts it and one that refuses it.
 4. Cycling: three presses of Left Half, then drag the window and confirm the next press restarts at ½.
 5. Restore on a window Tinycast has never moved.
+6. Switch to Previous/Next Space with a held hotkey, across a full-screen app's Space and at both
+   ends of the Space list, on a second display too.
