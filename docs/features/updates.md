@@ -43,6 +43,10 @@ release feed the website already reads is the feed the app reads.
   parses inline styling only; headings and bullets are placed by hand or they arrive as literal `##`
   and `*`. `ExtensionMarkdownView` does the same job and is deliberately not reused — an extension's
   views never leave `Features/Extensions/`.
+- **`@handle` and `#304` are linked by the app, never by the release body.** GitHub autolinks both on
+  the web, and a bare mention is what notifies the contributor, so the published body keeps them
+  plain and `ReleaseNotes` spells them as Markdown links on the way to the window. Both point at
+  `ReleaseFeed.repository`, the one place the repo is named.
 
 ## Channel and version
 

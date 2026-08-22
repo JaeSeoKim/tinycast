@@ -25,6 +25,7 @@ struct UpdatesTests {
         offersOnlyWhatIsWorthInstalling()
         keepsOnlyTheChangelog()
         laysOutTheChangelog()
+        linksMentionsAndPullRequests()
         blocksWhileBusy()
 
         print("\(passes) passed, \(failures) failed")
@@ -278,8 +279,11 @@ struct UpdatesTests {
         expect(blocks.first == .heading(level: 2, text: "What's Changed"), "a heading loses its hashes")
         expect(
             blocks.dropFirst().first
-                == .bullet("Adjust top padding in **UpdateWindowView** by @abue-ammar in #304"),
-            "a bullet loses its marker and keeps its inline markup, author and PR number")
+                == .bullet(
+                    "Adjust top padding in **UpdateWindowView** by "
+                        + "[@abue-ammar](https://github.com/abue-ammar) in "
+                        + "[#304](https://github.com/\(ReleaseFeed.repository)/pull/304)"),
+            "a bullet loses its marker, keeps its inline markup, and links its author and PR")
         expect(
             blocks.contains(.heading(level: 2, text: "New Contributors")),
             "the contributors heading survives the blank line before it")
@@ -305,6 +309,43 @@ struct UpdatesTests {
         expect(
             ReleaseNotes.blocks(from: "2 * 3 = 6") == [.paragraph("2 * 3 = 6")],
             "an asterisk mid-line is not a bullet")
+    }
+
+    static func linksMentionsAndPullRequests() {
+        func rendered(_ text: String) -> String {
+            guard case .bullet(let linked)? = ReleaseNotes.blocks(from: "* \(text)").first else {
+                return "not a bullet"
+            }
+            return linked
+        }
+        let pull = "https://github.com/\(ReleaseFeed.repository)/pull"
+
+        expect(
+            rendered("Fix by @abue-ammar in #304")
+                == "Fix by [@abue-ammar](https://github.com/abue-ammar) in [#304](\(pull)/304)",
+            "a mention and a PR reference both become links")
+        expect(
+            rendered("@tipybara made their first contribution in #294")
+                == "[@tipybara](https://github.com/tipybara) made their first contribution in [#294](\(pull)/294)",
+            "a mention opening the line is linked too")
+        expect(
+            rendered("track @raycast/api 2.0.3").contains("github.com/raycast") == false,
+            "a scoped package name is not a person, so it is left alone")
+        expect(
+            rendered("mail me at name@example.invalid").contains("github.com/example") == false,
+            "an address is not a mention")
+        expect(
+            rendered("issue #12 and #7") == "issue [#12](\(pull)/12) and [#7](\(pull)/7)",
+            "every reference on a line is linked")
+        expect(
+            rendered("a #hashtag, C# and 0#1") == "a #hashtag, C# and 0#1",
+            "a hash without digits, or joined to a word, is not a reference")
+        expect(
+            rendered("see [#304](\(pull)/304)") == "see [#304](\(pull)/304)",
+            "an existing link is left exactly as written")
+        expect(
+            ReleaseNotes.blocks(from: "## What's Changed") == [.heading(level: 2, text: "What's Changed")],
+            "a heading is not linkified")
     }
 
     // MARK: - UpdateReadiness

@@ -27,7 +27,7 @@ enum ReleaseNotes {
 
         func flush() {
             guard !paragraph.isEmpty else { return }
-            blocks.append(.paragraph(paragraph.joined(separator: "\n")))
+            blocks.append(.paragraph(linkified(paragraph.joined(separator: "\n"))))
             paragraph.removeAll()
         }
 
@@ -42,7 +42,7 @@ enum ReleaseNotes {
                 blocks.append(heading)
             } else if let bullet = bullet(in: line) {
                 flush()
-                blocks.append(.bullet(bullet))
+                blocks.append(.bullet(linkified(bullet)))
             } else {
                 paragraph.append(line)
             }
@@ -58,6 +58,59 @@ enum ReleaseNotes {
         let text = line.dropFirst(hashes.count)
             .trimmingCharacters(in: CharacterSet(charactersIn: "# "))
         return .heading(level: hashes.count, text: text)
+    }
+
+    /// GitHub autolinks a mention and a PR reference on the web; in the window they are plain text
+    /// until they are spelled as Markdown links.
+    private static func linkified(_ text: String) -> String {
+        var output = ""
+        var index = text.startIndex
+        var previous: Character?
+
+        while index < text.endIndex {
+            let rest = text[index...]
+            // A Markdown destination is already a URL, so nothing inside it is a reference.
+            if rest.hasPrefix("]("), let close = rest.firstIndex(of: ")") {
+                output += text[index...close]
+                previous = ")"
+                index = text.index(after: close)
+            } else if let (link, next) = mention(in: rest, after: previous)
+                ?? pullRequest(in: rest, after: previous)
+            {
+                output += link
+                previous = text[text.index(before: next)]
+                index = next
+            } else {
+                output.append(rest[index])
+                previous = rest[index]
+                index = text.index(after: index)
+            }
+        }
+        return output
+    }
+
+    private static func mention(in rest: Substring, after previous: Character?) -> (String, String.Index)? {
+        guard rest.first == "@", previous.map({ !$0.isLetter && !$0.isNumber }) ?? true else { return nil }
+        let handle = rest.dropFirst().prefix(while: isHandle)
+        // A scoped package name — `@raycast/api` — is not a person.
+        guard !handle.isEmpty, handle.count <= 39, !handle.hasSuffix("-"),
+            rest[handle.endIndex...].first != "/"
+        else { return nil }
+        return ("[@\(handle)](https://github.com/\(handle))", handle.endIndex)
+    }
+
+    private static func pullRequest(
+        in rest: Substring, after previous: Character?
+    ) -> (String, String.Index)? {
+        guard rest.first == "#", previous.map({ $0.isWhitespace || $0 == "(" }) ?? true else { return nil }
+        let number = rest.dropFirst().prefix(while: { $0.isASCII && $0.isNumber })
+        guard !number.isEmpty else { return nil }
+        let url = "https://github.com/\(ReleaseFeed.repository)/pull/\(number)"
+        return ("[#\(number)](\(url))", number.endIndex)
+    }
+
+    private static func isHandle(_ character: Character) -> Bool {
+        character == "-" || (character.isASCII && (character.isLetter || character.isNumber))
     }
 
     private static func bullet(in line: String) -> String? {
