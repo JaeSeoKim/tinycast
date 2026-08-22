@@ -40,7 +40,7 @@ enum ReleaseFeed {
         return AvailableRelease(
             version: version,
             tag: entry.tagName,
-            notes: entry.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            notes: ReleaseNotes.summary(of: entry.body ?? ""),
             assetURL: asset.browserDownloadURL,
             assetSize: asset.size,
             publishedAt: entry.publishedAt.flatMap { try? Date($0, strategy: .iso8601) })
