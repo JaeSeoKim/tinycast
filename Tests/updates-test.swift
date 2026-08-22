@@ -268,7 +268,10 @@ struct UpdatesTests {
             "a body that is nothing but install text leaves nothing to show")
 
         let feedNotes = ReleaseFeed.newest(
-            from: feed(entry(tag: "v0.3.0", prerelease: false, body: "Changes.\\n\\n<!-- tinycast:install -->\\nBrew.")),
+            from: feed(
+                entry(
+                    tag: "v0.3.0", prerelease: false, body: "Changes.\\n\\n<!-- tinycast:install -->\\nBrew.")
+            ),
             channel: .stable)?.notes
         expect(feedNotes == "Changes.", "the feed stores the cut summary, so the cache holds it too")
     }

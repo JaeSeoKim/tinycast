@@ -114,7 +114,9 @@ enum ReleaseNotes {
     }
 
     private static func bullet(in line: String) -> String? {
-        guard let marker = line.first, "*-+".contains(marker), line.dropFirst().first == " " else { return nil }
+        guard let marker = line.first, "*-+".contains(marker), line.dropFirst().first == " " else {
+            return nil
+        }
         return line.dropFirst().trimmingCharacters(in: .whitespaces)
     }
 }
