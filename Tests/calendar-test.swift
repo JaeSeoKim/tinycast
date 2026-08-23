@@ -306,7 +306,8 @@ struct CalendarTests {
         let start = at(60)
 
         expect(
-            policy.meeting(from: [meeting], now: start.addingTimeInterval(-60), window: window,
+            policy.meeting(
+                from: [meeting], now: start.addingTimeInterval(-60), window: window,
                 joined: []) == nil,
             "auto join never fires early, however close the card is")
         expect(
@@ -316,15 +317,18 @@ struct CalendarTests {
             policy.meeting(from: [meeting], now: start, window: window, joined: ["standup"]) == nil,
             "and never twice for the same meeting")
         expect(
-            policy.meeting(from: [meeting], now: start.addingTimeInterval(299), window: window,
+            policy.meeting(
+                from: [meeting], now: start.addingTimeInterval(299), window: window,
                 joined: [])?.id == "standup",
             "a Mac waking inside the window still joins")
         expect(
-            policy.meeting(from: [meeting], now: start.addingTimeInterval(300), window: window,
+            policy.meeting(
+                from: [meeting], now: start.addingTimeInterval(300), window: window,
                 joined: []) == nil,
             "past the window it stays out of the way")
         expect(
-            policy.meeting(from: [event(id: "linkless", start: 60, link: nil)], now: start,
+            policy.meeting(
+                from: [event(id: "linkless", start: 60, link: nil)], now: start,
                 window: window, joined: []) == nil,
             "a meeting with no link is never auto joined")
     }
