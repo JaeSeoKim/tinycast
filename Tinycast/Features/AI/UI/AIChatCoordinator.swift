@@ -108,6 +108,7 @@ final class AIChatCoordinator {
     /// inline. A refusal is explained where it happened, and the chord is consumed either way: ⌘V on
     /// a picture never falls through to the field editor pasting its path as text.
     private func stage(file: URL?, pasted: Data?) {
+        let generation = chat.stagingGeneration
         Task { [weak self] in
             let staged = await Task.detached(priority: .userInitiated) { () -> (Data, String)? in
                 if let file, let bytes = try? Data(contentsOf: file),
@@ -119,6 +120,12 @@ final class AIChatCoordinator {
                 return nil
             }.value
             guard let self else { return }
+            guard generation == self.chat.stagingGeneration else {
+                core.showMessage(
+                    "That image was still loading and did not make it into the chat.",
+                    tone: .neutral)
+                return
+            }
             guard let staged else {
                 core.showMessage("That image could not be read.", tone: .neutral)
                 return

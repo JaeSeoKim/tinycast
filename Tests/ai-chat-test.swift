@@ -27,6 +27,7 @@ struct AIChatTests {
         markdownParsesTablesQuotesAndLists()
         markdownKeepsCommonMarkEdges()
         segmentsClampSearchOffsets()
+        leavingAConversationDropsItsStagedImages()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -426,5 +427,82 @@ struct AIChatTests {
                 .search(ChatSearch(query: "late", isComplete: true, textOffset: 99))
             ],
             "a search at the start or past the end never produces an empty text segment")
+    }
+
+    /// A staged picture belongs to the composer of the conversation it was picked in. Leaving that
+    /// conversation drops it, and moves `stagingGeneration` so a ⌘V decode still in flight is
+    /// disowned rather than landing on whatever conversation is on screen when it finishes.
+    static func leavingAConversationDropsItsStagedImages() {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tinycast-ai-staging-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ChatHistoryStore(directory: directory)
+        let created = Date(timeIntervalSince1970: 3_000)
+        let saved = UUID()
+        var stored = ChatSession(id: saved, createdAt: created)
+        stored.append(ChatMessage(role: .user, text: "Stored", sentAt: created))
+        store.save(stored)
+
+        // Distinct bytes per call: `attach` refuses a picture already staged.
+        var stamp = 0
+        func stage(_ chat: AIChatState) {
+            stamp += 1
+            chat.attach(
+                ChatAttachment(
+                    image: AIImage(data: Data([0x89, UInt8(stamp)]), mimeType: "image/png"),
+                    name: "shot-\(stamp).png"))
+        }
+
+        let opening = AIChatState(history: store)
+        stage(opening)
+        let beforeOpen = opening.stagingGeneration
+        expect(opening.open(id: saved), "a saved conversation opens")
+        expect(opening.pendingImages.isEmpty, "opening another conversation drops its staged images")
+        expect(
+            opening.stagingGeneration != beforeOpen,
+            "opening another conversation disowns a decode still in flight")
+
+        let reopening = AIChatState(history: store)
+        expect(reopening.open(id: saved), "the saved conversation opens once")
+        stage(reopening)
+        let beforeSame = reopening.stagingGeneration
+        expect(reopening.open(id: saved), "reopening the conversation already on screen succeeds")
+        expect(
+            reopening.pendingImages.count == 1 && reopening.stagingGeneration == beforeSame,
+            "reopening the conversation already on screen keeps its staged images")
+
+        let deleting = AIChatState(history: store)
+        expect(deleting.open(id: saved), "the conversation to delete opens")
+        stage(deleting)
+        let beforeOther = deleting.stagingGeneration
+        deleting.delete(id: UUID())
+        expect(
+            deleting.pendingImages.count == 1 && deleting.stagingGeneration == beforeOther,
+            "deleting some other conversation leaves the composer alone")
+        deleting.delete(id: saved)
+        expect(deleting.pendingImages.isEmpty, "deleting the open conversation drops its staged images")
+
+        let clearingAll = AIChatState(history: store)
+        stage(clearingAll)
+        clearingAll.deleteAll()
+        expect(clearingAll.pendingImages.isEmpty, "Delete All drops the staged images")
+
+        let starting = AIChatState(history: store)
+        stage(starting)
+        let beforeNew = starting.stagingGeneration
+        starting.startNewChat()
+        expect(
+            starting.pendingImages.isEmpty && starting.stagingGeneration != beforeNew,
+            "a new chat drops the staged images")
+
+        let removing = AIChatState(history: store)
+        stage(removing)
+        stage(removing)
+        let beforeRemove = removing.stagingGeneration
+        expect(removing.removeLastAttachment(), "backspace takes the last staged image")
+        expect(
+            removing.stagingGeneration == beforeRemove,
+            "taking one staged image back leaves another's decode on its way")
     }
 }

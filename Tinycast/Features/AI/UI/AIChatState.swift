@@ -12,6 +12,11 @@ final class AIChatState {
     /// Images staged for the next message; they go out with whatever is typed next.
     private(set) var pendingImages: [ChatAttachment] = []
 
+    /// Staging outlives the keystroke that began it, so a decode still in flight has to be able to
+    /// tell that the message it was picked for has gone. Every path that consumes or drops the
+    /// staged images moves this on; the counter lives beside them so a new one cannot forget to.
+    @ObservationIgnored private(set) var stagingGeneration = 0
+
     private let history: ChatHistoryStore
     @ObservationIgnored private var replyTask: Task<Void, Never>?
     @ObservationIgnored private var replyGeneration = 0
@@ -32,7 +37,7 @@ final class AIChatState {
         guard !text.isEmpty || !pendingImages.isEmpty, !isStreaming else { return false }
         notice = nil
         session.append(ChatMessage(role: .user, text: text, images: pendingImages.map(\.image)))
-        pendingImages = []
+        clearStaging()
         let request = AIRequest(messages: session.requestMessages, webSearch: webSearch)
         session.append(ChatMessage(role: .assistant, text: "", state: .streaming))
         isStreaming = true
@@ -89,7 +94,12 @@ final class AIChatState {
     }
 
     func clearAttachments() {
+        clearStaging()
+    }
+
+    private func clearStaging() {
         pendingImages = []
+        stagingGeneration += 1
     }
 
     func cancel() {
@@ -108,9 +118,11 @@ final class AIChatState {
         session = ChatSession()
         usage = nil
         notice = nil
-        pendingImages = []
+        clearStaging()
     }
 
+    /// Staged images belong to the composer of the conversation they were picked in, so leaving one
+    /// for another drops them rather than letting them go out with whatever is typed there next.
     @discardableResult
     func open(id: UUID) -> Bool {
         if session.id == id, !session.messages.isEmpty { return true }
@@ -119,6 +131,7 @@ final class AIChatState {
         session = loaded
         usage = nil
         notice = nil
+        clearStaging()
         return true
     }
 
@@ -128,6 +141,7 @@ final class AIChatState {
             session = ChatSession()
             usage = nil
             notice = nil
+            clearStaging()
         }
         history.remove(id: id)
     }
@@ -138,6 +152,7 @@ final class AIChatState {
         session = ChatSession()
         usage = nil
         notice = nil
+        clearStaging()
     }
 
     /// The line shown in the empty streaming bubble while nothing has arrived yet.

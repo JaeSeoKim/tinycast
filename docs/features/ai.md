@@ -213,10 +213,14 @@ first; a pasteboard holding an image file URL or a bare image (a screenshot) sta
 `ChatAttachment`, while anything carrying text falls through to the field editor as a normal paste.
 Images are re-encoded to PNG and bounded to 1568px on the long edge, off-main on a detached task so
 a display-sized screenshot does not decode on the keystroke; one past `AIAttachmentBudget` is refused
-with a HUD instead of being staged. A staged image shows as a pill
-— a photo glyph plus file name, or "Image" for a screenshot; the row is too thin for a thumbnail to
-read — beside the typed text, through the same
-`headerAccessory` the launcher's argument fields use, so the field shrinks to its text and the chip
+with a HUD instead of being staged. Because that decode outlives the keystroke, it shares the staged
+images' lifetime exactly: whatever consumes or clears them — a send, a new chat, Remove Attachments,
+or leaving the conversation for another through history — disowns one still in flight and says so,
+rather than letting it surface on a later message. The counter that decides this sits on
+`AIChatState` beside the staged images, so a route that drops them cannot forget to move it. A
+staged image shows as a pill — a photo glyph plus file name, or "Image" for a screenshot; the row is
+too thin for a thumbnail to read — beside the typed text, through the same `headerAccessory` the
+launcher's argument fields use, so the field shrinks to its text and the chip
 follows it rather than the composer growing. Bare backspace on an empty composer removes the last
 chip before it backs out of chat; ⌘K → Remove Attachments clears them all. Sent images persist in
 `message_images` beside their message and render as thumbnails in the user bubble.
