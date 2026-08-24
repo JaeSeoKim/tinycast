@@ -32,11 +32,12 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
   while a response streams — followed by Actions (`⌘K`), which owns New Chat.
 - **History is local and lazy.** Conversation summaries stay in memory while transcripts load from the
   system SQLite database only for the selected preview or opened chat. Empty chats are never saved.
-- **A request is bounded outright, not merely flat.** `ChatSession.boundedContext` sends the newest
-  user message whole, keeps images only on that turn and only up to `AIAttachmentBudget`, and walks
-  older text newest-first into a ~100 KB budget; both transports funnel through `requestMessages`, so
-  no route can resend every image each turn or put an unbounded payload on the wire. The composer
-  refuses a picture past the budget and says so, rather than letting send time drop it silently.
+- **Everything but the newest message is bounded.** `ChatSession.boundedContext` sends that message
+  whole — truncating what someone just typed is worse than the provider's own error — keeps images
+  only on that turn and only up to `AIAttachmentBudget`, and walks older text newest-first into a
+  ~100 KB budget; both transports funnel through `requestMessages`, so no route can resend every
+  image each turn or let history grow the payload as a chat goes on. The composer refuses a picture
+  past the budget and says so, rather than letting send time drop it silently.
 
 ## Connections and routing
 

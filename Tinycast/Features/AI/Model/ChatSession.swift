@@ -46,7 +46,7 @@ struct ChatSession: Equatable, Sendable {
 
     /// Provider requests cap near 25 MB; resending every turn whole walks into an opaque 413. Older
     /// turns come back as text inside `textBudget`, and the prompt keeps its own pictures up to
-    /// `AIAttachmentBudget` — so the request is bounded outright, not merely flat as a chat grows.
+    /// `AIAttachmentBudget` — so a request stops growing with the chat. Its own text is never cut.
     static func boundedContext(
         _ messages: [AIMessage], textBudget: Int = 100_000
     ) -> [AIMessage] {
