@@ -332,8 +332,13 @@ struct AISettingsView: View {
     ) -> String? {
         let key = key.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
+            let retargeted = keyStatuses[connection.id] == true && pointsSomewhereNew(connection)
             if !key.isEmpty {
                 try keyStore.setKey(key, for: connection.id)
+            } else if retargeted, AIEndpointPolicy.isLoopback(connection.baseURL) {
+                try keyStore.removeKey(for: connection.id)
+            } else if retargeted {
+                return "Enter an API key for this endpoint — the saved key stays with the old one."
             } else if !AIEndpointPolicy.isLoopback(connection.baseURL)
                 && keyStatuses[connection.id] != true
             {
@@ -350,6 +355,12 @@ struct AISettingsView: View {
                 ? "The key could not be saved to Keychain."
                 : "The saved key could not be updated in Keychain."
         }
+    }
+
+    /// The same rule where the secret actually persists: a retarget brings its own key, or none.
+    private func pointsSomewhereNew(_ connection: AIConnection) -> Bool {
+        guard let saved = settings.connection(id: connection.id) else { return false }
+        return !AIEndpointPolicy.sameDestination(connection, saved)
     }
 
     private func removeConnection(_ connection: AIConnection) {
@@ -490,10 +501,18 @@ private struct AIConnectionEditorSheet: View {
                         SecureField(
                             "API Key", text: $key, prompt: Text(apiKeyPlaceholder))
                     }
-                    if target.hasStoredKey {
+                    if storedKeyMatchesTarget {
                         Label("A key is already stored in Keychain", systemImage: "lock.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    } else if target.hasStoredKey {
+                        Label(
+                            "The saved key stays with the endpoint it was saved for. "
+                                + "Enter a key for this one.",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                     }
                     if let error {
                         Text(error).foregroundStyle(.orange)
@@ -684,8 +703,14 @@ private struct AIConnectionEditorSheet: View {
         }
     }
 
+    /// Discovery reaches the endpoint before Save does, so it honours the same rule: retarget the
+    /// connection and it must ask for a key rather than introduce the old one to a new host.
+    private var storedKeyMatchesTarget: Bool {
+        target.hasStoredKey && AIEndpointPolicy.sameDestination(connection, target.connection)
+    }
+
     private var apiKeyPlaceholder: String {
-        if target.hasStoredKey { return "Leave blank to keep saved key" }
+        if storedKeyMatchesTarget { return "Leave blank to keep saved key" }
         if AIEndpointPolicy.isLoopback(connection.baseURL) { return "Optional for local endpoint" }
         return "Paste API key"
     }
@@ -723,7 +748,7 @@ private struct AIConnectionEditorSheet: View {
         let apiKey: String
         if !enteredKey.isEmpty {
             apiKey = enteredKey
-        } else if target.hasStoredKey {
+        } else if storedKeyMatchesTarget {
             do {
                 apiKey = try APIKeyStore().key(for: connection.id) ?? ""
             } catch {

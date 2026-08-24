@@ -21,6 +21,7 @@ struct AIProviderTests {
         modelCatalogDecodesProviderResponses()
         modelCatalogSearchesWithoutRenderingEverything()
         endpointPolicyRejectsUnsafeRemoteURLs()
+        storedKeysDoNotFollowARetargetedConnection()
         sseFramesSurviveSplits()
         openAIAndAnthropicStreamsDecode()
         capturedStreamsDecodeHoweverTheyArrive()
@@ -203,6 +204,34 @@ struct AIProviderTests {
         expect(
             (try? AIEndpointPolicy.validate("file:///etc/hosts")) == nil,
             "file URLs are not a provider")
+    }
+
+    static func storedKeysDoNotFollowARetargetedConnection() {
+        var saved = AIConnection()
+        saved.provider = .openAI
+        saved.baseURL = "https://api.openai.com/v1"
+        expect(
+            AIEndpointPolicy.sameDestination(saved, saved),
+            "an untouched connection still points where its key was issued")
+
+        var switchedProvider = saved
+        switchedProvider.provider = .anthropic
+        expect(
+            !AIEndpointPolicy.sameDestination(switchedProvider, saved),
+            "a new provider is a new destination, so the OpenAI key must not go to Anthropic")
+
+        var switchedURL = saved
+        switchedURL.baseURL = "https://gateway.example.com/v1"
+        expect(
+            !AIEndpointPolicy.sameDestination(switchedURL, saved),
+            "a retyped base URL is a new destination, whatever the provider preset still says")
+
+        var renamed = saved
+        renamed.name = "Work key"
+        renamed.models = ["gpt-5.4-mini"]
+        expect(
+            AIEndpointPolicy.sameDestination(renamed, saved),
+            "editing a label or the model list is not a retarget and keeps the saved key")
     }
 
     static func sseFramesSurviveSplits() {

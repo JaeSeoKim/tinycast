@@ -8,7 +8,10 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
 
 - **API keys live only in the login Keychain.** `AIConnection` persists the provider, endpoint and
   model identifiers in `UserDefaults`; it never contains a key. Keys are addressed by connection UUID
-  through `APIKeyStore`, and never enter logs, errors or settings backups.
+  through `APIKeyStore`, and never enter logs, errors or settings backups. A key is issued for one
+  endpoint and never follows a connection retargeted at another — change the provider or base URL and
+  both model discovery and Save ask for a new key, rather than introduce the saved one to a host it
+  was never meant to reach (`AIEndpointPolicy.sameDestination`).
 - **Remote endpoints require HTTPS.** Plain HTTP is accepted only for `localhost`, `127.0.0.1` and
   `::1`, where a key is optional, and any other scheme is rejected outright — a loopback host does
   not excuse `ftp://`. `AIEndpointPolicy` is the one place that decides this.

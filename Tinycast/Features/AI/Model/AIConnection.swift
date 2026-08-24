@@ -150,6 +150,12 @@ enum AIEndpointPolicy {
         return url
     }
 
+    /// A stored key is issued for one endpoint, so it may not follow a connection retargeted at
+    /// another: a changed provider or base URL leaves the saved secret behind rather than send it.
+    static func sameDestination(_ connection: AIConnection, _ other: AIConnection) -> Bool {
+        connection.provider == other.provider && connection.baseURL == other.baseURL
+    }
+
     static func isLoopback(_ value: String) -> Bool {
         guard let host = URL(string: value)?.host() else { return false }
         return isLoopback(host: host)
