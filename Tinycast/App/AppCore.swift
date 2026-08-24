@@ -42,6 +42,10 @@ final class AppCore {
     let quicklinkArguments = QuicklinkArgumentSession()
     let notesStore: NotesStore
     let extensions: ExtensionManager
+    let chatHistory: ChatHistoryStore
+    let aiChat: AIChatState
+    let aiSettings = AISettingsStore()
+    let chatGPTSubscription = ChatGPTSubscriptionManager()
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
     var pendingQuicklinkEdit: QuicklinkEditRequest?
@@ -118,6 +122,10 @@ final class AppCore {
         paletteCoordinator: paletteCoordinator, core: self)
     @ObservationIgnored private(set) lazy var updateCoordinator = UpdateCoordinator(
         store: updateChecker, core: self)
+    @ObservationIgnored private(set) lazy var aiChatCoordinator = AIChatCoordinator(
+        chat: aiChat, palette: palette,
+        paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
+        core: self)
 
     @ObservationIgnored private lazy var windowController = PaletteWindowController(core: self)
     @ObservationIgnored private lazy var messageHUD = MessageHUDController(settings: settings)
@@ -128,8 +136,11 @@ final class AppCore {
     private init() {
         let launcherRanking = LauncherRankingStore()
         let settings = AppSettings()
+        let chatHistory = ChatHistoryStore(directory: AppPaths.applicationSupport())
         self.launcherRanking = launcherRanking
         self.settings = settings
+        self.chatHistory = chatHistory
+        aiChat = AIChatState(history: chatHistory)
         appIndex = AppIndex(ranking: launcherRanking, aliases: aliases)
         let clipboardManager = ClipboardManager(store: clipboardStore, settings: settings)
         self.clipboardManager = clipboardManager
@@ -159,6 +170,7 @@ final class AppCore {
             clipboardStore.maxAge = settings.clipboardRetention.maxAge
             // Defer the SQLite read + prune off the launch path; the palette fills in later.
             Task { clipboardStore.load() }
+            Task { chatHistory.load() }
             clipboardManager.start()
 
             appIndex.start(settings: settings)
@@ -308,6 +320,13 @@ final class AppCore {
         snippetTextInjector.prepareForTermination()
         snippetListener.stop()
         snippetsStore.stop()
+        aiChat.cancel()
+        chatGPTSubscription.stop()
+    }
+
+    func aiProvider() throws -> any AIProvider {
+        try AIProviderFactory.make(
+            settings: aiSettings, subscription: chatGPTSubscription)
     }
 
     // MARK: - Feature switches
