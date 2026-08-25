@@ -229,10 +229,39 @@ final class AIChatCoordinator {
     }
 
     /// Opening the chat on a ChatGPT model fetches its list, so the title is the display name
-    /// rather than the raw id until the first send would have loaded it.
+    /// rather than the raw id until the first send would have loaded it. With nothing stored, that
+    /// same fetch is what lets the app resolve a default rather than send the reader to Settings.
     func warmUpModelList() {
-        guard case .chatGPT? = core.aiSettings.defaultModel else { return }
+        let stored = core.aiSettings.defaultModel
+        if stored == nil {
+            prepareModelSwitcher()
+            resolveDefaultModel()
+            awaitModelList()
+            return
+        }
+        guard case .chatGPT? = stored else { return }
         prepareModelSwitcher()
+    }
+
+    /// Resolving a first default used to live only in the settings pane, so a signed-in
+    /// subscription still asked the reader to go there and pick what the app already knew about.
+    func resolveDefaultModel() {
+        guard core.aiSettings.defaultModel == nil, let first = modelOptions.first else { return }
+        core.aiSettings.select(first.selection)
+    }
+
+    /// A subscription signs in after the screen is already up, so its model list arrives late;
+    /// without this the empty state sits there until the reader leaves and comes back.
+    private func awaitModelList() {
+        withObservationTracking {
+            _ = core.chatGPTSubscription.models
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, self.core.aiSettings.defaultModel == nil else { return }
+                self.resolveDefaultModel()
+                if self.core.aiSettings.defaultModel == nil { self.awaitModelList() }
+            }
+        }
     }
 
     private var selectedModelOption: AIModelOption? {
