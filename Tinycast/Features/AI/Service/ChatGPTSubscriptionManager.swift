@@ -52,6 +52,8 @@ final class ChatGPTSubscriptionManager {
     }
 
     func refresh() {
+        // A check is under way the moment it is asked for, so `.idle` can mean nobody asked.
+        if phase == .idle { phase = .starting }
         runOperation { [weak self] in await self?.refreshNow() }
     }
 
@@ -99,10 +101,13 @@ final class ChatGPTSubscriptionManager {
         }
     }
 
+    /// Releases the process, the timers and the observable state alike: a check cancelled here would
+    /// otherwise spin on for good, and `.idle` is what lets the next visit check again.
     func stop() {
         operationTask?.cancel()
-        // Interrupting a live turn re-arms idle shutdown, so the reset must precede the cancel.
-        turns.reset()
+        // Interrupting a live turn re-arms idle shutdown, so forgetting must precede the cancel.
+        forget()
+        phase = .idle
         idleTask?.cancel()
         client.stop()
     }
@@ -261,6 +266,8 @@ final class ChatGPTSubscriptionManager {
     }
 
     private func apply(_ error: Error) {
+        // A cancelled check has no verdict: whoever cancelled it already set the state it wanted.
+        guard !Task.isCancelled else { return }
         forget()
         let message = Self.userFacing(error).localizedDescription
         if let clientError = error as? CodexAppServerClient.ClientError,

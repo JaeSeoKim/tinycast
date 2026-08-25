@@ -123,7 +123,7 @@ final class AppCore {
     @ObservationIgnored private(set) lazy var updateCoordinator = UpdateCoordinator(
         store: updateChecker, core: self)
     @ObservationIgnored private(set) lazy var aiChatCoordinator = AIChatCoordinator(
-        chat: aiChat, palette: palette,
+        chat: aiChat, settings: settings, appIndex: appIndex, palette: palette,
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
         core: self)
 
@@ -170,7 +170,6 @@ final class AppCore {
             clipboardStore.maxAge = settings.clipboardRetention.maxAge
             // Defer the SQLite read + prune off the launch path; the palette fills in later.
             Task { clipboardStore.load() }
-            Task { chatHistory.load() }
             clipboardManager.start()
 
             appIndex.start(settings: settings)
@@ -179,6 +178,7 @@ final class AppCore {
             fileSearchCoordinator.applyEnabled()
             fileSearchCoordinator.applyPolicy()
             notesCoordinator.applyEnabled()
+            aiChatCoordinator.applyEnabled()
             customCommands.onChange = { [weak self] _ in
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
             }
@@ -211,6 +211,7 @@ final class AppCore {
             hotKeys.onCreateNote = { [weak self] in self?.notesCoordinator.createNote() }
             hotKeys.onSearchNotes = { [weak self] in self?.notesCoordinator.searchNotes() }
             hotKeys.onSearchFiles = { [weak self] in self?.fileSearchCoordinator.show() }
+            hotKeys.onShowAIChat = { [weak self] in self?.aiChatCoordinator.showChat() }
             hotKeys.onJoinNextMeeting = { [weak self] in
                 self?.calendarCoordinator.joinNextMeeting()
             }
@@ -304,7 +305,7 @@ final class AppCore {
             return appIndex.apps.first { $0.kind == .extensionCommand && $0.id == entryID }?.name
         case .togglePalette, .toggleClipboard, .toggleEmoji, .searchFiles, .systemAction,
             .showNotes, .createNote, .searchNotes, .windowCommand, .joinNextMeeting, .mySchedule,
-            .createEvent:
+            .createEvent, .aiChat:
             return nil
         }
     }
@@ -349,6 +350,7 @@ final class AppCore {
             }, reproject: { $0.quicklinkCoordinator.applyQuicklinksPresence() })
         track({ _ = $0.fileSearchEnabled }, reproject: { $0.fileSearchCoordinator.applyEnabled() })
         track({ _ = $0.notesEnabled }, reproject: { $0.notesCoordinator.applyEnabled() })
+        track({ _ = $0.aiEnabled }, reproject: { $0.aiChatCoordinator.applyEnabled() })
         track(
             {
                 _ = $0.calendarEnabled

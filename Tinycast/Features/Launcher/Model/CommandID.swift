@@ -97,6 +97,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .joinNextMeeting: return .joinNextMeeting
         case .mySchedule: return .mySchedule
         case .createEvent: return .createEvent
+        case .aiChat: return .aiChat
         default: return nil
         }
     }

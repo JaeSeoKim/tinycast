@@ -82,6 +82,13 @@ final class ChatHistoryStore {
         conversations = loaded
     }
 
+    /// Off means fully off: the handle and the resident summaries go, the file on disk stays.
+    func close() {
+        sqlite3_close(database)
+        database = nil
+        conversations = []
+    }
+
     func search(_ query: String) -> [ChatConversation] {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return conversations }

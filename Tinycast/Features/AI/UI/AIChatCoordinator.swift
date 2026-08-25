@@ -5,29 +5,49 @@ import Foundation
 @MainActor
 final class AIChatCoordinator {
     private let chat: AIChatState
+    private let settings: AppSettings
+    private let appIndex: AppIndex
     private let palette: PaletteState
     private let paletteCoordinator: PaletteCoordinator
     private let settingsCoordinator: SettingsCoordinator
     private unowned let core: AppCore
 
     init(
-        chat: AIChatState, palette: PaletteState,
+        chat: AIChatState, settings: AppSettings, appIndex: AppIndex, palette: PaletteState,
         paletteCoordinator: PaletteCoordinator, settingsCoordinator: SettingsCoordinator,
         core: AppCore
     ) {
         self.chat = chat
+        self.settings = settings
+        self.appIndex = appIndex
         self.palette = palette
         self.paletteCoordinator = paletteCoordinator
         self.settingsCoordinator = settingsCoordinator
         self.core = core
     }
 
+    func applyEnabled() {
+        appIndex.setCommandsVisible([.aiChat], settings.aiEnabled)
+        guard settings.aiEnabled else {
+            // Before the handle closes: cancelling an open reply saves the conversation it ends.
+            chat.startNewChat()
+            core.chatGPTSubscription.stop()
+            core.chatHistory.close()
+            if palette.mode == .ai || palette.mode == .aiHistory { palette.prepare(mode: .launcher) }
+            return
+        }
+        // Deferred off the launch path like the clipboard's own read; history fills in behind it.
+        Task { core.chatHistory.load() }
+    }
+
     func showChat() {
+        guard settings.aiEnabled else { return }
         paletteCoordinator.showPalette(mode: .ai)
     }
 
     @discardableResult
     func send(_ input: String) -> Bool {
+        guard settings.aiEnabled else { return false }
         do {
             let webSearch = core.aiSettings.webSearchEnabled && capabilities.webSearch
             return chat.send(input, using: try core.aiProvider(), webSearch: webSearch)

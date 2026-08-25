@@ -6,6 +6,12 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
 
 ## Invariants
 
+- **AI is off out of the box, and off means fully off.** `AppSettings.aiEnabled` is the flag and
+  `AIChatCoordinator.applyEnabled()` is the only place that projects it: no `AI Chat` command in the
+  launcher, no history database opened or created, no Codex helper resident, and the palette leaves
+  `.ai`. Turning it off cancels a streaming reply and drops the transcript, but touches neither the
+  saved conversations in `ai-chats.sqlite3` nor a Keychain key. `aiEnabled` is excluded from settings
+  backups like every other AI key, so an import can never arm a feature it cannot configure.
 - **API keys live only in the login Keychain.** `AIConnection` persists the provider, endpoint and
   model identifiers in `UserDefaults`; it never contains a key. Keys are addressed by connection UUID
   through `APIKeyStore`, and never enter logs, errors or settings backups. A key is issued for one
@@ -79,7 +85,10 @@ hold neither settings nor credentials itself.
 
 ## Chat surface
 
-The built-in `AI Chat` launcher command enters `AIScreen`. The palette search field becomes the
+The built-in `AI Chat` launcher command enters `AIScreen`, and carries a bindable global shortcut
+(`HotKeyAction.aiChat`) that does the same thing from any app. Settings → AI holds both the recorder and
+a checkbox for the command's place in launcher search; the shortcut keeps working while the command is
+hidden, and does nothing at all while the feature is off. The palette search field becomes the
 single-line composer. The footer pill and Return are one action, `activate`: Send, or Stop while a
 response streams — an empty composer sends nothing, so the pill never needs a disabled state. The
 header's trailing model switcher uses the same in-window menu control as Clipboard's type filter and
@@ -159,7 +168,9 @@ server only for a stored sign-in (`auth.json` in the private home) or an explici
 after ten idle minutes — counted from a failed or still-waiting Connect too, so a sign-in abandoned
 in the browser cannot leave the server resident — and restarts it on demand;
 `AppCore.prepareForTermination()` stops it for good, by closing stdin first and SIGTERM a second
-later. Browser login uses `account/login/start`;
+later. Switching AI off stops it the same way. `stop()` also resets the manager to `.idle` and forgets
+the account, so nothing claims a server that is gone and the next visit checks again; a check cancelled
+on the way out publishes no verdict. Browser login uses `account/login/start`;
 account state, model availability and rate-limit windows come from the app-server. The `codex`
 binary is the user's own — found on the app's PATH, the usual install locations, or by asking the
 login shell — and is never installed by Tinycast; Settings links to the install docs instead.

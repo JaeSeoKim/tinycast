@@ -3,6 +3,7 @@ import SwiftUI
 
 struct AISettingsView: View {
     @Environment(AISettingsStore.self) private var settings
+    @Environment(AppSettings.self) private var appSettings
     @Environment(ChatGPTSubscriptionManager.self) private var subscription
 
     @State private var keyStatuses: [UUID: Bool] = [:]
@@ -13,11 +14,27 @@ struct AISettingsView: View {
     private let keyStore = APIKeyStore()
 
     var body: some View {
-        Form {
-            defaultModelSection
-            chatSection
-            chatGPTSection
-            apiConnectionsSection
+        @Bindable var appSettings = appSettings
+        return Form {
+            Section {
+                Toggle(isOn: $appSettings.aiEnabled) {
+                    Text("Enable AI")
+                    Text("Chat with the model you choose; nothing is loaded or sent until it is on.")
+                }
+            } header: {
+                Text("AI")
+            }
+
+            AICommandSection()
+                .settingsEnabled(appSettings.aiEnabled)
+
+            Group {
+                defaultModelSection
+                chatSection
+                chatGPTSection
+                apiConnectionsSection
+            }
+            .settingsEnabled(appSettings.aiEnabled)
         }
         .formStyle(.grouped)
         .sheet(item: $editor) { target in
@@ -40,10 +57,10 @@ struct AISettingsView: View {
         }
         .onAppear {
             loadKeyStatuses()
-            if subscription.phase == .idle {
-                subscription.refresh()
-            }
+            refreshSubscription()
         }
+        // Switched on with the pane already open, the ChatGPT section would otherwise stay empty.
+        .onChange(of: appSettings.aiEnabled) { refreshSubscription() }
         .onChange(of: subscription.models) { syncSelection() }
         .onChange(of: subscription.phase) { syncSelection() }
     }
@@ -133,12 +150,13 @@ struct AISettingsView: View {
     @ViewBuilder
     private var chatGPTConnection: some View {
         switch subscription.phase {
-        case .idle, .starting:
+        case .starting:
             HStack {
                 ProgressView().controlSize(.small)
                 Text("Checking ChatGPT…").foregroundStyle(.secondary)
             }
-        case .signedOut:
+        // `.idle` is nothing asked yet — with AI off, no check is coming, so it must not spin.
+        case .idle, .signedOut:
             LabeledContent {
                 Button("Connect…") { subscription.connect() }
             } label: {
@@ -372,6 +390,12 @@ struct AISettingsView: View {
         } catch {
             keyError = true
         }
+    }
+
+    /// Opening the pane must not spawn the Codex helper for a feature that is switched off.
+    private func refreshSubscription() {
+        guard appSettings.aiEnabled, subscription.phase == .idle else { return }
+        subscription.refresh()
     }
 
     private func loadKeyStatuses() {

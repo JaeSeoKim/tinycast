@@ -71,6 +71,9 @@ enum SettingsBackupCoverage {
             "Arms the app to open meeting links unattended; an import must not switch that on.",
         AppSettingsKey.cameraPreview.rawValue:
             "Turns the camera on before a meeting; an import must not grant that.",
+        AppSettingsKey.aiEnabled.rawValue:
+            "No other AI setting travels in a backup, so an import would arm a feature it cannot "
+            + "configure.",
         AppSettingsKey.aiConnections.rawValue:
             "AI connection metadata stays on the Mac with the Keychain credentials it describes.",
         AppSettingsKey.aiDefaultModel.rawValue:
