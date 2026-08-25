@@ -15,6 +15,9 @@ enum Theme {
         static let xxxl: CGFloat = 28
         /// Gap under a category header, shared by every palette list's `SectionHeader`.
         static let sectionHeaderBottom: CGFloat = 4
+        /// Clearance under a transcript's last message, so its actions row reads as belonging to
+        /// the message rather than to the palette footer sitting directly beneath it.
+        static let chatTranscriptBottom: CGFloat = 28
         /// Space above every header but the first, reading as the previous section's close.
         static let sectionSpacing: CGFloat = 12
     }

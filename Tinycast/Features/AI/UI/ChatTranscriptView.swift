@@ -31,7 +31,8 @@ struct ChatTranscriptView: View {
                         .id("ai-transcript-tail")
                 }
                 .padding(.horizontal, Theme.Spacing.xxl)
-                .padding(.vertical, Theme.Spacing.xl)
+                .padding(.top, Theme.Spacing.xl)
+                .padding(.bottom, Theme.Spacing.chatTranscriptBottom)
             }
             .edgeDissolve()
             .thinScrollbar()
