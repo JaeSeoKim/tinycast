@@ -18,6 +18,9 @@ enum Theme {
         /// Clearance under a transcript's last message, so its actions row reads as belonging to
         /// the message rather than to the palette footer sitting directly beneath it.
         static let chatTranscriptBottom: CGFloat = 28
+        /// How near the end still counts as following a reply. A stream grows the transcript while
+        /// the reader is on their way down, so an exact-bottom test is a target that runs away.
+        static let chatFollowTailSlack: CGFloat = 44
         /// Space above every header but the first, reading as the previous section's close.
         static let sectionSpacing: CGFloat = 12
     }

@@ -7,7 +7,16 @@ struct ChatTranscriptView: View {
     let usage: AIUsage?
     /// Cleared when the reader scrolls up, so a streaming reply stops dragging them back down.
     @State private var followsTail = true
-    @State private var scrollPhase = ScrollPhase.idle
+
+    /// Below this a backward move is momentum settling, not the reader asking for the wheel.
+    private static let deliberateScroll: CGFloat = 2
+
+    /// Where the reader sits, and whether that is the end. A reply growing moves the end away
+    /// without the reader moving, so the two have to be read together.
+    private struct ScrollMark: Equatable {
+        var offset: CGFloat
+        var atEnd: Bool
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -38,17 +47,34 @@ struct ChatTranscriptView: View {
             .thinScrollbar()
             // Reopened chats start at the latest message; other anchor roles fight the reader.
             .defaultScrollAnchor(.bottom, for: .initialOffset)
-            .onScrollPhaseChange { _, newPhase in scrollPhase = newPhase }
-            .onScrollGeometryChange(for: Bool.self) { geometry in
-                geometry.contentOffset.y + geometry.containerSize.height
-                    >= geometry.contentSize.height - Theme.Spacing.xl
-            } action: { _, atBottom in
-                // A growing reply moves geometry too; only a user-driven phase may drop the tail.
-                if scrollPhase != .idle, scrollPhase != .animating { followsTail = atBottom }
+            .onScrollGeometryChange(for: ScrollMark.self) { geometry in
+                ScrollMark(
+                    offset: geometry.contentOffset.y,
+                    atEnd: geometry.contentOffset.y + geometry.containerSize.height
+                        >= geometry.contentSize.height - Theme.Spacing.chatFollowTailSlack)
+            } action: { old, new in
+                // A plain wheel reports no ScrollPhase, so the offset is the only signal every
+                // input device gives. Reaching the end is tested first and wins: a wheel settling
+                // back a pixel off the end would otherwise hand control straight back again.
+                if new.atEnd {
+                    followsTail = true
+                } else if new.offset < old.offset - Self.deliberateScroll {
+                    followsTail = false
+                }
             }
             .onChange(of: messages.count) { follow(proxy, always: true) }
             .onChange(of: messages) { follow(proxy, always: false) }
             .onChange(of: usage) { follow(proxy, always: false) }
+            .overlay(alignment: .bottom) {
+                ResumeFollowingButton {
+                    followsTail = true
+                    follow(proxy, always: true)
+                }
+                .padding(.bottom, Theme.Spacing.lg)
+                .opacity(followsTail ? 0 : 1)
+                .allowsHitTesting(!followsTail)
+                .animation(.easeOut(duration: Theme.Duration.chatFooter), value: followsTail)
+            }
         }
     }
 
@@ -56,6 +82,25 @@ struct ChatTranscriptView: View {
     private func follow(_ proxy: ScrollViewProxy, always: Bool) {
         guard always || followsTail else { return }
         proxy.scrollTo("ai-transcript-tail", anchor: .bottom)
+    }
+}
+
+/// A fast reply grows the transcript quicker than a reader can scroll toward it, so arriving at
+/// the end cannot be the only way to resume: this asks for the tail rather than chasing it.
+private struct ResumeFollowingButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label("Jump to Latest", systemImage: "arrow.down")
+                .font(Theme.Typography.rowTrailing)
+                .foregroundStyle(Theme.Colors.textSecondary)
+                .padding(.horizontal, Theme.Spacing.lg)
+                .padding(.vertical, Theme.Spacing.sm)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.Colors.border))
+        }
+        .buttonStyle(.plain)
     }
 }
 
