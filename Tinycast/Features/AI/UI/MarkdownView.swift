@@ -65,7 +65,7 @@ private struct MarkdownListView: View {
             ForEach(Array(items.enumerated()), id: \.offset) { offset, item in
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.sm) {
                     marker(at: offset, checked: item.checked)
-                        .frame(width: Theme.Size.markdownListMarker, alignment: .trailing)
+                        .frame(minWidth: Theme.Size.markdownListMarker, alignment: .trailing)
                     MarkdownView(blocks: item.blocks, spacing: Theme.Spacing.xs)
                 }
             }
@@ -76,13 +76,24 @@ private struct MarkdownListView: View {
         if let checked {
             Image(systemName: checked ? "checkmark.square.fill" : "square")
                 .foregroundStyle(checked ? Theme.Colors.success : Theme.Colors.textTertiary)
-        } else if let start {
-            Text("\(start + offset).")
+        } else if start != nil {
+            // Never wrapped: a marker past the column's width used to break "10." into "10" and a
+            // "." on the next line. Padding to the list's widest number keeps the column straight.
+            Text(orderedMarker(at: offset))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.textSecondary)
+                .fixedSize(horizontal: true, vertical: false)
         } else {
             Text("•").foregroundStyle(Theme.Colors.textSecondary)
         }
+    }
+
+    /// Right-aligned within the list by padding, since monospaced digits all measure the same.
+    private func orderedMarker(at offset: Int) -> String {
+        guard let start else { return "" }
+        let widest = String(start + max(items.count - 1, 0)).count
+        let number = String(start + offset)
+        return String(repeating: " ", count: max(0, widest - number.count)) + number + "."
     }
 }
 
