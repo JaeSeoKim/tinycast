@@ -20,8 +20,7 @@ A tiny, fully native macOS launcher — the essentials, without the bloat.
 
 <p align="center">
   <a href="https://buy.polar.sh/polar_cl_NDVFC20DKQpLcNawsh97QzbARBXD3WNn8v35R0mbJmT">
-    <img alt="Support Tinycast" height="60"
-         src="https://img.shields.io/badge/%E2%99%A5%20%20Support%20Tinycast-863BFF?style=for-the-badge"></a>
+    <img alt="Support Tinycast" width="360" height="64" src="docs/support-button.svg"></a>
 </p>
 
 Around **5 MB on disk** and **under 100 MB of RAM** — no Electron, no telemetry, no background

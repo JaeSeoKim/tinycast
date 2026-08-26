@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="64" viewBox="0 0 360 64" role="img" aria-label="Support Tinycast">
+  <title>Support Tinycast</title>
+  <defs>
+    <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9B5CFF"/>
+      <stop offset="1" stop-color="#7912FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="64" rx="32" fill="url(#fill)"/>
+  <rect x="0.5" y="0.5" width="359" height="63" rx="31.5" fill="none" stroke="#ffffff" stroke-opacity="0.22"/>
+  <g transform="translate(75 20)" fill="#ffffff">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </g>
+  <text x="111" y="40" fill="#ffffff" font-size="21" font-weight="600" textLength="174" lengthAdjust="spacingAndGlyphs"
+        font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">Support Tinycast</text>
+</svg>
