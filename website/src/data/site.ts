@@ -14,6 +14,8 @@ export const site = {
   community: {
     discord: "https://discord.gg/v2Eeb4QQy3",
   },
+  support:
+    "https://buy.polar.sh/polar_cl_NDVFC20DKQpLcNawsh97QzbARBXD3WNn8v35R0mbJmT",
 } as const;
 
 // The hero, in as few words as possible — headline plus one punchy line.

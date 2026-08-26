@@ -18,6 +18,12 @@ A tiny, fully native macOS launcher — the essentials, without the bloat.
   <img src="docs/screenshot.png" alt="Tinycast command palette" width="720">
 </p>
 
+<p align="center">
+  <a href="https://buy.polar.sh/polar_cl_NDVFC20DKQpLcNawsh97QzbARBXD3WNn8v35R0mbJmT">
+    <img alt="Support Tinycast" height="48"
+         src="https://img.shields.io/badge/%E2%99%A5%20%20Support%20Tinycast-863BFF?style=for-the-badge"></a>
+</p>
+
 Around **3 MB on disk** and **under 100 MB of RAM** — no Electron, no telemetry, no background
 CPU churn. Just SwiftUI + AppKit with zero dependencies. It's fast because there's nothing to it.
 
