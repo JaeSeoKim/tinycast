@@ -24,7 +24,7 @@ A tiny, fully native macOS launcher — the essentials, without the bloat.
          src="https://img.shields.io/badge/%E2%99%A5%20%20Support%20Tinycast-863BFF?style=for-the-badge"></a>
 </p>
 
-Around **3 MB on disk** and **under 100 MB of RAM** — no Electron, no telemetry, no background
+Around **5 MB on disk** and **under 100 MB of RAM** — no Electron, no telemetry, no background
 CPU churn. Just SwiftUI + AppKit with zero dependencies. It's fast because there's nothing to it.
 
 It also **runs Raycast extensions** — the real ones, rendered as native SwiftUI. No Node.js, no
