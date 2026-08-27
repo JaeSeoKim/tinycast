@@ -39,13 +39,11 @@ final class AIChatCoordinator {
         // Deferred off the launch path like the clipboard's own read; history fills in behind it.
         Task {
             core.chatHistory.load()
-            // Only ever inside the enabled branch: age passes while AI is switched off, and off
-            // means the file is untouched — a Mac left off for four months keeps its chats.
+            // Inside the enabled branch only: off means the file is untouched, however old it gets.
             applyRetention()
         }
     }
 
-    /// Called on enable and whenever the setting changes, the way clipboard retention is applied.
     func applyRetention() {
         guard settings.aiEnabled,
             let cutoff = core.aiSettings.retention.cutoff(from: Date())
@@ -59,11 +57,9 @@ final class AIChatCoordinator {
         paletteCoordinator.showPalette(mode: .ai)
     }
 
-    /// The one place that decides whether summoning chat resumes or starts fresh. It used to be Pop
-    /// to Root's by accident — that fires on every hide, so a conversation never outlived the
-    /// window — and moving it here leaves one clock instead of two racing over the same transcript.
+    /// The one place deciding whether summoning resumes; Pop to Root only forgets the screen.
     private func applyOpenPolicy() {
-        // A reply still arriving was asked for; resetting under the reader would discard the answer.
+        // A reply still arriving was asked for; resetting would discard the answer.
         guard !chat.isStreaming else { return }
         let recent = core.chatHistory.conversations.first
         let isResident = !chat.session.messages.isEmpty
@@ -251,8 +247,7 @@ final class AIChatCoordinator {
         return scaled.representation(using: .png, properties: [:])
     }
 
-    /// The on-device model leads: it is the route a Mac already has, so it is what an unconfigured
-    /// first run resolves to.
+    /// The on-device model leads: it is the route an unconfigured Mac already has.
     var modelOptions: [AIModelOption] {
         let onDevice =
             core.aiSettings.isAppleIntelligenceAvailable()
@@ -317,7 +312,7 @@ final class AIChatCoordinator {
         if stored == nil {
             prepareModelSwitcher()
             resolveDefaultModel()
-            // On-device settles it here; only a route that has yet to report in is worth waiting on.
+            // On-device settles it here; only a route yet to report in is worth waiting for.
             if core.aiSettings.defaultModel == nil { awaitModelList() }
             return
         }
@@ -381,7 +376,6 @@ struct AIModelOption: Identifiable {
     let selection: AIModelSelection
     let title: String
     let sourceTitle: String
-    /// The row's glyph, resolved at build time: a vendor's mark, Apple's, or the generic sparkle.
     let menuIcon: PopoverMenuIcon
 
     init(

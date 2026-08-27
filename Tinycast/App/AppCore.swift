@@ -346,9 +346,7 @@ final class AppCore {
             settings: aiSettings, subscription: chatGPTSubscription)
     }
 
-    /// Quick Actions route themselves: they fire far more often than a chat turn, so billing them
-    /// to whatever chat points at is not a default anyone would choose. Permissive guardrails
-    /// because the text being transformed is the reader's own, which the default filter refuses.
+    /// Permissive guardrails: the text transformed is the reader's own, which `.default` refuses.
     func quickActionProvider() throws -> any AIProvider {
         guard let selection = quickActionSettings.model ?? aiSettings.defaultModel else {
             throw AIProviderError.unavailable("Choose a model in Settings \u{2192} Quick Actions.")

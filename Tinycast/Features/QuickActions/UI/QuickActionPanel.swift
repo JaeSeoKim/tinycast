@@ -1,8 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// The result panel: Tinycast's fourth borderless surface, beside the dialog, the notes panel and
-/// the join preview. Keys go through `sendEvent`, so ↵, ⌘C and Esc need no focused subview.
+/// Keys go through `sendEvent`, so ↵, ⌘C and Esc need no focused subview to reach the panel.
 final class QuickActionPanel: NSPanel {
     enum Key {
         case replace

@@ -2,8 +2,7 @@ import Foundation
 import NaturalLanguage
 import Translation
 
-/// Apple's translator rather than the language model: free on every route, on device, and markedly
-/// better. `TranslationError` is macOS 26.4 against a 26.0 floor, so failures are plain `Error`.
+/// `TranslationError` is macOS 26.4 against a 26.0 floor, so failures stay plain `Error` here.
 enum TextTranslator {
     enum Failure: LocalizedError, Equatable {
         case undetectableSource
@@ -25,8 +24,7 @@ enum TextTranslator {
         }
     }
 
-    /// `TranslationSession(installedSource:target:)` needs a concrete source, and
-    /// `LanguageAvailability` reports only a status, so the language itself comes from here.
+    /// `TranslationSession(installedSource:)` needs a language; availability reports only a status.
     static func sourceLanguage(of text: String) -> Locale.Language? {
         let recognizer = NLLanguageRecognizer()
         recognizer.processString(text)
@@ -36,16 +34,15 @@ enum TextTranslator {
         return Locale.Language(identifier: dominant.rawValue)
     }
 
-    /// What the caller may do with this pair: translate, offer the download, or refuse.
-    static func status(from source: Locale.Language, to target: Locale.Language) async
+    static func status(
+        from source: Locale.Language, to target: Locale.Language
+    ) async
         -> LanguageAvailability.Status
     {
         await LanguageAvailability().status(from: source, to: target)
     }
 
-    /// Only ever translates an already-installed pair. Fetching one needs SwiftUI's
-    /// `translationTask`, which is why an uninstalled pair opens the panel instead of silently
-    /// replacing the reader's text once a download they never saw has finished.
+    /// Installed pairs only: fetching one needs SwiftUI's `translationTask`, which the panel owns.
     static func translate(_ text: String, to target: Locale.Language) async throws -> String {
         guard let source = sourceLanguage(of: text) else { throw Failure.undetectableSource }
         guard !source.isEquivalent(to: target) else { return text }
@@ -67,15 +64,13 @@ enum TextTranslator {
         }
     }
 
-    /// Minimal, not maximal: the maximal form carries the script, so `es` would read
-    /// "Spanish (Latin, Spain)" in a menu where the reader expects "Spanish".
+    /// Minimal, not maximal: the maximal form would spell `es` "Spanish (Latin, Spain)" in a menu.
     static func displayName(of language: Locale.Language) -> String {
         Locale.current.localizedString(forIdentifier: language.minimalIdentifier)
             ?? language.minimalIdentifier
     }
 
-    /// What Apple's translator can actually reach, so the picker cannot offer a language that only
-    /// fails at press time. 47 of them as of macOS 26, and the list is the framework's to change.
+    /// The framework's own list, so the picker cannot offer a pair that only fails at press time.
     static func supportedLanguages() async -> [Locale.Language] {
         await LanguageAvailability().supportedLanguages
             .sorted { displayName(of: $0) < displayName(of: $1) }

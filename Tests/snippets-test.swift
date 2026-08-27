@@ -557,9 +557,7 @@ struct SnippetsTests {
         }
     }
 
-    /// The clipboard fallback for apps that surface nothing over Accessibility. The dangerous case
-    /// is a copy that never lands: returning the pasteboard's existing contents there would
-    /// transform whatever the reader last copied.
+    /// The dangerous case is a copy that never lands, returning what the reader last copied.
     private static func testCopySelectionFallback() async {
         let injector = TextInjector(clipboardManager: ClipboardManager(), settings: AppSettings())
         let backing = NSPasteboard(name: .init("tinycast-copy-tests-\(UUID().uuidString)"))

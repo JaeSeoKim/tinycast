@@ -61,7 +61,7 @@ struct AISettingsView: View {
         .onAppear {
             loadKeyStatuses()
             refreshSubscription()
-            // Whichever of this pane and the chat screen opens first leaves a real selection behind.
+            // Whichever of this pane and the chat opens first leaves a real selection behind.
             settings.resolveDefaultModel()
         }
         // Switched on with the pane already open, the ChatGPT section would otherwise stay empty.
@@ -72,8 +72,7 @@ struct AISettingsView: View {
 
     private var defaultModelSection: some View {
         Section {
-            // Shown either way: a Mac with nothing configured is exactly the one that needs telling
-            // its free, already-installed route is switched off.
+            // A Mac with nothing configured is the one that needs telling its free route is off.
             if let reason = appleIntelligenceReason {
                 Label(reason, systemImage: "apple.intelligence")
                     .foregroundStyle(.secondary)

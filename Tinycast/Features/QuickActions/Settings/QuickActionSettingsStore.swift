@@ -1,8 +1,7 @@
 import Foundation
 import Observation
 
-/// Quick Actions' own persisted state, kept apart from `AISettingsStore` because the feature is a
-/// peer of chat rather than part of it — it has its own switch, its own route and its own pane.
+/// Apart from `AISettingsStore`: a peer of chat, with its own switch, route and settings pane.
 @MainActor
 @Observable
 final class QuickActionSettingsStore {
@@ -11,8 +10,7 @@ final class QuickActionSettingsStore {
     var settings: QuickActionSettings {
         didSet { persistSettings() }
     }
-    /// Its own routing decision, defaulting to the on-device model. A grammar fix fires far more
-    /// often than a chat turn does, and billing one per keystroke is not a default anyone chooses.
+    /// A grammar fix fires far oftener than a chat turn, so billing it per press is no default.
     private(set) var model: AIModelSelection? {
         didSet { persistModel() }
     }

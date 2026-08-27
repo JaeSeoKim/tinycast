@@ -1,16 +1,12 @@
 import AppKit
 
-/// Reads the selection and transforms it. Owns no UI and no delivery: whether the result replaces
-/// the text is the coordinator's call.
+/// Reads the selection and transforms it; replacing the text is the coordinator's call, not this.
 @MainActor
 final class QuickActionRunner {
-    /// A selection is read over Accessibility and sent whole, so the ceiling is here rather than at
-    /// the provider, where it would come back as an opaque context error.
+    /// The ceiling lives here, not at the provider, where it returns as an opaque context error.
     static let maxSelectionBytes = 32_768
 
-    /// Reads what is selected in `targetApp`, refusing anything a transform must not touch.
-    /// Accessibility first, then a borrowed ⌘C for the apps that answer nothing over it. Copying
-    /// synthesises a keystroke into somebody's app, so it is a fallback, never the first try.
+    /// A borrowed ⌘C synthesises a keystroke into somebody's app, so it is never the first try.
     static func selection(
         in targetApp: NSRunningApplication?, using injector: TextInjector
     ) async throws -> String {
@@ -39,8 +35,7 @@ final class QuickActionRunner {
         return text
     }
 
-    /// Drains a provider stream into one string. Quick Actions have no transcript to grow, so a
-    /// caller that wants to show progress reads `onDelta`; one that does not simply awaits.
+    /// No transcript to grow, so a caller showing progress reads `onDelta` and the rest just await.
     static func run(
         _ action: QuickAction, selection: String, using provider: any AIProvider,
         targetLanguage: String? = nil,
@@ -68,8 +63,7 @@ final class QuickActionRunner {
         return trimmed
     }
 
-    /// A transform returns roughly what it was given; a summary returns less. Both need a ceiling,
-    /// because the on-device window counts the prompt and the reply against one budget.
+    /// The on-device window counts the prompt and the reply against one budget, so both need a cap.
     private static func maxOutputTokens(for action: QuickAction, selection: String) -> Int {
         let approximateTokens = max(selection.count / 3, 64)
         return action == .summarize

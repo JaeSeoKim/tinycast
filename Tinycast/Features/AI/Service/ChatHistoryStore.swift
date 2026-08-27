@@ -179,13 +179,7 @@ final class ChatHistoryStore {
         conversations = []
     }
 
-    /// Drops conversations last touched before `cutoff`, and reports how many went. One statement
-    /// does it all: `messages` cascades to `message_images` and `message_searches`, and
-    /// `PRAGMA foreign_keys` is part of the schema so every connection re-arms it.
-    ///
-    /// `VACUUM` only when something was actually deleted. Pictures live inline in `message_images`,
-    /// so this is the one store holding megabytes of BLOB, and a delete alone frees pages inside
-    /// the file without ever shrinking it.
+    /// Inline BLOBs make this the one store where a delete frees pages without shrinking the file.
     @discardableResult
     func prune(before cutoff: Date) -> Int {
         guard ensureDatabase(), let database,

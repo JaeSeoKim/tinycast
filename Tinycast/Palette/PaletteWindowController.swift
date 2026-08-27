@@ -112,9 +112,7 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         }
     }
 
-    /// The screen only. A conversation is not a typed query: whether the next summon resumes it is
-    /// Settings → AI's `Opens To`, decided in `AIChatCoordinator` from the time since it was last
-    /// used, so a chat outlives the window that showed it.
+    /// The screen only: a conversation is not a typed query, and `Opens To` decides its lifetime.
     private func popToRoot() {
         core.palette.prepare(mode: .launcher)
     }

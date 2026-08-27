@@ -16,9 +16,7 @@ struct QuickActionResultView: View {
     @State private var footerHeight: CGFloat = 0
     @State private var download: TranslationSession.Configuration?
 
-    /// The scroll view owns the whole panel and the bars sit over it, so a result dissolves beneath
-    /// them rather than stopping at a line. `safeAreaBar` was measured doing this and lays its bars
-    /// over the content instead of insetting it, which is why the overlays are explicit.
+    /// Explicit overlays, not `safeAreaBar`: that lays its bars over the content instead of inset.
     var body: some View {
         ScrollView {
             body(for: state.phase)
@@ -27,7 +25,11 @@ struct QuickActionResultView: View {
                 // A `ScrollView` has no ideal height, so the frame below is set, not merely capped.
                 .fixedSize(horizontal: false, vertical: true)
                 // Measured before the insets, so `isScrollable` cannot depend on its own answer.
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    contentHeight = $0
+                }
                 .padding(.top, inset(headerHeight))
                 .padding(.bottom, inset(footerHeight))
         }
@@ -55,14 +57,12 @@ struct QuickActionResultView: View {
         bar.onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: action)
     }
 
-    /// Clears the bar, plus the ramp when there is one, so the first line starts fully opaque and
-    /// only dissolves once it scrolls up into the gradient.
+    /// Clears the bar and its ramp, so the first line is opaque until it scrolls into the gradient.
     private func inset(_ bar: CGFloat) -> CGFloat {
         bar + (isScrollable ? Theme.Size.quickActionScrollFade : 0)
     }
 
-    /// A mask, not `scrollEdgeEffectStyle`: that draws a material where a scroll view meets a safe
-    /// area, and over this panel's own vibrancy it composited to nothing.
+    /// A mask, not `scrollEdgeEffectStyle`: its material composited to nothing over this vibrancy.
     @ViewBuilder
     private var scrollFade: some View {
         if isScrollable {
@@ -93,7 +93,6 @@ struct QuickActionResultView: View {
             max(contentHeight + chrome, chrome + Theme.Size.quickActionPanelMinBody),
             chrome + Theme.Size.quickActionPanelBody)
     }
-
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.md) {

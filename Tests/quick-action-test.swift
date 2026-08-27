@@ -1,5 +1,4 @@
-// Quick Actions' pure half: what each action is, what it tells the model, how a result is diffed,
-// and which choices are the reader's rather than a default.
+// Quick Actions' pure half: the actions, their prompts, the diff, and the reader's own choices.
 
 import Foundation
 
@@ -31,8 +30,7 @@ struct QuickActionTests {
         if failures > 0 { exit(1) }
     }
 
-    /// The regression this pins: every refusal used to read "Select some text first", so a reader
-    /// whose Accessibility grant had gone stale was told to do the one thing they had already done.
+    /// A refusal naming no cause tells a reader to select the text they had already selected.
     static func refusalsNameTheirOwnCause() {
         let failures: [QuickActionFailure] = [
             .needsAccessibility, .noTarget, .unreadableApp("Chrome"), .noSelection, .tooLong
@@ -88,7 +86,7 @@ struct QuickActionTests {
         expect(reopened.settings.previewsResult(.fixGrammar), "a preview choice survives a relaunch")
         expect(reopened.settings.targetLanguage == "de", "the target language survives a relaunch")
 
-        // A connection the reader removed must not leave this pointing at a route that cannot answer.
+        // A removed connection must not leave this pointing at a route that cannot answer.
         reopened.repairModel(against: [], fallback: .appleIntelligence)
         expect(
             reopened.model == .appleIntelligence,
@@ -204,9 +202,7 @@ struct QuickActionTests {
             TextDiffEngine.diff(original: "gone", modified: "") == [.deleted("gone")],
             "an emptied result is wholly deleted")
 
-        // Coalescing's real invariant: no two neighbours share a kind, or a changed phrase would
-        // read as a stutter of single words. Runs that a shared space separates stay separate,
-        // which is why this checks adjacency rather than counting chunks.
+        // Coalescing's invariant: no two neighbours share a kind, or a phrase reads as a stutter.
         let phrase = TextDiffEngine.diff(original: "one two three", modified: "four five three")
         let stutters = zip(phrase, phrase.dropFirst()).filter { sameKind($0, $1) }
         expect(stutters.isEmpty, "no two adjacent chunks share a kind, got \(phrase)")

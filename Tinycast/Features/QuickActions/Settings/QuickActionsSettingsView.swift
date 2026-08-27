@@ -1,8 +1,7 @@
 import Combine
 import SwiftUI
 
-/// A peer of the AI pane, not a section inside it: Quick Actions has its own switch, route and
-/// permission, and only borrows the provider layer.
+/// A peer of the AI pane, not a section in it: it only borrows the provider layer.
 struct QuickActionsSettingsView: View {
     @Environment(AppCore.self) private var core
     @Environment(AppSettings.self) private var appSettings
@@ -167,14 +166,18 @@ struct QuickActionsSettingsView: View {
         }
         for model in core.chatGPTSubscription.models {
             choices.append(
-                (.chatGPT(model: model.id, effort: model.resolvedEffort(nil)),
-                    "\(model.name) · ChatGPT"))
+                (
+                    .chatGPT(model: model.id, effort: model.resolvedEffort(nil)),
+                    "\(model.name) · ChatGPT"
+                ))
         }
         for connection in aiSettings.connections {
             for model in connection.models {
                 choices.append(
-                    (.api(connection: connection.id, model: model),
-                        "\(model) · \(connection.title)"))
+                    (
+                        .api(connection: connection.id, model: model),
+                        "\(model) · \(connection.title)"
+                    ))
             }
         }
         return choices

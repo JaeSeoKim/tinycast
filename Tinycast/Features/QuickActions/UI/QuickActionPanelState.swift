@@ -1,8 +1,7 @@
 import Foundation
 import Observation
 
-/// What the result panel is showing. Owned by its controller, not the view, so a reply keeps
-/// arriving while SwiftUI re-renders around it.
+/// Owned by the controller, not the view, so a reply keeps arriving while SwiftUI re-renders.
 @MainActor
 @Observable
 final class QuickActionPanelState {
@@ -18,10 +17,8 @@ final class QuickActionPanelState {
     let original: String
     private(set) var output = ""
     private(set) var phase: Phase = .running
-    /// The language the panel is translating into; a switcher rewrites it and re-runs.
     var targetLanguage: Locale.Language
 
-    /// Shown instead of the plain output when the result is the input, edited.
     var diff: [TextDiffEngine.Chunk] {
         guard action.showsDiff, phase == .finished else { return [] }
         return TextDiffEngine.diff(original: original, modified: output)

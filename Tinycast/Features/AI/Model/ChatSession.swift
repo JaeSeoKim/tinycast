@@ -34,8 +34,7 @@ struct ChatSession: Equatable, Sendable {
             updatedAt: updatedAt, messageCount: messages.count)
     }
 
-    /// `textBudget` is the route's, not the chat's: the on-device model holds a fraction of what a
-    /// cloud endpoint does, and history is the only part of a turn that can be cut to fit.
+    /// `textBudget` is the route's, not the chat's: on-device windows hold far less than a cloud.
     func requestMessages(textBudget: Int = Self.defaultTextBudget) -> [AIMessage] {
         Self.boundedContext(
             messages.compactMap { message in

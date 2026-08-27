@@ -15,7 +15,6 @@ final class HotKeyManager {
     var onShowSchedule: (() -> Void)?
     var onCreateEvent: (() -> Void)?
     var onShowAIChat: (() -> Void)?
-    /// One closure for every Quick Action; the case carries which.
     var onQuickAction: ((QuickAction) -> Void)?
     var onRunCustomCommand: ((UUID) -> Void)?
     var onRunSystemAction: ((SystemAction.ID) -> Void)?

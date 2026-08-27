@@ -8,8 +8,7 @@ enum AccessibilityText {
     /// Generous for a responsive app, short enough that a wedged one can't stall the main actor.
     private static let timeout: Float = 1
 
-    /// "Nothing is selected" and "this app tells us nothing" have different fixes; a caller that
-    /// collapses them tells the reader to select text they already selected.
+    /// The two have different fixes; collapsing them tells a reader to select what they selected.
     enum Selection: Equatable {
         case text(String)
         case noFocusedElement
@@ -48,17 +47,13 @@ enum AccessibilityText {
         return .text(web)
     }
 
-    /// For callers that can act on the text but not on why there is none: a snippet token, and the
-    /// extension bridge. Not a shim over `read` — a narrower question.
+    /// A narrower question, for callers that can act on the text but not on why there is none.
     static func selection(in app: NSRunningApplication) -> String? {
         guard case .text(let text) = read(in: app) else { return nil }
         return text
     }
 
-    /// Chromium builds its accessibility tree only once something asks for it, so Chrome, Electron
-    /// apps and VS Code answer every attribute with nothing until this is set. Harmless elsewhere:
-    /// an app without the attribute just refuses it. Unmemoised on purpose — a cache would be
-    /// global mutable state for one cheap IPC call on a keystroke, and Chromium ignores a repeat.
+    /// Chromium builds its tree only once asked, so Chrome and Electron answer nothing until this.
     private static func activateManualAccessibility(of application: AXUIElement) {
         AXUIElementSetAttributeValue(
             application, "AXManualAccessibility" as CFString, kCFBooleanTrue)

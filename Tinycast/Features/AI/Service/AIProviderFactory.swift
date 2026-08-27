@@ -17,8 +17,7 @@ enum AIProviderFactory {
             keyStore: keyStore)
     }
 
-    /// `guardrails` reaches only the on-device model, which is the only route that filters locally.
-    /// A Quick Action transforms text the reader already wrote, and the default filter refuses that.
+    /// `guardrails` reaches only the on-device model, the one route that filters locally.
     static func make(
         selection: AIModelSelection,
         settings: AISettingsStore,

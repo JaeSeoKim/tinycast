@@ -2,8 +2,7 @@ import AppKit
 import FoundationModels
 import Observation
 
-/// The single funnel for every Quick Action, however it was started. It resolves the target app,
-/// reads the selection, runs the action, and either replaces the text or shows the panel.
+/// The single funnel for every Quick Action, however it was started.
 @MainActor
 @Observable
 final class QuickActionCoordinator {
@@ -14,8 +13,7 @@ final class QuickActionCoordinator {
     private let panels = QuickActionPanelController()
     private unowned let core: AppCore
 
-    /// One at a time: two runs would race for the same selection, and the second would replace text
-    /// the first had already changed.
+    /// One at a time: two runs race for one selection, and the second overwrites the first's work.
     @ObservationIgnored private var running: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
 
@@ -30,8 +28,7 @@ final class QuickActionCoordinator {
         self.core = core
     }
 
-    /// Off means the hotkeys do nothing and nothing reads a selection. The bindings stay registered
-    /// so re-enabling restores every shortcut without touching Carbon.
+    /// Bindings stay registered while off, so re-enabling restores them without touching Carbon.
     func applyEnabled() {
         guard !settings.quickActionsEnabled else {
             store.resolveModel(
@@ -43,8 +40,7 @@ final class QuickActionCoordinator {
         cancel()
     }
 
-    /// The switch funnels here so enabling, which is also consent, confirms first. Reading a
-    /// selection and typing over it is the whole feature, and both need Accessibility.
+    /// Enabling is consent: reading a selection and typing over it both need Accessibility.
     func setEnabled(_ enabled: Bool) {
         guard enabled != settings.quickActionsEnabled else { return }
         guard enabled else {
@@ -82,8 +78,7 @@ final class QuickActionCoordinator {
         panels.dismiss()
     }
 
-    /// Replaces whatever was running. The generation stops a task that finishes after being
-    /// replaced from clearing the newer handle and letting a third run start alongside it.
+    /// The generation stops a superseded task from clearing the newer handle as it finishes.
     private func start(_ work: @escaping @MainActor () async -> Void) {
         generation += 1
         let mine = generation
@@ -113,8 +108,7 @@ final class QuickActionCoordinator {
         await perform(action, state: state, target: target, previewing: previews)
     }
 
-    /// A HUD is right for "nothing was selected" — the reader can fix that themselves. A missing
-    /// permission cannot be fixed from a pill that fades, so it gets a dialog with somewhere to go.
+    /// A missing permission cannot be fixed from a pill that fades, so it earns a dialog instead.
     private func reportRefusal(_ failure: QuickActionFailure) {
         guard failure.opensAccessibilitySettings else {
             core.showMessage(failure.localizedDescription, tone: .danger)
@@ -177,8 +171,7 @@ final class QuickActionCoordinator {
         }
     }
 
-    /// A failure the reader cannot see is a hotkey that silently did nothing, so a direct run
-    /// reports through the HUD and a preview keeps the panel open saying why.
+    /// A failure the reader cannot see is a hotkey that silently did nothing.
     private func report(
         _ error: Error, state: QuickActionPanelState, previewing: Bool,
         target: NSRunningApplication?
@@ -218,8 +211,6 @@ final class QuickActionCoordinator {
         return Locale.Language(identifier: stored)
     }
 
-    /// Apple's own list, loaded once. Offering the reader's preferred languages instead would put a
-    /// language the translator cannot reach in the menu, where it would only fail at press time.
     /// Observed, not ignored: it arrives after the pane has painted, and the picker has to notice.
     private(set) var offeredLanguages: [Locale.Language] = []
 

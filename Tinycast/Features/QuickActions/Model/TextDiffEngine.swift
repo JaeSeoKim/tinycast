@@ -8,8 +8,7 @@ enum TextDiffEngine: Sendable {
         case deleted(String)
     }
 
-    /// Past this many tokens a side, the LCS matrix costs more memory than the diff is worth —
-    /// it is quadratic, so 20k tokens either way would ask for gigabytes.
+    /// The LCS matrix is quadratic, so an unbounded diff of a long selection asks for gigabytes.
     static let maxTokens = 4_000
 
     static func diff(original: String, modified: String) -> [Chunk] {

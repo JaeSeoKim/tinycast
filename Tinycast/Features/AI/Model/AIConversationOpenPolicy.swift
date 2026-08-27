@@ -1,7 +1,6 @@
 import Foundation
 
-/// What summoning AI Chat lands on. `newConversation` is the case that used to be implicit: Pop to
-/// Root reset the transcript on every palette hide, so a chat never outlived the window.
+/// What summoning AI Chat lands on, decided at open time rather than when the palette hides.
 enum AIOpensTo: Int, CaseIterable, Identifiable, Sendable {
     case recent = 0
     case newConversation = 1
@@ -16,9 +15,7 @@ enum AIOpensTo: Int, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// How long a conversation may sit idle and still be resumed. Minutes as the raw value, `never`
-/// negative so it does not collide with the 0 an unset key reads as — the default is five minutes,
-/// and a zero case would swallow it.
+/// Minutes as the raw value, `never` negative so it cannot collide with the 0 an unset key reads.
 enum AINewChatAfter: Int, CaseIterable, Identifiable, Sendable {
     case twoMinutes = 2
     case fiveMinutes = 5
@@ -35,12 +32,7 @@ enum AINewChatAfter: Int, CaseIterable, Identifiable, Sendable {
     var interval: TimeInterval { TimeInterval(rawValue) * 60 }
 }
 
-/// The single authority on whether opening chat resumes or starts fresh.
-///
-/// This used to be `PaletteWindowController`'s business: Pop to Root fired on every hide and ended
-/// the conversation with the screen. Deciding here instead means one clock rather than two racing
-/// over the same state, and a verdict read from a timestamp survives a relaunch — which a timer
-/// scheduled at hide does not.
+/// One clock, read from a timestamp, so the verdict survives a relaunch as a hide timer could not.
 enum AIConversationOpenPolicy {
     enum Decision: Equatable, Sendable {
         case resume
@@ -53,8 +45,7 @@ enum AIConversationOpenPolicy {
     ) -> Decision {
         guard opensTo == .recent, let lastActiveAt else { return .startNew }
         guard newAfter != .never else { return .resume }
-        // A clock that has gone backwards — a manual change, or NTP — must not strand the reader in
-        // a conversation they cannot leave, so only elapsed time counts.
+        // A backwards clock yields a negative interval; it must not strand a reader in a chat.
         let idle = now.timeIntervalSince(lastActiveAt)
         return idle >= newAfter.interval ? .startNew : .resume
     }

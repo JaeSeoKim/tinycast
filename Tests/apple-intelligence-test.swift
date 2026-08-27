@@ -1,6 +1,4 @@
-// The on-device route. Everything but the last case is pure and runs anywhere; the end-to-end leg
-// needs Apple Intelligence switched on, so it reports a skip rather than failing a Mac without it —
-// the same bargain `symbols-test` makes with this machine's glyph catalog.
+// The on-device route; the end-to-end leg skips with a reason on a Mac that cannot run it.
 
 import FoundationModels
 import Foundation
@@ -52,8 +50,7 @@ struct AppleIntelligenceTests {
         let emitted = ["He", "Hello", "Hello!"].map { delta.delta(from: $0) }
         expect(emitted == ["He", "llo", "!"], "cumulative snapshots become deltas, got \(emitted)")
 
-        // A revision replaces what came before rather than extending it, so the whole snapshot has
-        // to go out — dropping a prefix that is no longer there would truncate the answer.
+        // A revision replaces what came before, so dropping a stale prefix would truncate it.
         var revised = AppleIntelligenceDelta()
         _ = revised.delta(from: "Hello")
         expect(revised.delta(from: "Goodbye") == "Goodbye", "a revised snapshot is emitted whole")

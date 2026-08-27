@@ -1,12 +1,9 @@
 import FoundationModels
 import Foundation
 
-/// The on-device route: no key, no endpoint, no request leaving this Mac. It is the only provider
-/// with nothing to configure, which is why a first run can select it on the reader's behalf.
+/// The only provider with nothing to configure, so a first run may select it unasked.
 struct AppleIntelligenceProvider: AIProvider {
-    /// Chat writes fresh prose, where the default filter belongs. A rewrite transforms text the
-    /// reader already wrote — which is what the permissive setting exists for — so the caller picks
-    /// and a later Quick Fix needs no second provider.
+    /// The caller's, not a constant: the default filter refuses text the reader already wrote.
     let guardrails: SystemLanguageModel.Guardrails
 
     init(guardrails: SystemLanguageModel.Guardrails = .default) {
@@ -25,9 +22,7 @@ struct AppleIntelligenceProvider: AIProvider {
 
     func stream(_ request: AIRequest) -> AIProviderStream {
         AIProviderStream { continuation in
-            // Detached like every other provider: generation is the model's work, not the main
-            // actor's. The session and its stream are both born here, since `ResponseStream` is
-            // `sending` and may not cross an isolation domain.
+            // Session and stream are born here: `ResponseStream` is `sending` and cannot cross.
             let task = Task.detached {
                 do {
                     if let message = Self.status().message {
@@ -63,9 +58,7 @@ struct AppleIntelligenceProvider: AIProvider {
         }
     }
 
-    /// A request split the way a session takes it: the newest user turn is the prompt, everything
-    /// ahead of it is the transcript the session resumes from. Pictures are dropped — the model is
-    /// text-only, and `AIModelCapabilities` already stops the composer offering one.
+    /// Split the way a session takes it: the newest user turn is the prompt, the rest a transcript.
     static func turn(for request: AIRequest) -> (prompt: String?, transcript: Transcript) {
         var entries: [Transcript.Entry] = []
         if let instructions = request.instructions, !instructions.isEmpty {
@@ -94,8 +87,7 @@ struct AppleIntelligenceProvider: AIProvider {
         return (prompt?.isEmpty == true ? nil : prompt, Transcript(entries: entries))
     }
 
-    /// Plain sentences rather than the framework's own copy: a `Context`'s `debugDescription` is
-    /// written for a log, and it is the only detail these errors carry.
+    /// Plain sentences: the only detail these carry is a `debugDescription` written for a log.
     static func providerError(_ error: LanguageModelSession.GenerationError) -> AIProviderError {
         switch error {
         case .exceededContextWindowSize:

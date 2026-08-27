@@ -1,7 +1,6 @@
 import Foundation
 
-/// What a Quick Action does to the selected text. Adding a fifth is a case here plus its prompt in
-/// `QuickActionPrompt` — the hotkey, the settings row and the panel all read this list.
+/// What a Quick Action does to the selected text; a fifth is one case here plus its prompt.
 enum QuickAction: String, CaseIterable, Codable, Identifiable, Sendable {
     case fixGrammar
     case rewrite
@@ -28,17 +27,13 @@ enum QuickAction: String, CaseIterable, Codable, Identifiable, Sendable {
         }
     }
 
-    /// Summarize answers a question about the text rather than restating it, so replacing the
-    /// selection with the answer is a choice the reader makes in the panel, never the default.
+    /// Summarize answers a question about the text, so replacing it unasked would destroy it.
     var alwaysPreviews: Bool { self == .summarize }
 
-    /// Whether the result goes straight into the field when the reader has expressed no preference.
-    /// Only grammar is safe unseen: it changes what was wrong, where a rewrite changes the voice.
+    /// Only grammar is safe unseen: it fixes what was wrong, where a rewrite changes the voice.
     var replacesDirectlyByDefault: Bool { self == .fixGrammar }
 
-    /// Showing what changed only reads when the output is the input, edited.
     var showsDiff: Bool { self == .fixGrammar || self == .rewrite }
 
-    /// Apple's translator handles this one; the rest are prompts.
     var usesTranslationFramework: Bool { self == .translate }
 }

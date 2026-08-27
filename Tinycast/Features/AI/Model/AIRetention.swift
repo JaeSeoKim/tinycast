@@ -1,7 +1,6 @@
 import Foundation
 
-/// How long saved conversations are kept. Days as the raw value, `forever` negative so an unset
-/// key — `integer(forKey:)` answers 0 — matches no case and falls to the default.
+/// Days as the raw value, `forever` negative so the 0 an unset key reads matches no case at all.
 enum AIRetention: Int, CaseIterable, Identifiable, Sendable {
     case week = 7
     case month = 30

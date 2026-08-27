@@ -39,12 +39,7 @@ final class AISettingsStore {
         }
     }
 
-    /// Asked each time, not captured: the model finishes downloading while the app is running, and
-    /// a flag read once at launch would keep saying "not ready" for the rest of the session. It is
-    /// injected because the check belongs to FoundationModels and this type is compiled standalone
-    /// by `ai-provider-test` to prove it stays Foundation-only. Reading it inside a view body also
-    /// leaves SwiftUI observing the framework's own `Observable` state, so the picker refreshes
-    /// itself when the model lands.
+    /// Asked each time: the model lands mid-session, and a flag read at launch would never notice.
     @ObservationIgnored let isAppleIntelligenceAvailable: @Sendable () -> Bool
 
     init(
@@ -133,16 +128,13 @@ final class AISettingsStore {
             model: replacement.id, effort: replacement.resolvedEffort(nil))
     }
 
-    /// Nothing chosen yet takes the route that needs no account. Called from the chat screen and
-    /// the AI pane, so whichever the reader opens first leaves a real selection behind rather than
-    /// a hidden default — the routing decision stays the one persisted value that names it.
+    /// Nothing chosen yet takes the route that needs no account, leaving a real stored selection.
     func resolveDefaultModel() {
         guard defaultModel == nil, let selection = firstAvailableSelection() else { return }
         defaultModel = selection
     }
 
-    /// Where a route that no longer exists falls forward to. The on-device model leads: it is free,
-    /// private and always configured, so it is never the surprising place to land.
+    /// The on-device model leads: free, private, always configured, so never a surprising landing.
     private func firstAvailableSelection() -> AIModelSelection? {
         if isAppleIntelligenceAvailable() { return .appleIntelligence }
         for connection in connections {

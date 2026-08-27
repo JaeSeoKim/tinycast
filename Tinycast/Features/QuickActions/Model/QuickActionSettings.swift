@@ -1,11 +1,7 @@
 import Foundation
 
-/// The per-action and shared choices behind Quick Actions, held as plain values so this stays
-/// Foundation-only and the harness compiles it standalone.
 struct QuickActionSettings: Equatable, Sendable {
-    /// Only what the reader actually chose. An absent action takes its own default, so adding one
-    /// never depends on what a missing key would have meant — and changing a default later moves
-    /// only the readers who never expressed a preference.
+    /// Only what the reader chose: an absent action takes its default, so a default may move later.
     var previewChoices: [QuickAction: Bool] = [:]
 
     /// BCP-47, e.g. `es-419`. Empty means the Mac's own language.

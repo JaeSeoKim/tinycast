@@ -1,8 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// What goes where the selection or the keyword was. Two fields rather than a caller's own result
-/// type, so the injector stays a text-delivery engine that neither snippets nor anything else owns.
+/// Its own shape, not a caller's result type, so the injector stays owned by no one feature.
 struct InjectedText: Equatable, Sendable {
     let text: String
     /// Leaves the caret this many characters back from the end; nil leaves it after the text.
@@ -100,10 +99,7 @@ final class TextInjector {
         }
     }
 
-    /// True when `targetApp` is somebody else's editable text. Both halves used to live only on the
-    /// automatic path, which was safe while the only caller was a keyword tap inside another app. A
-    /// hotkey resolves its target from `frontmostApplication`, which can be Tinycast, and Secure
-    /// Event Input means a password field holds focus.
+    /// A hotkey's target comes from `frontmostApplication`, which can be Tinycast itself.
     private func targetAcceptsInjection(_ targetApp: NSRunningApplication?) -> Bool {
         guard let targetApp,
             !targetApp.isTerminated,
@@ -138,12 +134,7 @@ final class TextInjector {
             timeZone: .current)
     }
 
-    /// Replaces whatever is selected in `targetApp`. No keyword to match and no generation to
-    /// cancel: a hotkey is an explicit gesture, not an expansion the app decided to attempt, so it
-    /// takes the interactive path and its Accessibility prompt.
-    ///
-    /// The caller must have checked there *is* a selection: a zero-length one inserts at the
-    /// caret, which is right for a snippet and wrong here.
+    /// The caller must know there *is* a selection: a zero-length one inserts at the caret instead.
     func replaceSelection(
         with text: String,
         in targetApp: NSRunningApplication?,
@@ -154,12 +145,7 @@ final class TextInjector {
             automaticGeneration: nil, onDelivered: onDelivered)
     }
 
-    /// Reads the selection by asking the app to copy it, for the apps that surface nothing over
-    /// Accessibility. It lives here because the pasteboard has one owner: the same lease, queue and
-    /// `ClipboardManager` coordination that a paste needs.
-    ///
-    /// A `changeCount` that never moves means nothing was selected. Returning the pasteboard's
-    /// existing contents there would transform whatever the reader last copied.
+    /// A `changeCount` that never moves means nothing was selected, not that the old clipboard won.
     func copySelection(from targetApp: NSRunningApplication?) async -> String? {
         guard finishPendingPasteboardOwnership(),
             await activateAndWaitForTarget(targetApp, automaticGeneration: nil),

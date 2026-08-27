@@ -430,7 +430,9 @@ struct AIProviderTests {
 
     static func conversationSettingsPersistAndDecide() {
         let now = Date(timeIntervalSince1970: 1_000_000)
-        func decide(_ opensTo: AIOpensTo, _ after: AINewChatAfter, idle: TimeInterval?)
+        func decide(
+            _ opensTo: AIOpensTo, _ after: AINewChatAfter, idle: TimeInterval?
+        )
             -> AIConversationOpenPolicy.Decision
         {
             AIConversationOpenPolicy.decide(
@@ -502,8 +504,7 @@ struct AIProviderTests {
                 && !AIModelSelection.chatGPT(model: "gpt-5", effort: nil).isOnDevice,
             "only the on-device selection reads as on device")
 
-        // Stored data written before this route existed decodes to nothing, and nothing resolves
-        // forward — there is no migration and none is wanted.
+        // Data written before this route existed decodes to nothing; there is no migration.
         let suite = "AIProviderTests.onDevice"
         let defaults = isolatedDefaults(suite)
         defer { discardSuite(suite, defaults) }

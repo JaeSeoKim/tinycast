@@ -212,8 +212,7 @@ final class AppSettings {
         didSet { defaults.set(snippetsEnabled, forKey: Key.snippetsEnabled.rawValue) }
     }
 
-    /// Off out of the box like every switch that reaches into another app: on means Tinycast may
-    /// read the selection anywhere and type over it.
+    /// Off out of the box: on means Tinycast may read a selection anywhere and type over it.
     var quickActionsEnabled: Bool {
         didSet { defaults.set(quickActionsEnabled, forKey: Key.quickActionsEnabled.rawValue) }
     }

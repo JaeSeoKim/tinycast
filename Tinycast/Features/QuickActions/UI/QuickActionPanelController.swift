@@ -92,8 +92,7 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         callback?(outcome)
     }
 
-    /// Grows from the window's current top-left rather than a remembered one, so a reply arriving
-    /// after the reader dragged the panel cannot snap it back.
+    /// Grows from the current top-left, so a reply landing after a drag cannot snap the panel back.
     private func resize(toHeight height: CGFloat) {
         guard let panel, height > 0, abs(height - panel.frame.height) > 0.5 else { return }
         let topLeft = NSPoint(x: panel.frame.minX, y: panel.frame.maxY)
@@ -130,7 +129,6 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
 
-    /// Click-away dismisses, like every other borderless surface.
     func windowDidResignKey(_ notification: Notification) {
         guard let panel, notification.object as? NSWindow === panel else { return }
         finish(.dismissed)
