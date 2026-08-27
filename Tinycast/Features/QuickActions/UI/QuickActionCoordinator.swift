@@ -8,9 +8,12 @@ final class QuickActionCoordinator {
     private let settings: AppSettings
     private let store: QuickActionSettingsStore
     private let injector: TextInjector
+    private let appIndex: AppIndex
     private let paletteCoordinator: PaletteCoordinator
     private let panels = QuickActionPanelController()
     private unowned let core: AppCore
+
+    private static let launcherCommands = Set(QuickAction.allCases.map(CommandID.init))
 
     /// One at a time: two runs race for one selection, and the second overwrites the first's work.
     @ObservationIgnored private var running: Task<Void, Never>?
@@ -18,25 +21,27 @@ final class QuickActionCoordinator {
 
     init(
         settings: AppSettings, store: QuickActionSettingsStore, injector: TextInjector,
-        paletteCoordinator: PaletteCoordinator, core: AppCore
+        appIndex: AppIndex, paletteCoordinator: PaletteCoordinator, core: AppCore
     ) {
         self.settings = settings
         self.store = store
         self.injector = injector
+        self.appIndex = appIndex
         self.paletteCoordinator = paletteCoordinator
         self.core = core
     }
 
-    /// Bindings stay registered while off, so re-enabling restores them without touching Carbon.
+    /// The launcher rows come and go with the switch; the Carbon bindings stay registered either way.
     func applyEnabled() {
-        guard !settings.quickActionsEnabled else {
-            store.resolveModel(
-                appleIntelligenceAvailable: core.aiSettings.isAppleIntelligenceAvailable(),
-                fallback: core.aiSettings.defaultModel)
-            loadLanguages()
+        appIndex.setCommandsVisible(Self.launcherCommands, settings.quickActionsEnabled)
+        guard settings.quickActionsEnabled else {
+            cancel()
             return
         }
-        cancel()
+        store.resolveModel(
+            appleIntelligenceAvailable: core.aiSettings.isAppleIntelligenceAvailable(),
+            fallback: core.aiSettings.defaultModel)
+        loadLanguages()
     }
 
     /// Enabling is consent: reading a selection and typing over it both need Accessibility.
@@ -67,6 +72,7 @@ final class QuickActionCoordinator {
     func run(_ action: QuickAction) {
         guard settings.quickActionsEnabled, running == nil else { return }
         let target = paletteCoordinator.targetApp
+        if paletteCoordinator.isVisible { paletteCoordinator.hidePalette(restoreFocus: false) }
         start { [weak self] in await self?.begin(action, target: target) }
     }
 

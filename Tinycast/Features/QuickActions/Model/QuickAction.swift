@@ -20,7 +20,7 @@ enum QuickAction: String, CaseIterable, Codable, Identifiable, Sendable {
 
     var symbol: String {
         switch self {
-        case .fixGrammar: return "textformat.abc.dottedunderline"
+        case .fixGrammar: return "textformat"
         case .rewrite: return "wand.and.sparkles"
         case .translate: return "translate"
         case .summarize: return "text.line.3.summary"

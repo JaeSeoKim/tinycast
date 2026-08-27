@@ -7,6 +7,7 @@ struct QuickActionsSettingsView: View {
     @Environment(AppSettings.self) private var appSettings
     @Environment(QuickActionSettingsStore.self) private var store
     @Environment(AISettingsStore.self) private var aiSettings
+    @Environment(VisibilityStore.self) private var visibility
 
     /// Polled like the Permissions pane: the grant lands in System Settings, which sends nothing.
     @State private var isTrusted = Permissions.isAccessibilityTrusted()
@@ -63,19 +64,29 @@ struct QuickActionsSettingsView: View {
                         .frame(width: Theme.Size.settingsRowIcon)
                 } trailing: {
                     ShortcutRecorder(action: .quickAction(action), isQuiet: true)
-                    Toggle("", isOn: previewBinding(action))
-                        .labelsHidden()
-                        .toggleStyle(.checkbox)
-                        .disabled(action.alwaysPreviews)
-                        .accessibilityLabel("Preview \(action.title) before replacing")
+                    Picker("", selection: previewBinding(action)) {
+                        Text("Replace").tag(false)
+                        Text("Preview").tag(true)
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                    .disabled(action.alwaysPreviews)
+                    .accessibilityLabel("What \(action.title) does with its result")
+                    if let entry = CommandCatalog.entry(for: CommandID(action)) {
+                        Toggle("", isOn: launcherBinding(entry))
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
+                            .accessibilityLabel("Show \(action.title) in launcher")
+                    }
                 }
             }
         } header: {
             Text("Actions")
         } footer: {
             Text(
-                "The checkbox shows the result in a panel first. Without it the selection is "
-                    + "replaced straight away — undo in the app you were in brings it back."
+                "Replace puts the result straight into your document — undo in the app you were in "
+                    + "brings it back. Preview shows it in a panel first. The checkbox lists the "
+                    + "action in the launcher; its shortcut works either way."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -146,6 +157,12 @@ struct QuickActionsSettingsView: View {
         Binding(
             get: { store.settings.previewsResult(action) },
             set: { store.settings.setPreviewsResult($0, for: action) })
+    }
+
+    private func launcherBinding(_ entry: AppEntry) -> Binding<Bool> {
+        Binding(
+            get: { visibility.isItemVisible(entry) },
+            set: { visibility.setItemVisible($0, for: entry) })
     }
 
     private var modelBinding: Binding<AIModelSelection?> {

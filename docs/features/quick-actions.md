@@ -1,9 +1,10 @@
 # Quick Actions
 
-Global shortcuts that act on whatever text is selected, in whatever app is frontmost. Four of them —
-Fix Grammar, Rewrite, Translate and Summarize — each with its own bindable shortcut in
-**Settings → Quick Actions**. Three go through the AI provider layer; Translate goes to Apple's own
-translator. The result either replaces the selection or arrives in a floating panel, per action.
+Act on whatever text is selected, in whatever app is frontmost. Four of them — Fix Grammar, Rewrite,
+Translate and Summarize — each with its own bindable shortcut **and its own launcher command**, both
+listed in **Settings → Quick Actions**. Three go through the AI provider layer; Translate goes to
+Apple's own translator. The result either replaces the selection or arrives in a floating panel, per
+action.
 
 Quick Actions is the provider layer's second consumer. It shares nothing with AI Chat but the
 provider protocol and the connections behind it.
@@ -12,9 +13,15 @@ provider protocol and the connections behind it.
 
 - **Off out of the box, and off means the shortcuts do nothing.** `AppSettings.quickActionsEnabled`
   is the flag and `QuickActionCoordinator` is the only place that reads it: no selection is read, no
-  provider is built, no panel opens. Carbon bindings stay registered, so re-enabling restores every
-  shortcut without touching the hotkey layer. The flag grants keystroke delivery into other apps, so
-  like `snippetsEnabled` it is excluded from settings backups — an import must never arm it.
+  provider is built, no panel opens. The four commands leave the launcher's Commands slice through
+  `AppIndex.setCommandsVisible`, the way Notes and AI Chat drop theirs. Carbon bindings stay
+  registered, so re-enabling restores every shortcut without touching the hotkey layer. The flag
+  grants keystroke delivery into other apps, so like `snippetsEnabled` it is excluded from settings
+  backups — an import must never arm it.
+- **One funnel, whichever way an action started.** A shortcut and a launcher row both land on
+  `QuickActionCoordinator.run(_:)`, which reads `paletteCoordinator.targetApp` **before** hiding the
+  palette — once the palette is gone, the frontmost app is Tinycast, and the action would read its
+  own window. Hiding there rather than at each caller is what keeps the two paths identical.
 - **Enabling is consent, and it is the only place Accessibility is requested.** The toggle confirms
   through `DialogController` first and then calls `Permissions.ensureAccessibility()`, the pattern
   `SnippetExpansionCoordinator.setSnippetsEnabled` established. Everything else — a shortcut press, a
@@ -42,9 +49,11 @@ provider protocol and the connections behind it.
 
 ## The actions
 
-`QuickAction` is the whole extensibility story: a fifth action is one case there plus its prompt in
-`QuickActionPrompt`. The shortcut, the settings row and the panel all read that list, and
-`HotKeyAction.quickAction(QuickAction)` is parameterised so the hotkey enum never changes again.
+`QuickAction` is the extensibility story: a fifth action is one case there, its prompt in
+`QuickActionPrompt`, and one `CommandID` case for its launcher row. The shortcut, the settings row
+and the panel all read `allCases`, `HotKeyAction.quickAction(QuickAction)` is parameterised so the
+hotkey enum never changes again, and `CommandID.init(_ action:)` is exhaustive over `QuickAction`, so
+a fifth cannot compile without a launcher command of its own.
 
 | Action | Engine | Default result | Diff |
 | --- | --- | --- | --- |
@@ -56,8 +65,10 @@ provider protocol and the connections behind it.
 Only Fix Grammar applies unseen: it changes what was wrong, where a rewrite changes the voice.
 Summarize can never be told to replace text unseen — it answers a question *about* the text, so
 replacing the text with the answer has to be a choice made in the panel. Every other default is a
-checkbox in the pane, and `QuickActionSettings` stores only what the reader actually changed, so a
-new action arrives with its own default rather than whatever a missing key would have meant.
+**Replace / Preview** popup in the pane — a popup rather than a second checkbox, because the trailing
+checkbox column means "show in the launcher" in every pane the app has. `QuickActionSettings` stores
+only what the reader actually changed, so a new action arrives with its own default rather than
+whatever a missing key would have meant.
 
 ## Translation
 
@@ -158,6 +169,9 @@ behaviour rather than something Tinycast asserts, so it is the part worth checki
 
 - Select text in Safari, Chrome, Slack, Mail, Notes, VS Code and Terminal, press Fix Grammar, and
   confirm the selection is **replaced** rather than appended to.
+- Run one from the launcher (⌘Space → "Fix Grammar") with text selected behind it: the palette
+  closes and the selection in the displaced app is what gets acted on, not Tinycast's own field.
+- Uncheck an action's launcher checkbox: the row leaves ⌘Space, and its shortcut still works.
 - Press a shortcut with Tinycast's own Settings window frontmost: refused, with a HUD.
 - Press one in a password field: refused.
 - Summarize a long selection: the panel streams, grows without the title drifting, and scrolls past
