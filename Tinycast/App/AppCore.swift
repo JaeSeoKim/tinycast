@@ -45,7 +45,8 @@ final class AppCore {
     let extensions: ExtensionManager
     let chatHistory: ChatHistoryStore
     let aiChat: AIChatState
-    let aiSettings = AISettingsStore()
+    let aiSettings = AISettingsStore(
+        isAppleIntelligenceAvailable: { AppleIntelligenceProvider.status().isAvailable })
     let chatGPTSubscription = ChatGPTSubscriptionManager()
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.

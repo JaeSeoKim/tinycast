@@ -27,8 +27,20 @@ final class AISettingsStore {
         }
     }
 
-    init(defaults: UserDefaults = .standard) {
+    /// Asked each time, not captured: the model finishes downloading while the app is running, and
+    /// a flag read once at launch would keep saying "not ready" for the rest of the session. It is
+    /// injected because the check belongs to FoundationModels and this type is compiled standalone
+    /// by `ai-provider-test` to prove it stays Foundation-only. Reading it inside a view body also
+    /// leaves SwiftUI observing the framework's own `Observable` state, so the picker refreshes
+    /// itself when the model lands.
+    @ObservationIgnored let isAppleIntelligenceAvailable: @Sendable () -> Bool
+
+    init(
+        defaults: UserDefaults = .standard,
+        isAppleIntelligenceAvailable: @escaping @Sendable () -> Bool = { false }
+    ) {
         self.defaults = defaults
+        self.isAppleIntelligenceAvailable = isAppleIntelligenceAvailable
         connections = Self.decodeConnections(
             defaults.data(forKey: AppSettingsKey.aiConnections.rawValue))
         defaultModel = Self.decodeDefaultModel(
@@ -41,7 +53,7 @@ final class AISettingsStore {
         if case .api(let connection, let model) = defaultModel,
             !connections.contains(where: { $0.id == connection && $0.models.contains(model) })
         {
-            defaultModel = firstAPISelection()
+            defaultModel = firstAvailableSelection()
         }
     }
 
@@ -78,13 +90,13 @@ final class AISettingsStore {
     func removeConnection(id: UUID) {
         connections.removeAll { $0.id == id }
         guard case .api(id, _) = defaultModel else { return }
-        defaultModel = firstAPISelection()
+        defaultModel = firstAvailableSelection()
     }
 
     func reconcile(chatGPTModels models: [ChatGPTSubscription.Model], isSignedOut: Bool) {
         guard case .chatGPT(let model, let effort) = defaultModel else { return }
         if isSignedOut {
-            defaultModel = firstAPISelection()
+            defaultModel = firstAvailableSelection()
             return
         }
         guard !models.isEmpty else { return }
@@ -98,7 +110,18 @@ final class AISettingsStore {
             model: replacement.id, effort: replacement.resolvedEffort(nil))
     }
 
-    private func firstAPISelection() -> AIModelSelection? {
+    /// Nothing chosen yet takes the route that needs no account. Called from the chat screen and
+    /// the AI pane, so whichever the reader opens first leaves a real selection behind rather than
+    /// a hidden default — the routing decision stays the one persisted value that names it.
+    func resolveDefaultModel() {
+        guard defaultModel == nil, let selection = firstAvailableSelection() else { return }
+        defaultModel = selection
+    }
+
+    /// Where a route that no longer exists falls forward to. The on-device model leads: it is free,
+    /// private and always configured, so it is never the surprising place to land.
+    private func firstAvailableSelection() -> AIModelSelection? {
+        if isAppleIntelligenceAvailable() { return .appleIntelligence }
         for connection in connections {
             if let model = connection.models.first {
                 return .api(connection: connection.id, model: model)

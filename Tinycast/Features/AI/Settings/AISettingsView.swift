@@ -59,6 +59,8 @@ struct AISettingsView: View {
         .onAppear {
             loadKeyStatuses()
             refreshSubscription()
+            // Whichever of this pane and the chat screen opens first leaves a real selection behind.
+            settings.resolveDefaultModel()
         }
         // Switched on with the pane already open, the ChatGPT section would otherwise stay empty.
         .onChange(of: appSettings.aiEnabled) { refreshSubscription() }
@@ -68,6 +70,12 @@ struct AISettingsView: View {
 
     private var defaultModelSection: some View {
         Section {
+            // Shown either way: a Mac with nothing configured is exactly the one that needs telling
+            // its free, already-installed route is switched off.
+            if let reason = appleIntelligenceReason {
+                Label(reason, systemImage: "apple.intelligence")
+                    .foregroundStyle(.secondary)
+            }
             if modelGroups.isEmpty {
                 Label("No AI provider configured", systemImage: "sparkles")
                     .foregroundStyle(.secondary)
@@ -98,14 +106,24 @@ struct AISettingsView: View {
         } header: {
             Text("Default")
         } footer: {
-            Text(
-                modelGroups.isEmpty
-                    ? "Connect ChatGPT or add an API connection below."
-                    : "Tinycast contacts only the selected provider when an AI feature runs."
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text(defaultModelFooter)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+    }
+
+    private var defaultModelFooter: String {
+        if settings.defaultModel?.isOnDevice == true {
+            return "Apple Intelligence runs on this Mac. No key, no account, and nothing leaves it."
+        }
+        return modelGroups.isEmpty
+            ? "Turn on Apple Intelligence, connect ChatGPT, or add an API connection below."
+            : "Tinycast contacts only the selected provider when an AI feature runs."
+    }
+
+    /// Why the on-device route is missing from the picker, or `nil` when it is there.
+    private var appleIntelligenceReason: String? {
+        settings.isAppleIntelligenceAvailable() ? nil : AppleIntelligenceProvider.status().message
     }
 
     private var chatSection: some View {
@@ -268,6 +286,16 @@ struct AISettingsView: View {
 
     private var modelGroups: [AIModelGroup] {
         var groups: [AIModelGroup] = []
+        if settings.isAppleIntelligenceAvailable() {
+            groups.append(
+                AIModelGroup(
+                    id: "apple-intelligence",
+                    title: "On device",
+                    choices: [
+                        AIModelChoice(
+                            selection: .appleIntelligence, title: AppleIntelligence.title)
+                    ]))
+        }
         if subscription.isConnected, !subscription.models.isEmpty {
             groups.append(
                 AIModelGroup(

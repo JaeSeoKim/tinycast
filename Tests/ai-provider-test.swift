@@ -30,6 +30,7 @@ struct AIProviderTests {
         codexProtocolFramesRoundTrip()
         settingsPersistAndRepairSelections()
         subscriptionSelectionsReconcile()
+        onDeviceSelectionsRoundTripAndLead()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -424,6 +425,56 @@ struct AIProviderTests {
         } else {
             expect(false, "a valid Codex response parses")
         }
+    }
+
+    static func onDeviceSelectionsRoundTripAndLead() {
+        let encoded = try? JSONEncoder().encode(AIModelSelection.appleIntelligence)
+        let decoded = encoded.flatMap { try? JSONDecoder().decode(AIModelSelection.self, from: $0) }
+        expect(decoded == .appleIntelligence, "the on-device selection survives a round trip")
+        expect(
+            AIModelSelection.appleIntelligence.model == AppleIntelligence.modelID,
+            "the on-device selection reports a stable model id")
+        expect(
+            AIModelSelection.appleIntelligence.source == .appleIntelligence,
+            "the on-device selection is its own source")
+        expect(
+            AIModelSelection.appleIntelligence.isOnDevice
+                && !AIModelSelection.chatGPT(model: "gpt-5", effort: nil).isOnDevice,
+            "only the on-device selection reads as on device")
+
+        // Stored data written before this route existed decodes to nothing, and nothing resolves
+        // forward — there is no migration and none is wanted.
+        let suite = "AIProviderTests.onDevice"
+        let defaults = isolatedDefaults(suite)
+        defer { discardSuite(suite, defaults) }
+
+        let store = AISettingsStore(defaults: defaults, isAppleIntelligenceAvailable: { true })
+        expect(store.defaultModel == nil, "a fresh store chooses nothing on its own")
+        store.resolveDefaultModel()
+        expect(
+            store.defaultModel == .appleIntelligence,
+            "the on-device route is what an unconfigured Mac resolves to")
+
+        // A configured connection must not be displaced by resolution running a second time.
+        let connectionID = UUID()
+        store.save(AIConnection(id: connectionID, name: "Local", models: ["m"]))
+        store.select(.api(connection: connectionID, model: "m"))
+        store.resolveDefaultModel()
+        expect(
+            store.defaultModel == .api(connection: connectionID, model: "m"),
+            "resolution never overrides a selection the reader made")
+
+        // A removed connection falls forward to the route that is always configured.
+        store.removeConnection(id: connectionID)
+        expect(
+            store.defaultModel == .appleIntelligence,
+            "a removed connection falls forward to the on-device route")
+
+        let without = AISettingsStore(defaults: defaults, isAppleIntelligenceAvailable: { false })
+        without.resolveDefaultModel()
+        expect(
+            without.defaultModel == .appleIntelligence,
+            "an unavailable model does not silently reroute a stored on-device selection")
     }
 
     static func settingsPersistAndRepairSelections() {

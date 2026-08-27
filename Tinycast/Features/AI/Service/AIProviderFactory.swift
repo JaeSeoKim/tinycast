@@ -11,6 +11,11 @@ enum AIProviderFactory {
             throw AIProviderError.unavailable("Choose a default AI model in Settings.")
         }
         switch selection {
+        case .appleIntelligence:
+            if let message = AppleIntelligenceProvider.status().message {
+                throw AIProviderError.unavailable(message)
+            }
+            return AppleIntelligenceProvider()
         case .chatGPT(let model, let effort):
             return ChatGPTSubscriptionProvider(
                 turns: subscription.turns, model: model, effort: effort)

@@ -47,8 +47,8 @@ struct AIChatTests {
 
         expect(session.title == "Explain the launcher action layout", "titles collapse whitespace")
         expect(session.preview == "Provider failed", "previews use the latest visible message")
-        expect(session.requestMessages.count == 2, "failed replies do not poison the next request")
-        expect(session.requestMessages.last?.role == .assistant, "complete replies remain context")
+        expect(session.requestMessages().count == 2, "failed replies do not poison the next request")
+        expect(session.requestMessages().last?.role == .assistant, "complete replies remain context")
     }
 
     static func requestsKeepOnlyBoundedContext() {
@@ -58,7 +58,7 @@ struct AIChatTests {
         session.append(ChatMessage(role: .user, text: "First", sentAt: now, images: [picture]))
         session.append(ChatMessage(role: .assistant, text: "Reply", sentAt: now))
         session.append(ChatMessage(role: .user, text: "Second", sentAt: now, images: [picture]))
-        let request = session.requestMessages
+        let request = session.requestMessages()
         expect(request.count == 3, "a small chat is sent whole")
         expect(request.first?.images.isEmpty == true, "older turns drop their images")
         expect(request.last?.images == [picture], "the newest user turn keeps its images")
@@ -69,12 +69,12 @@ struct AIChatTests {
         bloated.append(ChatMessage(role: .assistant, text: "Reply", sentAt: now))
         bloated.append(ChatMessage(role: .user, text: "Second", sentAt: now))
         expect(
-            bloated.requestMessages.map(\.text) == ["Second"],
+            bloated.requestMessages().map(\.text) == ["Second"],
             "a reply never survives without the user turn that prompted it")
 
         var huge = ChatSession(createdAt: now)
         huge.append(ChatMessage(role: .user, text: big, sentAt: now))
-        expect(huge.requestMessages.first?.text == big, "the newest user message is never trimmed")
+        expect(huge.requestMessages().first?.text == big, "the newest user message is never trimmed")
 
         var overloaded = ChatSession(createdAt: now)
         overloaded.append(
@@ -82,7 +82,7 @@ struct AIChatTests {
                 role: .user, text: "Look", sentAt: now,
                 images: Array(repeating: picture, count: AIAttachmentBudget.maxCount + 3)))
         expect(
-            overloaded.requestMessages.last?.images.count == AIAttachmentBudget.maxCount,
+            overloaded.requestMessages().last?.images.count == AIAttachmentBudget.maxCount,
             "the newest turn's own pictures are bounded too, whatever staged them")
 
         let whole = ChatSession.boundedContext(
@@ -170,7 +170,7 @@ struct AIChatTests {
                 == [ChatSearch(query: "india news", isComplete: true, textOffset: 3)],
             "searches survive reopening and are always finished")
         expect(
-            session.requestMessages.first?.images == [picture],
+            session.requestMessages().first?.images == [picture],
             "attached images travel with the request")
         expect(loaded?.messages.last?.state == .failed, "an interrupted stream is repaired")
         expect(

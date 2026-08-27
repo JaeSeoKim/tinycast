@@ -29,9 +29,22 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
 - **Remote endpoints require HTTPS.** Plain HTTP is accepted only for `localhost`, `127.0.0.1` and
   `::1`, where a key is optional, and any other scheme is rejected outright — a loopback host does
   not excuse `ftp://`. `AIEndpointPolicy` is the one place that decides this.
-- **The default model is the routing decision.** It names either one saved API connection and model or
-  one ChatGPT subscription model and reasoning effort. A removed connection, model or subscription
-  falls forward to another usable API model, or to no selection.
+- **The default model is the routing decision.** It names the on-device model, one saved API
+  connection and model, or one ChatGPT subscription model and reasoning effort. A removed connection,
+  model or subscription falls forward to the on-device route when this Mac has one, then to another
+  usable API model, then to no selection.
+- **The on-device route is configured by having a Mac.** `.appleIntelligence` takes no key, opens no
+  socket and names no endpoint, so the Keychain, HTTPS and ephemeral-session rules below have nothing
+  to bind to — the Settings pane must never grow a credential field for it. It is text-only and
+  offers no web search, the preamble still rides ahead of every turn, and history is bounded to
+  `AppleIntelligence.contextBudget` rather than the cloud routes' ~100 KB because the on-device window
+  holds a prompt and its reply together. Availability is asked for each time, never cached at launch:
+  the model finishes downloading mid-session, and reading it inside a view body leaves SwiftUI
+  observing the framework's own state.
+- **An unavailable on-device model is reported, never rerouted.** Fall-forward exists for a route the
+  reader *removed*; a Mac with Apple Intelligence switched off keeps its stored selection and is told
+  why, because silently moving someone from a free, private, local model onto a billed endpoint is
+  the one redirection this feature must never perform.
 - **ChatGPT subscription access stays separate from API-key billing.** It uses `codex app-server` with
   a private `CODEX_HOME` under Tinycast's Application Support directory. Tinycast never reads browser
   cookies, copies another Codex login or calls undocumented ChatGPT web endpoints.
@@ -55,16 +68,21 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
 - **Everything but the newest message is bounded.** `ChatSession.boundedContext` sends that message
   whole — truncating what someone just typed is worse than the provider's own error — keeps images
   only on that turn and only up to `AIAttachmentBudget`, and walks older text newest-first into a
-  ~100 KB budget; both transports funnel through `requestMessages`, so no route can resend every
-  image each turn or let history grow the payload as a chat goes on. The composer refuses a picture
+  budget the *route* names: ~100 KB for a cloud endpoint, `AppleIntelligence.contextBudget` for the
+  on-device model. Every transport funnels through `requestMessages(textBudget:)`, so no route can
+  resend every image each turn or let history grow the payload as a chat goes on. The composer refuses a picture
   past the budget and says so, rather than letting send time drop it silently.
 
 ## Connections and routing
 
-`AIProviderKind` exposes four named presets plus a custom OpenAI-compatible route:
+`AIModelSelection` has three cases: `.appleIntelligence`, `.chatGPT` and `.api`. The first needs no
+connection at all — `AppleIntelligenceProvider` talks to the Foundation Models framework, so there is
+nothing to name and nothing to store. The other two route through `AIProviderKind`, which exposes four
+named presets plus a custom OpenAI-compatible route:
 
 | Setting | Transport | Default base URL |
 | --- | --- | --- |
+| Apple Intelligence | Foundation Models, on device | none |
 | OpenAI API | OpenAI Chat Completions | `https://api.openai.com/v1` |
 | Anthropic Claude | Anthropic Messages | `https://api.anthropic.com` |
 | Google Gemini | Gemini's OpenAI-compatible API | `https://generativelanguage.googleapis.com/v1beta/openai` |
@@ -94,8 +112,18 @@ system messages are lifted into its top-level `system` field; the other HTTP rou
 messages in the OpenAI message array.
 
 `AIProviderFactory` resolves the selection, validates the endpoint, reads the key at the last possible
-moment and returns either `HTTPAIProvider` or `ChatGPTSubscriptionProvider`. A future feature should
-hold neither settings nor credentials itself.
+moment and returns `AppleIntelligenceProvider`, `HTTPAIProvider` or `ChatGPTSubscriptionProvider`. A
+future feature should hold neither settings nor credentials itself.
+
+`AppleIntelligenceProvider` is the only route whose model is a local process. It builds a `Transcript`
+from the turns ahead of the newest user message and streams the rest as the prompt, so a conversation
+resumes rather than being replayed as one blob. Foundation Models reports the whole answer so far in
+every snapshot while every other transport speaks in deltas; `AppleIntelligenceDelta` is the one place
+that difference lives. Guardrails are a construction parameter rather than a constant: chat writes
+fresh prose, where the default filter belongs, and a later text-rewrite feature transforms text the
+reader already wrote, which is what `permissiveContentTransformations` exists for — so that feature
+needs no second provider. `GenerationError` never reaches the transcript as-is; its `Context` carries
+a debug description written for a log, so each case maps to a plain sentence instead.
 
 ## Chat surface
 
@@ -170,10 +198,15 @@ nineteenth feature coordinator.
 - Switching while a response streams does not stop or reroute that response; the new model applies to
   the following message.
 - With no available model, the menu offers Configure AI and opens the AI Settings pane.
-- Harnesses: `ai-provider-test` (endpoints, stream decoding, persistence repair, Codex framing),
-  `ai-chat-test` (`ChatSession`, `MarkdownBlock`, `ChatHistoryStore`) and `codex-turn-test` (the Stop
-  path, driven against a stub app-server stalled where Stop races the turn ID), all in
-  `run-tests.sh`.
+- With Apple Intelligence available and nothing else configured, opening chat or the AI pane leaves
+  the selection reading **Apple Intelligence** without asking for anything.
+- With it switched off in System Settings, the pane says so and chat says so; neither moves the
+  reader onto a configured API connection.
+- Harnesses: `ai-provider-test` (endpoints, stream decoding, persistence repair, Codex framing,
+  on-device routing), `ai-chat-test` (`ChatSession`, `MarkdownBlock`, `ChatHistoryStore`),
+  `codex-turn-test` (the Stop path, driven against a stub app-server stalled where Stop races the
+  turn ID) and `apple-intelligence-test` (status copy, snapshot deltas, transcript assembly, error
+  mapping, plus one real generation when this Mac can run one), all in `run-tests.sh`.
 
 ## ChatGPT subscription
 
@@ -209,6 +242,7 @@ URLs, and as `input_image` when prior turns are injected.
 
 | Route | Web search | Images |
 | --- | --- | --- |
+| Apple Intelligence | never — it reaches nothing | never — the model is text-only |
 | ChatGPT subscription | Codex `web_search` config | `image` input part |
 | OpenRouter | `plugins: [{id: "web"}]` — OpenRouter's own layer, any model | `image_url` part, only for models whose catalog lists the `image` modality |
 | OpenAI / Gemini / compatible | not offered | `image_url` part, assumed supported |

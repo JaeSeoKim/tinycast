@@ -54,7 +54,8 @@ final class AIChatCoordinator {
                 input, using: try core.aiProvider(), webSearch: webSearch,
                 instructions: AIInstructions.compose(
                     userPrompt: core.aiSettings.systemPrompt,
-                    isEnabled: core.aiSettings.systemPromptEnabled))
+                    isEnabled: core.aiSettings.systemPromptEnabled),
+                contextBudget: contextBudget)
         } catch {
             chat.report(error.localizedDescription)
             return false
@@ -109,12 +110,19 @@ final class AIChatCoordinator {
     /// What the selected model can take; the footer offers only what applies.
     var capabilities: AIModelCapabilities {
         switch core.aiSettings.defaultModel {
+        case .appleIntelligence?: return .appleIntelligence
         case .chatGPT?: return .chatGPT
         case .api(let connection, let model)?:
             return core.aiSettings.connection(id: connection)?.capabilities(for: model)
                 ?? AIModelCapabilities(images: false, webSearch: false)
         case nil: return AIModelCapabilities(images: false, webSearch: false)
         }
+    }
+
+    /// How much history the selected route can hold; the on-device window is far smaller.
+    private var contextBudget: Int {
+        core.aiSettings.defaultModel?.isOnDevice == true
+            ? AppleIntelligence.contextBudget : ChatSession.defaultTextBudget
     }
 
     /// ⌘V with a picture on the pasteboard — a screenshot, or an image file from Finder — stages
@@ -214,14 +222,23 @@ final class AIChatCoordinator {
         return scaled.representation(using: .png, properties: [:])
     }
 
+    /// The on-device model leads: it is the route a Mac already has, so it is what an unconfigured
+    /// first run resolves to.
     var modelOptions: [AIModelOption] {
+        let onDevice =
+            core.aiSettings.isAppleIntelligenceAvailable()
+            ? [
+                AIModelOption(
+                    selection: .appleIntelligence, title: AppleIntelligence.title,
+                    sourceTitle: "On device", icon: Self.appleIntelligenceIcon)
+            ] : []
         let subscription = core.chatGPTSubscription.models.map { model in
             AIModelOption(
                 selection: .chatGPT(
                     model: model.id, effort: model.resolvedEffort(nil)),
                 title: model.name,
                 sourceTitle: "ChatGPT",
-                brand: .openAI)
+                icon: .asset(AIBrand.openAI.assetName))
         }
         let api = core.aiSettings.connections.flatMap { connection in
             connection.models.map { model in
@@ -229,11 +246,14 @@ final class AIChatCoordinator {
                     selection: .api(connection: connection.id, model: model),
                     title: model,
                     sourceTitle: connection.title,
-                    brand: AIBrand.resolve(provider: connection.provider, model: model))
+                    icon: AIModelOption.icon(
+                        AIBrand.resolve(provider: connection.provider, model: model)))
             }
         }
-        return subscription + api
+        return onDevice + subscription + api
     }
+
+    static let appleIntelligenceIcon = PopoverMenuIcon.symbol("apple.intelligence")
 
     /// Shortened here, not by layout: a flexible label would take the row from the search field.
     var selectedModelTitle: String {
@@ -248,16 +268,16 @@ final class AIChatCoordinator {
 
     /// From the selection, not the loaded list: the list arrives after the picker first paints.
     var selectedModelIcon: PopoverMenuIcon {
-        let brand: AIBrand?
         switch core.aiSettings.defaultModel {
-        case .chatGPT?: brand = .openAI
+        case .appleIntelligence?: return Self.appleIntelligenceIcon
+        case .chatGPT?: return .asset(AIBrand.openAI.assetName)
         case .api(let connection, let model)?:
-            brand = core.aiSettings.connection(id: connection).flatMap {
-                AIBrand.resolve(provider: $0.provider, model: model)
-            }
-        case nil: brand = nil
+            return AIModelOption.icon(
+                core.aiSettings.connection(id: connection).flatMap {
+                    AIBrand.resolve(provider: $0.provider, model: model)
+                })
+        case nil: return AIModelOption.icon(nil)
         }
-        return brand.map { .asset($0.assetName) } ?? .symbol("sparkles")
     }
 
     /// Opening the chat on a ChatGPT model fetches its list, so the title is the display name
@@ -268,7 +288,8 @@ final class AIChatCoordinator {
         if stored == nil {
             prepareModelSwitcher()
             resolveDefaultModel()
-            awaitModelList()
+            // On-device settles it here; only a route that has yet to report in is worth waiting on.
+            if core.aiSettings.defaultModel == nil { awaitModelList() }
             return
         }
         guard case .chatGPT? = stored else { return }
@@ -278,6 +299,7 @@ final class AIChatCoordinator {
     /// Resolving a first default used to live only in the settings pane, so a signed-in
     /// subscription still asked the reader to go there and pick what the app already knew about.
     func resolveDefaultModel() {
+        core.aiSettings.resolveDefaultModel()
         guard core.aiSettings.defaultModel == nil, let first = modelOptions.first else { return }
         core.aiSettings.select(first.selection)
     }
@@ -330,12 +352,25 @@ struct AIModelOption: Identifiable {
     let selection: AIModelSelection
     let title: String
     let sourceTitle: String
-    /// The vendor's mark for the picker row; `nil` keeps the generic sparkle.
-    let brand: AIBrand?
+    /// The row's glyph, resolved at build time: a vendor's mark, Apple's, or the generic sparkle.
+    let menuIcon: PopoverMenuIcon
+
+    init(
+        selection: AIModelSelection, title: String, sourceTitle: String, icon: PopoverMenuIcon
+    ) {
+        self.selection = selection
+        self.title = title
+        self.sourceTitle = sourceTitle
+        self.menuIcon = icon
+    }
+
+    /// An unrecognised model keeps the generic sparkle rather than borrowing someone's mark.
+    static func icon(_ brand: AIBrand?) -> PopoverMenuIcon {
+        brand.map { .asset($0.assetName) } ?? .symbol("sparkles")
+    }
 
     var id: AIModelSelection { selection }
     var menuTitle: String { "\(title) · \(sourceTitle)" }
-    var menuIcon: PopoverMenuIcon { brand.map { .asset($0.assetName) } ?? .symbol("sparkles") }
 
     func matches(_ other: AIModelSelection) -> Bool {
         selection.source == other.source && selection.model == other.model
