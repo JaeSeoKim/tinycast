@@ -157,6 +157,10 @@ enum Theme {
         static let cameraPreview = CGSize(width: 420, height: 236)
         /// Wider than a dialog: a Quick Action's result is prose to read, not a sentence to answer.
         static let quickActionPanel: CGFloat = 520
+        /// Matched to the title's cap height; a row-sized glyph beside it reads as an error.
+        static let quickActionHeaderIcon: CGFloat = 14
+        /// How far a scrolling result dissolves at each edge, long enough to read as a fade.
+        static let quickActionScrollFade: CGFloat = 28
         /// Past this the result scrolls, so a long summary cannot grow the panel off the screen.
         static let quickActionPanelBody: CGFloat = 320
         /// Keeps a two-word grammar fix from collapsing the panel to a slot.
@@ -196,6 +200,8 @@ enum Theme {
         static let rowTitle = Font.body
         static let rowTrailing = Font.callout
         static let sectionHeader = Font.subheadline.weight(.medium)
+        /// A borderless panel's own title, which names the surface rather than a section inside it.
+        static let panelTitle = Font.headline
         /// The big value line on the calculator answer card (both source and target sides).
         static let calcResult = Font.title
         static let keyCap = Font.caption

@@ -36,42 +36,61 @@ struct QuickActionResultView: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: Theme.Spacing.md) {
-            // Only the title run drags: the handle is an overlay, and would eat the menu's clicks.
-            HStack(spacing: Theme.Spacing.md) {
-                SymbolImage(name: state.action.symbol, size: Theme.Size.settingsRowIcon)
-                Text(state.action.title)
-                    .font(Theme.Typography.sectionHeader)
-                Spacer(minLength: Theme.Spacing.md)
-            }
-            .foregroundStyle(Theme.Colors.textSecondary)
-            .windowDraggable(true)
-            if state.action == .translate, !languages.isEmpty { languageMenu }
-        }
-        .padding(.horizontal, Theme.Spacing.xxl)
-        .padding(.top, Theme.Spacing.xl)
-        .padding(.bottom, Theme.Spacing.lg)
-    }
-
     private var result: some View {
         ScrollView {
             body(for: state.phase)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Theme.Spacing.xxl)
+                .padding(.vertical, Theme.Spacing.lg)
                 // A `ScrollView` has no ideal height, so the frame below is set, not merely capped.
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
         .frame(height: bodyHeight)
         .scrollBounceBehavior(.basedOnSize)
-        .edgeDissolve()
+        .mask(scrollFade)
+    }
+
+    /// A mask, not the native scroll edge effect: that draws a material where a scroll view meets a
+    /// safe area, and over this panel's own vibrancy it composited to nothing.
+    @ViewBuilder
+    private var scrollFade: some View {
+        if contentHeight > bodyHeight {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: Theme.Size.quickActionScrollFade)
+                Color.black
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: Theme.Size.quickActionScrollFade)
+            }
+        } else {
+            // Fading text that already fits would read as a defect.
+            Color.black
+        }
     }
 
     private var bodyHeight: CGFloat {
         min(
             max(contentHeight, Theme.Size.quickActionPanelMinBody),
             Theme.Size.quickActionPanelBody)
+    }
+
+    private var header: some View {
+        HStack(spacing: Theme.Spacing.md) {
+            // Only the title run drags: the handle is an overlay, and would eat the menu's clicks.
+            HStack(spacing: Theme.Spacing.sm) {
+                SymbolImage(name: state.action.symbol, size: Theme.Size.quickActionHeaderIcon)
+                    .foregroundStyle(Theme.Colors.textSecondary)
+                Text(state.action.title)
+                    .font(Theme.Typography.panelTitle)
+                Spacer(minLength: Theme.Spacing.md)
+            }
+            .windowDraggable(true)
+            if state.action == .translate, !languages.isEmpty { languageMenu }
+        }
+        .padding(.horizontal, Theme.Spacing.xxl)
+        .padding(.top, Theme.Spacing.xl)
+        .padding(.bottom, Theme.Spacing.lg)
     }
 
     @ViewBuilder
@@ -98,24 +117,38 @@ struct QuickActionResultView: View {
     private var output: some View {
         let chunks = state.diff
         if !chunks.isEmpty {
-            // One `Text` per chunk would break the wrap, so the styled runs are concatenated.
-            chunks.reduce(Text("")) { $0 + styled($1) }
-                .font(Theme.Typography.rowTitle)
-                .textSelection(.enabled)
+            // One `Text` per chunk would break the wrap, so the runs are styled inside one string.
+            prose(Text(attributed(chunks)))
         } else if state.action == .summarize {
             MarkdownView(blocks: MarkdownBlock.parse(state.output))
         } else {
-            Text(state.output)
-                .font(Theme.Typography.rowTitle)
-                .textSelection(.enabled)
+            prose(Text(state.output))
         }
     }
 
-    private func styled(_ chunk: TextDiffEngine.Chunk) -> Text {
-        switch chunk {
-        case .equal(let text): Text(text)
-        case .inserted(let text): Text(text).foregroundStyle(Theme.Colors.success)
-        case .deleted(let text): Text(text).strikethrough().foregroundStyle(Theme.Colors.destructive)
+    /// A result is a paragraph to read rather than a row label, so it is led like one.
+    private func prose(_ text: Text) -> some View {
+        text
+            .font(Theme.Typography.rowTitle)
+            .lineSpacing(Theme.Spacing.xs)
+            .textSelection(.enabled)
+    }
+
+    private func attributed(_ chunks: [TextDiffEngine.Chunk]) -> AttributedString {
+        chunks.reduce(into: AttributedString()) { result, chunk in
+            switch chunk {
+            case .equal(let text):
+                result.append(AttributedString(text))
+            case .inserted(let text):
+                var run = AttributedString(text)
+                run.foregroundColor = Theme.Colors.success
+                result.append(run)
+            case .deleted(let text):
+                var run = AttributedString(text)
+                run.foregroundColor = Theme.Colors.destructive
+                run.strikethroughStyle = .single
+                result.append(run)
+            }
         }
     }
 

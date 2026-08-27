@@ -19,13 +19,14 @@ provider protocol and the connections behind it.
   through `DialogController` first and then calls `Permissions.ensureAccessibility()`, the pattern
   `SnippetExpansionCoordinator.setSnippetsEnabled` established. Everything else — a shortcut press, a
   delivery — uses `isAccessibilityTrusted()` and degrades to a HUD.
-- **Tinycast is never the target.** `QuickActionRunner.selection(in:)` refuses our own bundle
+- **Tinycast is never the target.** `QuickActionRunner.selection(in:using:)` refuses our own bundle
   identifier, and `TextInjector.targetAcceptsInjection` refuses it again before every event post,
   along with anything raised while Secure Event Input is up. A shortcut pressed with Settings
   frontmost, or in a password field, does nothing and says so.
 - **One run at a time.** Two overlapping runs would race for one selection, and the second would
   replace text the first had already changed. `QuickActionCoordinator` holds a single task and
-  refuses a second while it lives.
+  refuses a second while it lives; a generation token stops a task that finishes after being
+  replaced — by a retranslate, say — from clearing the newer handle.
 - **`Model/` stays Foundation-only.** `quick-action-test` compiles that folder standalone, which is
   what keeps `FoundationModels`, `Translation` and `NaturalLanguage` in `Service/` and `UI/`.
 - **Quick Actions route themselves.** `quickActionModel` is a second routing decision, defaulting to
@@ -86,9 +87,9 @@ replaced once a download the reader never saw has finished.
 `QuickActionPanel` is Tinycast's **fourth borderless surface**, beside the dialog, the notes panel
 and the join preview. It takes the same recipe — `panelScrim`, then `VisualEffectView`, then the
 clip — and sits at `.floating` like the join preview, so a failure report still lands on top of it.
-Its buttons are a deliberate copy of the dialog's rather than a share, for the reason
-[ui.md](../ui.md) gives: a panel that had to move with `DialogButton` would couple two unrelated
-surfaces.
+Its buttons are the system's own — `Button` with `.borderedProminent` on Replace — not a copy of
+`DialogButton`. A dialog asks a question and styles its answers; this panel presents a result, and
+standard controls are what a reader expects to act on one with.
 
 It could not have been built on `HUDPresenter`: `HUDPanel` sets `ignoresMouseEvents` and returns
 `false` from `canBecomeKey`, so it is click-through and hosts no buttons. Nor on `DialogAccessory`,
@@ -100,8 +101,39 @@ borderless surface. The panel is anchored by its **top-left** and re-measured as
 centring on every measure would walk it up the screen. `MarkdownView` and `MarkdownBlock.parse` are
 reused from chat; neither takes palette state.
 
+The body is a `ScrollView` with its height **set** rather than capped: a scroll view has no ideal
+height, so `NSHostingView.fittingSize` measures it as nothing and the body collapses to a slot. The
+content's ideal height is measured with `fixedSize` + `onGeometryChange`, the way the Support and
+Updates windows size themselves.
+
+Its edges fade through a gradient `mask` the panel owns, applied only while there is something to
+scroll. `scrollEdgeEffectStyle` was tried first and does nothing here, with or without
+`safeAreaBar`: it draws a material where a scroll view meets a safe area, and over this panel's own
+`panelScrim` + `VisualEffectView` that material composites to nothing.
+
 `TextDiffEngine` shows what changed when the output is the input, edited. Its LCS matrix is
 quadratic, so past `maxTokens` a side it degrades to whole-text rather than asking for gigabytes.
+
+## Reading the selection
+
+Two tiers, in order. `AccessibilityText.read` asks for `kAXSelectedTextAttribute`, then the
+text-marker range browsers use instead. `AXManualAccessibility` is set on the application element
+first, because Chromium builds its accessibility tree only once something asks and Chrome, Electron
+apps and VS Code otherwise answer every attribute with nothing.
+
+When Accessibility yields nothing, `TextInjector.copySelection` borrows a ⌘C: snapshot the
+pasteboard, synthesise the chord, wait for `changeCount` to **move**, read, restore. It lives on
+`TextInjector` because the pasteboard has one owner — the same lease, queue and `ClipboardManager`
+coordination a paste needs, and a second owner would race it.
+
+**The `changeCount` guard is load-bearing.** With nothing selected, ⌘C is a no-op; returning the
+pasteboard's existing contents there would transform whatever the reader last copied and paste it
+over their selection. Movement is the only proof a copy happened — never comparing content, which
+false-positives when the same text was already on the clipboard.
+
+Copying is the fallback and never the first try: it synthesises a keystroke into somebody else's app.
+When both tiers come back empty, only an Accessibility result of `.empty` justifies "nothing is
+selected"; otherwise the app told us nothing either way and says so.
 
 ## Delivery
 
