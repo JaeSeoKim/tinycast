@@ -169,6 +169,8 @@ behaviour rather than something Tinycast asserts, so it is the part worth checki
 
 - Select text in Safari, Chrome, Slack, Mail, Notes, VS Code and Terminal, press Fix Grammar, and
   confirm the selection is **replaced** rather than appended to.
+- Replace mode, with a slow route selected: the message pill says `Fixing Grammar…` with a blue
+  spinner while the model works, and the result message takes its place.
 - Run one from the launcher (⌘Space → "Fix Grammar") with text selected behind it: the palette
   closes and the selection in the displaced app is what gets acted on, not Tinycast's own field.
 - Uncheck an action's launcher checkbox: the row leaves ⌘Space, and its shortcut still works.

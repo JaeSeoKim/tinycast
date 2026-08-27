@@ -27,6 +27,16 @@ enum QuickAction: String, CaseIterable, Codable, Identifiable, Sendable {
         }
     }
 
+    /// Shown in the progress pill, where there is no panel to watch the answer arrive in.
+    var progressTitle: String {
+        switch self {
+        case .fixGrammar: return "Fixing Grammar…"
+        case .rewrite: return "Rewriting…"
+        case .translate: return "Translating…"
+        case .summarize: return "Summarizing…"
+        }
+    }
+
     /// Summarize answers a question about the text, so replacing it unasked would destroy it.
     var alwaysPreviews: Bool { self == .summarize }
 

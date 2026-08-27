@@ -500,6 +500,15 @@ final class AppCore {
         messageHUD.show(message: message, tone: tone)
     }
 
+    /// The same pill with a spinner, for work the reader started and cannot otherwise see running.
+    func showProgress(_ message: String) {
+        messageHUD.showProgress(message: message)
+    }
+
+    func hideProgress() {
+        messageHUD.dismiss()
+    }
+
     /// The volume slider, so `dialogs` stays the single owner of every prompt in the app.
     func pickVolume(current: Float32) async -> Float32? {
         await dialogs.pickVolume(current: current)

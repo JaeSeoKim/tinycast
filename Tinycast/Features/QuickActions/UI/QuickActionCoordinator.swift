@@ -154,8 +154,18 @@ final class QuickActionCoordinator {
         }
     }
 
+    /// Without a panel there is nothing on screen saying the model is working, so the pill says it.
     private func produce(
         _ state: QuickActionPanelState, previewing: Bool
+    ) async throws -> String {
+        guard !previewing else { return try await generate(state, streaming: true) }
+        core.showProgress(state.action.progressTitle)
+        defer { core.hideProgress() }
+        return try await generate(state, streaming: false)
+    }
+
+    private func generate(
+        _ state: QuickActionPanelState, streaming: Bool
     ) async throws -> String {
         if state.action.usesTranslationFramework {
             return try await TextTranslator.translate(state.original, to: state.targetLanguage)
@@ -164,7 +174,7 @@ final class QuickActionCoordinator {
         return try await QuickActionRunner.run(
             state.action, selection: state.original, using: provider,
             onDelta: { delta in
-                guard previewing else { return }
+                guard streaming else { return }
                 state.append(delta)
             })
     }

@@ -271,6 +271,8 @@ enum Theme {
         static let destructive = Color.red
         /// Success tint: the leading glyph of a `.success` dialog.
         static let success = Color.green
+        /// Progress tint: the message pill's spinner while the work behind it is still running.
+        static let progress = Color.blue
     }
 }
 
