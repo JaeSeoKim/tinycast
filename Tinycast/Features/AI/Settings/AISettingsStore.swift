@@ -26,6 +26,18 @@ final class AISettingsStore {
             defaults.set(systemPromptEnabled, forKey: AppSettingsKey.aiSystemPromptEnabled.rawValue)
         }
     }
+    /// Forever by default, so upgrading deletes nothing the reader did not ask to lose.
+    var retention: AIRetention {
+        didSet { defaults.set(retention.rawValue, forKey: AppSettingsKey.aiRetention.rawValue) }
+    }
+    var opensTo: AIOpensTo {
+        didSet { defaults.set(opensTo.rawValue, forKey: AppSettingsKey.aiOpensTo.rawValue) }
+    }
+    var newChatAfter: AINewChatAfter {
+        didSet {
+            defaults.set(newChatAfter.rawValue, forKey: AppSettingsKey.aiNewChatAfter.rawValue)
+        }
+    }
 
     /// Asked each time, not captured: the model finishes downloading while the app is running, and
     /// a flag read once at launch would keep saying "not ready" for the rest of the session. It is
@@ -50,6 +62,17 @@ final class AISettingsStore {
         systemPrompt = defaults.string(forKey: AppSettingsKey.aiSystemPrompt.rawValue) ?? ""
         systemPromptEnabled =
             defaults.object(forKey: AppSettingsKey.aiSystemPromptEnabled.rawValue) as? Bool ?? true
+        // Unset reads as 0, which no retention case carries — `forever` is negative on purpose.
+        retention =
+            AIRetention(rawValue: defaults.integer(forKey: AppSettingsKey.aiRetention.rawValue))
+            ?? .forever
+        opensTo =
+            AIOpensTo(rawValue: defaults.integer(forKey: AppSettingsKey.aiOpensTo.rawValue))
+            ?? .recent
+        newChatAfter =
+            AINewChatAfter(
+                rawValue: defaults.integer(forKey: AppSettingsKey.aiNewChatAfter.rawValue))
+            ?? .fiveMinutes
         if case .api(let connection, let model) = defaultModel,
             !connections.contains(where: { $0.id == connection && $0.models.contains(model) })
         {

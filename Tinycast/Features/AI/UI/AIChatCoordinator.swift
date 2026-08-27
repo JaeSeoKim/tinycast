@@ -37,12 +37,49 @@ final class AIChatCoordinator {
             return
         }
         // Deferred off the launch path like the clipboard's own read; history fills in behind it.
-        Task { core.chatHistory.load() }
+        Task {
+            core.chatHistory.load()
+            // Only ever inside the enabled branch: age passes while AI is switched off, and off
+            // means the file is untouched — a Mac left off for four months keeps its chats.
+            applyRetention()
+        }
+    }
+
+    /// Called on enable and whenever the setting changes, the way clipboard retention is applied.
+    func applyRetention() {
+        guard settings.aiEnabled,
+            let cutoff = core.aiSettings.retention.cutoff(from: Date())
+        else { return }
+        core.chatHistory.prune(before: cutoff)
     }
 
     func showChat() {
         guard settings.aiEnabled else { return }
+        applyOpenPolicy()
         paletteCoordinator.showPalette(mode: .ai)
+    }
+
+    /// The one place that decides whether summoning chat resumes or starts fresh. It used to be Pop
+    /// to Root's by accident — that fires on every hide, so a conversation never outlived the
+    /// window — and moving it here leaves one clock instead of two racing over the same transcript.
+    private func applyOpenPolicy() {
+        // A reply still arriving was asked for; resetting under the reader would discard the answer.
+        guard !chat.isStreaming else { return }
+        let recent = core.chatHistory.conversations.first
+        let isResident = !chat.session.messages.isEmpty
+        // From history when nothing is resident, so the verdict still holds after a relaunch.
+        let lastActiveAt = isResident ? chat.session.updatedAt : recent?.updatedAt
+        let decision = AIConversationOpenPolicy.decide(
+            opensTo: core.aiSettings.opensTo, newAfter: core.aiSettings.newChatAfter,
+            lastActiveAt: lastActiveAt, now: Date())
+        switch decision {
+        case .resume:
+            guard !isResident, let recent else { return }
+            chat.open(id: recent.id)
+        case .startNew:
+            guard isResident else { return }
+            chat.startNewChat()
+        }
     }
 
     @discardableResult
@@ -65,14 +102,6 @@ final class AIChatCoordinator {
     func startNewChat() {
         chat.startNewChat()
         palette.prepare(mode: .ai)
-    }
-
-    /// Pop to Root reaches the conversation too, so a palette that forgets its screen does not
-    /// reopen still holding a thread from before; the transcript is already saved by then.
-    func popToRoot() {
-        // A reply still arriving was asked for, and cancelling it here would throw away the answer.
-        guard settings.aiEnabled, !chat.isStreaming else { return }
-        chat.startNewChat()
     }
 
     func showHistory() {

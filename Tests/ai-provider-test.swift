@@ -31,6 +31,7 @@ struct AIProviderTests {
         settingsPersistAndRepairSelections()
         subscriptionSelectionsReconcile()
         onDeviceSelectionsRoundTripAndLead()
+        conversationSettingsPersistAndDecide()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
@@ -425,6 +426,65 @@ struct AIProviderTests {
         } else {
             expect(false, "a valid Codex response parses")
         }
+    }
+
+    static func conversationSettingsPersistAndDecide() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        func decide(_ opensTo: AIOpensTo, _ after: AINewChatAfter, idle: TimeInterval?)
+            -> AIConversationOpenPolicy.Decision
+        {
+            AIConversationOpenPolicy.decide(
+                opensTo: opensTo, newAfter: after,
+                lastActiveAt: idle.map { now.addingTimeInterval(-$0) }, now: now)
+        }
+
+        expect(
+            decide(.newConversation, .never, idle: 0) == .startNew,
+            "A New Conversation always starts fresh")
+        expect(
+            decide(.recent, .never, idle: 400 * 86_400) == .resume,
+            "Never means no amount of idling starts a new chat")
+        expect(decide(.recent, .fiveMinutes, idle: nil) == .startNew, "nothing to resume is new")
+        expect(
+            decide(.recent, .fiveMinutes, idle: 299) == .resume,
+            "inside the window the conversation resumes")
+        expect(
+            decide(.recent, .fiveMinutes, idle: 301) == .startNew,
+            "past the window the next summon starts fresh")
+        expect(
+            decide(.recent, .fiveMinutes, idle: 300) == .startNew,
+            "the boundary itself starts fresh, so the window is exclusive at its end")
+        // A backwards clock yields a negative interval; it must not strand a reader in a chat.
+        expect(
+            decide(.recent, .twoMinutes, idle: -3_600) == .resume,
+            "a clock that moved backwards resumes rather than misreading the idle time")
+
+        expect(
+            AIRetention.allCases.allSatisfy { !$0.title.isEmpty },
+            "every retention names itself")
+        expect(
+            AIRetention.week.cutoff(from: now) == now.addingTimeInterval(-7 * 86_400),
+            "a week's cutoff is seven days back")
+        expect(
+            AINewChatAfter.allCases.filter { $0.rawValue == 0 }.isEmpty,
+            "no timeout uses 0, which an unset key would swallow before the default applied")
+
+        let suite = "AIProviderTests.conversations"
+        let defaults = isolatedDefaults(suite)
+        defer { discardSuite(suite, defaults) }
+
+        let fresh = AISettingsStore(defaults: defaults)
+        expect(fresh.retention == .forever, "retention defaults to Forever, so upgrading deletes nothing")
+        expect(fresh.opensTo == .recent, "chat reopens on the recent conversation by default")
+        expect(fresh.newChatAfter == .fiveMinutes, "the idle window defaults to five minutes")
+
+        fresh.retention = .week
+        fresh.opensTo = .newConversation
+        fresh.newChatAfter = .never
+        let reopened = AISettingsStore(defaults: defaults)
+        expect(reopened.retention == .week, "retention persists")
+        expect(reopened.opensTo == .newConversation, "the open policy persists")
+        expect(reopened.newChatAfter == .never, "Never persists rather than reading as the default")
     }
 
     static func onDeviceSelectionsRoundTripAndLead() {

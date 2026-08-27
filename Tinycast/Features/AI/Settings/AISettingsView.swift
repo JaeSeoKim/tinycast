@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct AISettingsView: View {
+    @Environment(AppCore.self) private var core
     @Environment(AISettingsStore.self) private var settings
     @Environment(AppSettings.self) private var appSettings
     @Environment(ChatGPTSubscriptionManager.self) private var subscription
@@ -31,6 +32,7 @@ struct AISettingsView: View {
             Group {
                 defaultModelSection
                 chatSection
+                conversationsSection
                 systemPromptSection
                 chatGPTSection
                 apiConnectionsSection
@@ -140,6 +142,42 @@ struct AISettingsView: View {
             Text("Images pasted into the chat go to any model that accepts them; others never see one.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var conversationsSection: some View {
+        @Bindable var settings = settings
+        return Section {
+            Picker(selection: $settings.opensTo) {
+                ForEach(AIOpensTo.allCases) { Text($0.title).tag($0) }
+            } label: {
+                Text("Opens to")
+                Text("What summoning AI Chat lands on.")
+            }
+            if settings.opensTo == .recent {
+                Picker(selection: $settings.newChatAfter) {
+                    ForEach(AINewChatAfter.allCases) { Text($0.title).tag($0) }
+                } label: {
+                    Text("Start a new conversation after")
+                    Text("Idle this long and the next summon starts fresh instead.")
+                }
+            }
+            Picker(selection: $settings.retention) {
+                ForEach(AIRetention.allCases) { Text($0.title).tag($0) }
+            } label: {
+                Text("Keep conversations")
+                Text("Older conversations are deleted permanently.")
+            }
+            .onChange(of: settings.retention) { core.aiChatCoordinator.applyRetention() }
+        } header: {
+            Text("Conversations")
+        } footer: {
+            Text(
+                "Conversations stay on this Mac. Nothing here is carried in a settings backup — which "
+                    + "chats a Mac keeps is that Mac's business."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
 

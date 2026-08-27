@@ -57,14 +57,28 @@ AI Chat is the first consumer, but the provider layer does not depend on it.
 - **Chat is a palette screen, not another window** — including its lifetime. The launcher command
   enters `.ai`; its search field is the composer, and the shared footer's primary pill is Return's
   job: Send (`↵`), or Stop (`↵`) while a response streams — followed by Actions (`⌘K`), which owns
-  New Chat. A conversation lasts exactly as long as the palette remembers anything else: Pop to Root
-  Search resets the screen and starts a new chat in the same breath, through
-  `AIChatCoordinator.popToRoot`, so closing the palette and summoning it again does not reopen on a
-  thread from before. A reply still streaming is never reset out from under the reader — it was
-  asked for — and the transcript is saved regardless, so the old conversation is one ⌘K → Chat
-  History away.
+  New Chat. **A conversation outlives the window that showed it, and one place decides for how
+  long.** Pop to Root forgets the screen and the query; whether the next summon resumes the
+  transcript is Settings → AI's `Opens to`, applied in `AIChatCoordinator.applyOpenPolicy` on the
+  way into `.ai`. That used to be Pop to Root's job by accident — it fires on every hide, so a chat
+  never survived Escape — and deciding at open time from a timestamp leaves one clock instead of two
+  racing over the same state, and a verdict that still holds after a relaunch. A reply still
+  streaming is never reset out from under the reader — it was asked for — and the transcript is
+  saved regardless, so the old conversation is one ⌘K → Chat History away.
+- **`AIConversationOpenPolicy` is the whole rule, and it is pure.** `Recent Conversation` resumes the
+  resident transcript, or reopens the newest saved one when nothing is resident, unless it has been
+  idle past `Start a new conversation after`; `A New Conversation` always starts fresh. There is no
+  third setting for "immediately" because that *is* `A New Conversation` — two controls able to
+  express one state would only ever disagree.
 - **History is local and lazy.** Conversation summaries stay in memory while transcripts load from the
   system SQLite database only for the selected preview or opened chat. Empty chats are never saved.
+- **Retention is enforced only while AI is on.** `Keep conversations` prunes on the enable transition
+  and whenever the setting changes, through `AIChatCoordinator.applyRetention` — never on a schedule
+  and never while `aiEnabled` is false, because age passes while the feature is off and "off means
+  fully off" promises the file is untouched. A Mac left off for four months keeps its chats.
+  `ChatHistoryStore.prune(before:)` is one `DELETE` that cascades to messages, images and searches,
+  and it `VACUUM`s only when something actually went: pictures live inline as BLOBs, so this is the
+  one store where a delete alone frees pages without ever shrinking the file.
 - **Everything but the newest message is bounded.** `ChatSession.boundedContext` sends that message
   whole — truncating what someone just typed is worse than the provider's own error — keeps images
   only on that turn and only up to `AIAttachmentBudget`, and walks older text newest-first into a
@@ -202,6 +216,12 @@ nineteenth feature coordinator.
   the selection reading **Apple Intelligence** without asking for anything.
 - With it switched off in System Settings, the pane says so and chat says so; neither moves the
   reader onto a configured API connection.
+- With `Opens to: Recent Conversation` and a five-minute window, Escape out and summon again inside
+  five minutes resumes the transcript; past it, the composer is empty. Quitting and relaunching still
+  reopens the last conversation. `A New Conversation` is always empty.
+- Setting `Keep conversations` to 7 days drops older chats from ⌘K → Chat History and shrinks
+  `ai-chats.sqlite3`. Switching AI off, waiting past a boundary and switching back on prunes nothing
+  that was saved before it went off.
 - Harnesses: `ai-provider-test` (endpoints, stream decoding, persistence repair, Codex framing,
   on-device routing), `ai-chat-test` (`ChatSession`, `MarkdownBlock`, `ChatHistoryStore`),
   `codex-turn-test` (the Stop path, driven against a stub app-server stalled where Stop races the
@@ -331,4 +351,6 @@ describing itself, and a user switch must not be able to lift it.
 excluded from settings backups. The first is meaningless without machine-local Keychain items; the
 second names an external destination and must not silently redirect AI traffic after an import; the
 last two are standing instructions and the switch that sends them, both of which change every
-answer and must not arrive on another Mac unread.
+answer and must not arrive on another Mac unread. `aiRetention`, `aiOpensTo` and `aiNewChatAfter`
+join them: all three are decisions about conversations that never leave the Mac that had them, and
+an import must not arrive carrying an instruction to delete them.

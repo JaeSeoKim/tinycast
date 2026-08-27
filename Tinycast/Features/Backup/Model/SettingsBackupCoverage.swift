@@ -86,6 +86,15 @@ enum SettingsBackupCoverage {
             + "import must not carry them onto another Mac unseen.",
         AppSettingsKey.aiSystemPromptEnabled.rawValue:
             "Governs whether a turn carries standing instructions at all, so it changes every answer "
-            + "the same way the prompt it gates does."
+            + "the same way the prompt it gates does.",
+        AppSettingsKey.aiRetention.rawValue:
+            "How long conversations survive is a decision about the chats on this Mac, and an import "
+            + "must never arrive carrying an instruction to delete them.",
+        AppSettingsKey.aiOpensTo.rawValue:
+            "Whether chat reopens on an existing conversation depends on the history this Mac holds, "
+            + "which no other Mac has.",
+        AppSettingsKey.aiNewChatAfter.rawValue:
+            "Paces the same decision as the setting it accompanies, against conversations that stay "
+            + "on the Mac that had them."
     ]
 }

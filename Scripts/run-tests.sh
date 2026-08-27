@@ -226,6 +226,7 @@ run ai-provider-test       Tinycast/Features/Settings/AppSettingsKey.swift \
                            Tinycast/Features/AI/Model/*.swift \
                            Tinycast/Features/AI/Settings/AISettingsStore.swift
 run ai-chat-test           Tinycast/Features/AI/Model/AIRequest.swift \
+                           Tinycast/Features/AI/Model/AIRetention.swift \
                            Tinycast/Features/AI/Model/ChatMessage.swift \
                            Tinycast/Features/AI/Model/ChatSession.swift \
                            Tinycast/Features/AI/Model/MarkdownBlock.swift \
