@@ -24,9 +24,53 @@ struct QuickActionTests {
         previewChoicesRememberOnlyWhatWasChosen()
         diffsFindWordLevelChanges()
         diffsStayBoundedOnLongText()
+        settingsPersistAndRepairTheirRoute()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
+    }
+
+    static func settingsPersistAndRepairTheirRoute() {
+        let suite = "QuickActionTests.settings"
+        let defaults = isolatedDefaults(suite)
+        defer { discardSuite(suite, defaults) }
+
+        let store = QuickActionSettingsStore(defaults: defaults)
+        expect(store.model == nil, "a fresh store names no route until one is resolved")
+
+        // Nothing configured takes the route that needs no account, like chat's own default.
+        store.resolveModel(appleIntelligenceAvailable: true, fallback: nil)
+        expect(store.model == .appleIntelligence, "on-device is what an unconfigured Mac resolves to")
+
+        // Resolution never overrides a choice, and never re-runs over one.
+        let connectionID = UUID()
+        store.select(.api(connection: connectionID, model: "m"))
+        store.resolveModel(appleIntelligenceAvailable: true, fallback: nil)
+        expect(
+            store.model == .api(connection: connectionID, model: "m"),
+            "resolution leaves a route the reader chose alone")
+
+        store.settings.setPreviewsResult(true, for: .fixGrammar)
+        store.settings.targetLanguage = "de"
+
+        let reopened = QuickActionSettingsStore(defaults: defaults)
+        expect(
+            reopened.model == .api(connection: connectionID, model: "m"),
+            "the route survives a relaunch")
+        expect(reopened.settings.previewsResult(.fixGrammar), "a preview choice survives a relaunch")
+        expect(reopened.settings.targetLanguage == "de", "the target language survives a relaunch")
+
+        // A connection the reader removed must not leave this pointing at a route that cannot answer.
+        reopened.repairModel(against: [], fallback: .appleIntelligence)
+        expect(
+            reopened.model == .appleIntelligence,
+            "a removed connection falls forward rather than failing at press time")
+
+        let onDevice = QuickActionSettingsStore(defaults: defaults)
+        onDevice.repairModel(against: [], fallback: nil)
+        expect(
+            onDevice.model == .appleIntelligence,
+            "repair leaves a route that names no connection untouched")
     }
 
     static func everyActionDescribesItself() {
@@ -138,6 +182,23 @@ struct QuickActionTests {
         let phrase = TextDiffEngine.diff(original: "one two three", modified: "four five three")
         let stutters = zip(phrase, phrase.dropFirst()).filter { sameKind($0, $1) }
         expect(stutters.isEmpty, "no two adjacent chunks share a kind, got \(phrase)")
+    }
+
+    /// A fixed suite name stops cfprefsd accumulating a plist per run; cleared at both ends.
+    static func isolatedDefaults(_ name: String) -> UserDefaults {
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    /// `removePersistentDomain` only empties the domain; cfprefsd still leaves the plist on disk.
+    static func discardSuite(_ name: String, _ defaults: UserDefaults) {
+        defaults.removePersistentDomain(forName: name)
+        UserDefaults.standard.removeSuite(named: name)
+        CFPreferencesAppSynchronize(name as CFString)
+        try? FileManager.default.removeItem(
+            at: URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Library/Preferences/\(name).plist"))
     }
 
     static func sameKind(_ lhs: TextDiffEngine.Chunk, _ rhs: TextDiffEngine.Chunk) -> Bool {
