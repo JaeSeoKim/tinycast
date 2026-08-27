@@ -102,9 +102,8 @@ final class TextInjector {
 
     /// True when `targetApp` is somebody else's editable text. Both halves used to live only on the
     /// automatic path, which was safe while the only caller was a keyword tap inside another app. A
-    /// hotkey resolves its target from `frontmostApplication`, which can be Tinycast — typing into
-    /// our own Settings window — and Secure Event Input means a password field is focused, where
-    /// neither a synthetic keystroke nor a borrowed pasteboard belongs.
+    /// hotkey resolves its target from `frontmostApplication`, which can be Tinycast, and Secure
+    /// Event Input means a password field holds focus.
     private func targetAcceptsInjection(_ targetApp: NSRunningApplication?) -> Bool {
         guard let targetApp,
             !targetApp.isTerminated,
@@ -143,8 +142,8 @@ final class TextInjector {
     /// cancel: a hotkey is an explicit gesture, not an expansion the app decided to attempt, so it
     /// takes the interactive path and its Accessibility prompt.
     ///
-    /// The caller must have checked there *is* a selection — a zero-length one makes this an insert
-    /// at the caret, which is the right behaviour for a snippet and the wrong one here.
+    /// The caller must have checked there *is* a selection: a zero-length one inserts at the
+    /// caret, which is right for a snippet and wrong here.
     func replaceSelection(
         with text: String,
         in targetApp: NSRunningApplication?,
@@ -154,6 +153,54 @@ final class TextInjector {
             InjectedText(text), targetApp: targetApp, expectedKeyword: nil, keywordLength: 0,
             automaticGeneration: nil, onDelivered: onDelivered)
     }
+
+    /// Reads the selection by asking the app to copy it, for the apps that surface nothing over
+    /// Accessibility. It lives here because the pasteboard has one owner: the same lease, queue and
+    /// `ClipboardManager` coordination that a paste needs.
+    ///
+    /// A `changeCount` that never moves means nothing was selected. Returning the pasteboard's
+    /// existing contents there would transform whatever the reader last copied.
+    func copySelection(from targetApp: NSRunningApplication?) async -> String? {
+        guard finishPendingPasteboardOwnership(),
+            await activateAndWaitForTarget(targetApp, automaticGeneration: nil),
+            deliveryIsAllowed(
+                automaticGeneration: nil, targetApp: targetApp,
+                promptForInteractiveAccessibility: true)
+        else { return nil }
+        return await copySelection(from: targetApp, pasteboard: NSPasteboard.general)
+    }
+
+    /// Split for the harness, which drives a stub pasteboard rather than another app.
+    func copySelection(
+        from targetApp: NSRunningApplication?, pasteboard: any PasteboardAccess
+    ) async -> String? {
+        clipboardManager.prepareForTinycastPasteboardMutation()
+        guard let original = PasteboardSnapshot(pasteboard: pasteboard) else { return nil }
+        defer { restore(original, to: pasteboard) }
+
+        Paster.postCommandC(toPid: targetApp?.processIdentifier)
+        for _ in 0..<Self.copyPollAttempts {
+            guard await wait(for: Self.copyPollInterval) else { return nil }
+            guard pasteboard.changeCount != original.changeCount else { continue }
+            guard let copied = PasteboardSnapshot(pasteboard: pasteboard),
+                let data = copied.firstStringData
+            else { return nil }
+            return String(bytes: data, encoding: .utf8)
+        }
+        return nil
+    }
+
+    private func restore(_ snapshot: PasteboardSnapshot, to pasteboard: any PasteboardAccess) {
+        guard let items = snapshot.pasteboardItems() else { return }
+        pasteboard.clearContents()
+        guard pasteboard.writeObjects(items) else { return }
+        clipboardManager.synchronizeAfterTinycastPasteboardMutation(
+            changeCount: pasteboard.changeCount)
+    }
+
+    /// A copy lands well inside a second; past that the app was never going to answer.
+    private static let copyPollAttempts = 40
+    private static let copyPollInterval = Duration.milliseconds(25)
 
     func deliver(
         _ injected: InjectedText,
@@ -404,8 +451,7 @@ final class TextInjector {
             else { return false }
             return true
         }
-        // Re-checked before every event post, so the same refusal covers a target that went away,
-        // stopped being frontmost, or raised a secure field mid-delivery.
+        // Re-checked before every post, so a target that went away or went secure stops delivery.
         guard targetAcceptsInjection(targetApp), let targetApp,
             targetApp.isActive,
             NSWorkspace.shared.frontmostApplication?.processIdentifier

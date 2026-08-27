@@ -8,9 +8,8 @@ enum AccessibilityText {
     /// Generous for a responsive app, short enough that a wedged one can't stall the main actor.
     private static let timeout: Float = 1
 
-    /// Why a read came back without text. "Nothing is selected" and "this app tells us nothing" are
-    /// different problems with different fixes, and a caller that collapses them tells the reader to
-    /// select text they have already selected.
+    /// "Nothing is selected" and "this app tells us nothing" have different fixes; a caller that
+    /// collapses them tells the reader to select text they already selected.
     enum Selection: Equatable {
         case text(String)
         case noFocusedElement
@@ -49,8 +48,8 @@ enum AccessibilityText {
         return .text(web)
     }
 
-    /// For callers that can act on the text but not on why there is none — a snippet's `{selection}`
-    /// token, and the extension bridge. Not a shim over `read`: it answers a narrower question.
+    /// For callers that can act on the text but not on why there is none: a snippet token, and the
+    /// extension bridge. Not a shim over `read` — a narrower question.
     static func selection(in app: NSRunningApplication) -> String? {
         guard case .text(let text) = read(in: app) else { return nil }
         return text

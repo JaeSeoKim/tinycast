@@ -16,6 +16,7 @@ struct SnippetsTests {
         try testRepositoryStorage()
         try await testRepositoryConcurrency()
         try await testDeliveryQueueAndPasteboard()
+        await testCopySelectionFallback()
         try await testStoreWatcher()
         testTemplateExpansion()
         testDynamicPlaceholders()
@@ -554,6 +555,45 @@ struct SnippetsTests {
         } else {
             check("delete revalidates inside coordinated access at the mutation boundary", false)
         }
+    }
+
+    /// The clipboard fallback for apps that surface nothing over Accessibility. The dangerous case
+    /// is a copy that never lands: returning the pasteboard's existing contents there would
+    /// transform whatever the reader last copied.
+    private static func testCopySelectionFallback() async {
+        let injector = TextInjector(clipboardManager: ClipboardManager(), settings: AppSettings())
+        let backing = NSPasteboard(name: .init("tinycast-copy-tests-\(UUID().uuidString)"))
+        defer { backing.releaseGlobally() }
+        let pasteboard = CountingPasteboard(backing: backing)
+
+        func seed(_ text: String) {
+            let item = NSPasteboardItem()
+            item.setString(text, forType: .string)
+            backing.clearContents()
+            _ = backing.writeObjects([item])
+        }
+
+        seed("Something the reader copied earlier")
+        let unchanged = await injector.copySelection(from: nil, pasteboard: pasteboard)
+        check("a copy that never lands returns nothing, not the stale clipboard", unchanged == nil)
+        check(
+            "the reader's clipboard survives a failed copy",
+            backing.string(forType: .string) == "Something the reader copied earlier")
+
+        seed("Original")
+        let writer = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(60))
+            let item = NSPasteboardItem()
+            item.setString("the selection", forType: .string)
+            backing.clearContents()
+            _ = backing.writeObjects([item])
+        }
+        let copied = await injector.copySelection(from: nil, pasteboard: pasteboard)
+        _ = await writer.result
+        check("a copy that lands is read back: \(copied ?? "nil")", copied == "the selection")
+        check(
+            "the reader's clipboard is restored afterwards",
+            backing.string(forType: .string) == "Original")
     }
 
     private static func testDeliveryQueueAndPasteboard() async throws {
@@ -1668,6 +1708,7 @@ enum Permissions {
 enum Paster {
     static let tinycastEventTag: Int64 = 0x54494E59
     @MainActor static func postCommandV(toPid pid: pid_t? = nil) {}
+    @MainActor static func postCommandC(toPid pid: pid_t? = nil) {}
 }
 
 /// Deterministic `{uuid}` source. `@unchecked Sendable` with a lock because `makeUUID` is a `@Sendable` closure.

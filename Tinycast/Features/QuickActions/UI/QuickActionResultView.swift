@@ -38,7 +38,7 @@ struct QuickActionResultView: View {
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.md) {
-            // Only the title run drags: the handle is an overlay, and over the menu it would eat it.
+            // Only the title run drags: the handle is an overlay, and would eat the menu's clicks.
             HStack(spacing: Theme.Spacing.md) {
                 SymbolImage(name: state.action.symbol, size: Theme.Size.settingsRowIcon)
                 Text(state.action.title)

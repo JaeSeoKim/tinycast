@@ -17,6 +17,7 @@ final class QuickActionCoordinator {
     /// One at a time: two runs would race for the same selection, and the second would replace text
     /// the first had already changed.
     @ObservationIgnored private var running: Task<Void, Never>?
+    @ObservationIgnored private var generation = 0
 
     init(
         settings: AppSettings, store: QuickActionSettingsStore, injector: TextInjector,
@@ -69,12 +70,35 @@ final class QuickActionCoordinator {
     }
 
     func run(_ action: QuickAction) {
-        guard settings.quickActionsEnabled else { return }
-        guard running == nil else { return }
+        guard settings.quickActionsEnabled, running == nil else { return }
         let target = paletteCoordinator.targetApp
+        start { [weak self] in await self?.begin(action, target: target) }
+    }
+
+    func cancel() {
+        generation += 1
+        running?.cancel()
+        running = nil
+        panels.dismiss()
+    }
+
+    /// Replaces whatever was running. The generation stops a task that finishes after being
+    /// replaced from clearing the newer handle and letting a third run start alongside it.
+    private func start(_ work: @escaping @MainActor () async -> Void) {
+        generation += 1
+        let mine = generation
+        running?.cancel()
+        running = Task { [weak self] in
+            await work()
+            guard let self, mine == self.generation else { return }
+            self.running = nil
+        }
+    }
+
+    private func begin(_ action: QuickAction, target: NSRunningApplication?) async {
         let selection: String
         do {
-            selection = try QuickActionRunner.selection(in: target)
+            selection = try await QuickActionRunner.selection(in: target, using: injector)
         } catch let failure as QuickActionFailure {
             reportRefusal(failure)
             return
@@ -86,16 +110,7 @@ final class QuickActionCoordinator {
             action: action, original: selection, targetLanguage: targetLanguage)
         let previews = store.settings.previewsResult(action)
         if previews { present(state, target: target) }
-        running = Task { [weak self] in
-            await self?.perform(action, state: state, target: target, previewing: previews)
-            self?.running = nil
-        }
-    }
-
-    func cancel() {
-        running?.cancel()
-        running = nil
-        panels.dismiss()
+        await perform(action, state: state, target: target, previewing: previews)
     }
 
     /// A HUD is right for "nothing was selected" — the reader can fix that themselves. A missing
@@ -180,30 +195,21 @@ final class QuickActionCoordinator {
             state,
             languages: offeredLanguages,
             onRetranslate: { [weak self] language in
-                guard let self else { return }
                 state.targetLanguage = language
-                state.restart()
-                self.running?.cancel()
-                self.running = Task { [weak self] in
-                    await self?.perform(
-                        state.action, state: state, target: target, previewing: true)
-                    self?.running = nil
-                }
+                self?.rerun(state, target: target)
             },
-            onDownloaded: { [weak self] in
-                guard let self else { return }
-                state.restart()
-                self.running?.cancel()
-                self.running = Task { [weak self] in
-                    await self?.perform(
-                        state.action, state: state, target: target, previewing: true)
-                    self?.running = nil
-                }
-            },
+            onDownloaded: { [weak self] in self?.rerun(state, target: target) },
             onOutcome: { [weak self] outcome in
                 guard let self, case .replace(let text) = outcome else { return }
                 self.deliver(text, to: target, action: state.action)
             })
+    }
+
+    private func rerun(_ state: QuickActionPanelState, target: NSRunningApplication?) {
+        state.restart()
+        start { [weak self] in
+            await self?.perform(state.action, state: state, target: target, previewing: true)
+        }
     }
 
     private var targetLanguage: Locale.Language {

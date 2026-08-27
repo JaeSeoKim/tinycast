@@ -9,26 +9,34 @@ final class QuickActionRunner {
     static let maxSelectionBytes = 32_768
 
     /// Reads what is selected in `targetApp`, refusing anything a transform must not touch.
-    /// Tinycast's own windows are excluded: the palette and Settings are not somebody's document.
-    static func selection(in targetApp: NSRunningApplication?) throws -> String {
+    /// Accessibility first, then a borrowed ⌘C for the apps that answer nothing over it. Copying
+    /// synthesises a keystroke into somebody's app, so it is a fallback, never the first try.
+    static func selection(
+        in targetApp: NSRunningApplication?, using injector: TextInjector
+    ) async throws -> String {
         // A shortcut press is an explicit gesture, so it may prompt, as snippet expansion does.
         guard Permissions.ensureAccessibility() else { throw QuickActionFailure.needsAccessibility }
         guard let targetApp,
             targetApp.bundleIdentifier != Bundle.main.bundleIdentifier
         else { throw QuickActionFailure.noTarget }
 
-        switch AccessibilityText.read(in: targetApp) {
-        case .noFocusedElement:
-            throw QuickActionFailure.unreadableApp(targetApp.localizedName ?? "That app")
-        case .empty:
-            throw QuickActionFailure.noSelection
-        case .text(let text):
-            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw QuickActionFailure.noSelection
-            }
-            guard text.utf8.count <= maxSelectionBytes else { throw QuickActionFailure.tooLong }
-            return text
+        let reported = AccessibilityText.read(in: targetApp)
+        if case .text(let text) = reported { return try accepted(text) }
+        if let copied = await injector.copySelection(from: targetApp) {
+            return try accepted(copied)
         }
+        // Only when Accessibility saw a text element is "nothing is selected" the honest answer.
+        throw reported == .empty
+            ? QuickActionFailure.noSelection
+            : .unreadableApp(targetApp.localizedName ?? "That app")
+    }
+
+    private static func accepted(_ text: String) throws -> String {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw QuickActionFailure.noSelection
+        }
+        guard text.utf8.count <= maxSelectionBytes else { throw QuickActionFailure.tooLong }
+        return text
     }
 
     /// Drains a provider stream into one string. Quick Actions have no transcript to grow, so a
