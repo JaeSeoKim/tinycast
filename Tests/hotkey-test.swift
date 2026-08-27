@@ -113,6 +113,21 @@ struct DoubleTapDetectorTests {
             Set(HotKeyAction.builtInActions)
                 .isSuperset(of: Set(CommandID.allCases.compactMap(\.hotKeyAction))),
             "every bindable command appears among the built-in hotkey actions")
+
+        // Parameterised, so a new Quick Action must arrive bindable without editing this enum.
+        for action in QuickAction.allCases {
+            let hotKey = HotKeyAction.quickAction(action)
+            expect(
+                hotKey.defaultsKey == "hotkey.quickAction.\(action.rawValue)",
+                "\(action.title) keys its binding on its raw value, not its position")
+            expect(
+                HotKeyAction.builtInActions.contains(hotKey),
+                "\(action.title) is registered at launch like every other fixed action")
+        }
+        expect(
+            Set(HotKeyAction.builtInActions.map(\.defaultsKey)).count
+                == HotKeyAction.builtInActions.count,
+            "no two built-in actions share a defaults key, which would bind them together")
     }
 
     // MARK: - The Hyper chord

@@ -75,7 +75,8 @@ final class VisibilityStore {
         case .toggleClipboard, .toggleEmoji, .showNotes, .createNote, .searchNotes, .searchFiles,
             .joinNextMeeting, .mySchedule, .createEvent, .aiChat:
             isKindEnabled(.command)
-        case .togglePalette, .customCommand, .windowCommand, .quicklink, .extensionCommand:
+        case .togglePalette, .customCommand, .windowCommand, .quicklink, .extensionCommand,
+            .quickAction:
             true
         }
     }

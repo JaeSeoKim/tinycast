@@ -95,6 +95,17 @@ enum SettingsBackupCoverage {
             + "which no other Mac has.",
         AppSettingsKey.aiNewChatAfter.rawValue:
             "Paces the same decision as the setting it accompanies, against conversations that stay "
-            + "on the Mac that had them."
+            + "on the Mac that had them.",
+        AppSettingsKey.quickActionsEnabled.rawValue:
+            "Grants keystroke delivery into other apps through the Accessibility permission, and a "
+            + "flag that grants a capability is never carried by a backup.",
+        AppSettingsKey.quickActionModel.rawValue:
+            "Names an external AI destination for text taken from whatever app is frontmost; an "
+            + "import must not choose one.",
+        AppSettingsKey.quickActionPreviews.rawValue:
+            "Says which actions may rewrite a document without showing the result first, which is a "
+            + "decision each Mac makes about its own text.",
+        AppSettingsKey.quickActionLanguage.rawValue:
+            "Follows the language the person at this Mac reads, not the one who wrote the backup."
     ]
 }

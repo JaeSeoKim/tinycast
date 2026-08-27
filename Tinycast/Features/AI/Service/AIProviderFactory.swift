@@ -1,7 +1,9 @@
+import FoundationModels
 import Foundation
 
 @MainActor
 enum AIProviderFactory {
+    /// Chat's route, and the one every existing caller means.
     static func make(
         settings: AISettingsStore,
         subscription: ChatGPTSubscriptionManager,
@@ -10,12 +12,26 @@ enum AIProviderFactory {
         guard let selection = settings.defaultModel else {
             throw AIProviderError.unavailable("Choose a default AI model in Settings.")
         }
+        return try make(
+            selection: selection, settings: settings, subscription: subscription,
+            keyStore: keyStore)
+    }
+
+    /// `guardrails` reaches only the on-device model, which is the only route that filters locally.
+    /// A Quick Action transforms text the reader already wrote, and the default filter refuses that.
+    static func make(
+        selection: AIModelSelection,
+        settings: AISettingsStore,
+        subscription: ChatGPTSubscriptionManager,
+        keyStore: APIKeyStore = APIKeyStore(),
+        guardrails: SystemLanguageModel.Guardrails = .default
+    ) throws -> any AIProvider {
         switch selection {
         case .appleIntelligence:
             if let message = AppleIntelligenceProvider.status().message {
                 throw AIProviderError.unavailable(message)
             }
-            return AppleIntelligenceProvider()
+            return AppleIntelligenceProvider(guardrails: guardrails)
         case .chatGPT(let model, let effort):
             return ChatGPTSubscriptionProvider(
                 turns: subscription.turns, model: model, effort: effort)

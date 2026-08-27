@@ -2,7 +2,8 @@
 
 Tinycast has one app-wide provider layer for features that need text generation. Settings chooses the
 default model; callers ask `AppCore.aiProvider()` for the current provider and stream an `AIRequest`.
-AI Chat is the first consumer, but the provider layer does not depend on it.
+AI Chat is the first consumer and [Quick Actions](quick-actions.md) the second; the provider layer
+depends on neither, and Quick Actions carries its own route rather than borrowing this one.
 
 ## Invariants
 
@@ -127,7 +128,9 @@ messages in the OpenAI message array.
 
 `AIProviderFactory` resolves the selection, validates the endpoint, reads the key at the last possible
 moment and returns `AppleIntelligenceProvider`, `HTTPAIProvider` or `ChatGPTSubscriptionProvider`. A
-future feature should hold neither settings nor credentials itself.
+consumer should hold neither settings nor credentials itself. The `selection` and `guardrails`
+overload is what lets Quick Actions pick its own route and ask for permissive content
+transformations without a second factory.
 
 `AppleIntelligenceProvider` is the only route whose model is a local process. It builds a `Transcript`
 from the turns ahead of the newest user message and streams the rest as the prompt, so a conversation
@@ -323,7 +326,8 @@ width and clipped the search field well short of the button.
 
 Settings → AI is a normal grouped `Form` inside Tinycast's existing Settings window. It owns no
 separate settings window or palette overlay. The pane edits multiple API connections, manages the
-ChatGPT login and chooses the one default model shared by future features.
+ChatGPT login and chooses chat's default model, which is also the fallback Quick Actions uses
+until its own pane names one.
 
 The signed-in ChatGPT address is the one thing on the pane that names a person, and a Settings pane
 is what gets screenshotted into a bug report or left on screen in a recording, so `RedactedText`

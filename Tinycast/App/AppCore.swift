@@ -47,6 +47,7 @@ final class AppCore {
     let aiChat: AIChatState
     let aiSettings = AISettingsStore(
         isAppleIntelligenceAvailable: { AppleIntelligenceProvider.status().isAvailable })
+    let quickActionSettings = QuickActionSettingsStore()
     let chatGPTSubscription = ChatGPTSubscriptionManager()
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
@@ -126,6 +127,9 @@ final class AppCore {
         store: updateChecker, core: self)
     @ObservationIgnored private(set) lazy var supportCoordinator = SupportCoordinator(
         store: supportReminders, core: self)
+    @ObservationIgnored private(set) lazy var quickActionCoordinator = QuickActionCoordinator(
+        settings: settings, store: quickActionSettings, injector: textInjector,
+        paletteCoordinator: paletteCoordinator, core: self)
     @ObservationIgnored private(set) lazy var aiChatCoordinator = AIChatCoordinator(
         chat: aiChat, settings: settings, appIndex: appIndex, palette: palette,
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
@@ -219,6 +223,7 @@ final class AppCore {
             hotKeys.onSearchNotes = { [weak self] in self?.notesCoordinator.searchNotes() }
             hotKeys.onSearchFiles = { [weak self] in self?.fileSearchCoordinator.show() }
             hotKeys.onShowAIChat = { [weak self] in self?.aiChatCoordinator.showChat() }
+            hotKeys.onQuickAction = { [weak self] in self?.quickActionCoordinator.run($0) }
             hotKeys.onJoinNextMeeting = { [weak self] in
                 self?.calendarCoordinator.joinNextMeeting()
             }
@@ -316,7 +321,7 @@ final class AppCore {
             return appIndex.apps.first { $0.kind == .extensionCommand && $0.id == entryID }?.name
         case .togglePalette, .toggleClipboard, .toggleEmoji, .searchFiles, .systemAction,
             .showNotes, .createNote, .searchNotes, .windowCommand, .joinNextMeeting, .mySchedule,
-            .createEvent, .aiChat:
+            .createEvent, .aiChat, .quickAction:
             return nil
         }
     }
@@ -341,6 +346,18 @@ final class AppCore {
             settings: aiSettings, subscription: chatGPTSubscription)
     }
 
+    /// Quick Actions route themselves: they fire far more often than a chat turn, so billing them
+    /// to whatever chat points at is not a default anyone would choose. Permissive guardrails
+    /// because the text being transformed is the reader's own, which the default filter refuses.
+    func quickActionProvider() throws -> any AIProvider {
+        guard let selection = quickActionSettings.model ?? aiSettings.defaultModel else {
+            throw AIProviderError.unavailable("Choose a model in Settings \u{2192} Quick Actions.")
+        }
+        return try AIProviderFactory.make(
+            selection: selection, settings: aiSettings, subscription: chatGPTSubscription,
+            guardrails: .permissiveContentTransformations)
+    }
+
     // MARK: - Feature switches
 
     private func observeFeatureSwitches() {
@@ -362,6 +379,9 @@ final class AppCore {
         track({ _ = $0.fileSearchEnabled }, reproject: { $0.fileSearchCoordinator.applyEnabled() })
         track({ _ = $0.notesEnabled }, reproject: { $0.notesCoordinator.applyEnabled() })
         track({ _ = $0.aiEnabled }, reproject: { $0.aiChatCoordinator.applyEnabled() })
+        track(
+            { _ = $0.quickActionsEnabled },
+            reproject: { $0.quickActionCoordinator.applyEnabled() })
         track(
             {
                 _ = $0.calendarEnabled
