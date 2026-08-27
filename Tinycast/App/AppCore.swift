@@ -15,7 +15,7 @@ final class AppCore {
     let snippetsStore: SnippetsStore
     let snippetListener = SnippetKeywordListener(
         syntheticEventTag: Paster.tinycastEventTag)
-    let snippetTextInjector: SnippetTextInjector
+    let textInjector: TextInjector
     let hotKeys = HotKeyManager()
     let hyperKeyTap = HyperKeyTap()
     let windowMover = WindowMover()
@@ -53,12 +53,12 @@ final class AppCore {
     var pendingQuicklinkEdit: QuicklinkEditRequest?
 
     @ObservationIgnored private(set) lazy var snippetExpansion = SnippetExpansionCoordinator(
-        store: snippetsStore, listener: snippetListener, injector: snippetTextInjector,
+        store: snippetsStore, listener: snippetListener, injector: textInjector,
         clipboardStore: clipboardStore, appIndex: appIndex, settings: settings,
         showMessage: { [unowned self] in self.showMessage($0) }, core: self)
     @ObservationIgnored private(set) lazy var quicklinkCoordinator = QuicklinkCoordinator(
         store: quicklinks, argumentSession: quicklinkArguments, settings: settings,
-        appIndex: appIndex, injector: snippetTextInjector, hotKeys: hotKeys, favorites: favorites,
+        appIndex: appIndex, injector: textInjector, hotKeys: hotKeys, favorites: favorites,
         visibility: visibility, ranking: launcherRanking, aliases: aliases,
         windowController: windowController,
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
@@ -151,7 +151,7 @@ final class AppCore {
         self.clipboardManager = clipboardManager
         extensions = ExtensionManager(clipboardStore: clipboardStore)
         snippetsStore = SnippetsStore()
-        snippetTextInjector = SnippetTextInjector(
+        textInjector = TextInjector(
             clipboardManager: clipboardManager,
             settings: settings)
         let noteSelectionKey = "notesActiveFileName"
@@ -329,7 +329,7 @@ final class AppCore {
         // Caps Lock first: its remap is the one teardown that outlives the process.
         hyperKeyTap.prepareForTermination()
         inputSourceSwitcher.endSession()
-        snippetTextInjector.prepareForTermination()
+        textInjector.prepareForTermination()
         snippetListener.stop()
         snippetsStore.stop()
         aiChat.cancel()
@@ -432,7 +432,7 @@ final class AppCore {
     /// What the app is in the middle of; the update prompt and the support reminder both ask first.
     var currentActivity: UpdateActivity {
         UpdateActivity(
-            isExpandingSnippet: snippetTextInjector.isDelivering,
+            isExpandingSnippet: textInjector.isDelivering,
             isRunningExtension: extensions.running != nil,
             isUninstalling: uninstall.isTrashing,
             isRecordingHotKey: hotKeys.recordingAction != nil,

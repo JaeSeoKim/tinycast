@@ -557,7 +557,7 @@ struct SnippetsTests {
     }
 
     private static func testDeliveryQueueAndPasteboard() async throws {
-        let queue = SnippetDeliveryQueue()
+        let queue = DeliveryQueue()
         var order: [String] = []
         queue.enqueue(isAutomatic: false) {
             order.append("first-start")
@@ -584,7 +584,7 @@ struct SnippetsTests {
         check("automatic cancellation cannot run a queued stale delivery", !automaticRan)
 
         var completionCount = 0
-        let completion = SnippetDeliveryCompletion { completionCount += 1 }
+        let completion = DeliveryCompletion { completionCount += 1 }
         completion.confirm()
         completion.confirm()
         check(
@@ -593,19 +593,19 @@ struct SnippetsTests {
 
         check(
             "unavailable AX text attributes use the event delivery fallback",
-            SnippetAccessibilityReplacement.unavailable.fallsBackToEvents)
+            AccessibilityReplacement.unavailable.fallsBackToEvents)
         check(
             "a rejected AX keyword replacement fails closed instead of deleting by events",
-            !SnippetAccessibilityReplacement.rejected.fallsBackToEvents)
+            !AccessibilityReplacement.rejected.fallsBackToEvents)
         check(
             "unreadable AX state accepts a posted paste after the conservative delay",
-            SnippetPasteConfirmationPolicy.acceptsUnconfirmedDelivery(
+            PasteConfirmationPolicy.acceptsUnconfirmedDelivery(
                 attempt: 15,
                 hadPreviousState: true,
                 readStateAfterPaste: false))
         check(
             "readable unchanged AX state is not treated as a confirmed paste",
-            !SnippetPasteConfirmationPolicy.acceptsUnconfirmedDelivery(
+            !PasteConfirmationPolicy.acceptsUnconfirmedDelivery(
                 attempt: 79,
                 hadPreviousState: true,
                 readStateAfterPaste: true))
@@ -1606,7 +1606,7 @@ struct SnippetsTests {
 }
 
 @MainActor
-private final class CountingPasteboard: SnippetPasteboardAccess {
+private final class CountingPasteboard: PasteboardAccess {
     let backing: NSPasteboard
     private(set) var clearCount = 0
     private(set) var writeCount = 0

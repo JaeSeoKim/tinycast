@@ -171,7 +171,8 @@ run slow snippets-test     Tinycast/Platform/NotificationToken.swift \
                            Tinycast/Platform/HealthTicker.swift \
                            Tinycast/Platform/AccessibilityText.swift \
                            Tinycast/Features/Snippets/Model/*.swift \
-                           Tinycast/Features/Snippets/Service/*.swift
+                           Tinycast/Features/Snippets/Service/*.swift \
+                           Tinycast/Features/TextInjection/Service/*.swift
 run notes-test             Tinycast/Platform/Signposts.swift \
                            $L/SearchRelevance.swift \
                            Tinycast/Features/Notes/Model/*.swift \
