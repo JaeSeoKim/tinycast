@@ -12,21 +12,36 @@ struct QuickActionResultView: View {
     let onHeight: (CGFloat) -> Void
 
     @State private var contentHeight: CGFloat = 0
+    @State private var headerHeight: CGFloat = 0
+    @State private var footerHeight: CGFloat = 0
     @State private var download: TranslationSession.Configuration?
 
+    /// The scroll view owns the whole panel and the bars sit over it, so a result dissolves beneath
+    /// them rather than stopping at a line. `safeAreaBar` was measured doing this and lays its bars
+    /// over the content instead of insetting it, which is why the overlays are explicit.
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            result
-            footer
+        ScrollView {
+            body(for: state.phase)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Theme.Spacing.xxl)
+                // A `ScrollView` has no ideal height, so the frame below is set, not merely capped.
+                .fixedSize(horizontal: false, vertical: true)
+                // Measured before the insets, so `isScrollable` cannot depend on its own answer.
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+                .padding(.top, inset(headerHeight))
+                .padding(.bottom, inset(footerHeight))
         }
-        .frame(width: Theme.Size.quickActionPanel)
+        .scrollBounceBehavior(.basedOnSize)
+        .mask(scrollFade)
+        .overlay(alignment: .top) { measured(header) { headerHeight = $0 } }
+        .overlay(alignment: .bottom) { measured(footer) { footerHeight = $0 } }
+        .frame(width: Theme.Size.quickActionPanel, height: panelHeight)
         .background(Theme.Colors.panelScrim)
         .background(VisualEffectView())
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
         .panelEntrance()
-        // The panel's own height, which nothing here constrains, so reporting it cannot feed back.
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight($0) }
+        // Reported, not measured: the frame above is ours, so reading it back would feed itself.
+        .onChange(of: panelHeight, initial: true) { onHeight(panelHeight) }
         .translationTask(download) { session in
             try? await session.prepareTranslation()
             await MainActor.run {
@@ -36,44 +51,49 @@ struct QuickActionResultView: View {
         }
     }
 
-    private var result: some View {
-        ScrollView {
-            body(for: state.phase)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Theme.Spacing.xxl)
-                .padding(.vertical, Theme.Spacing.lg)
-                // A `ScrollView` has no ideal height, so the frame below is set, not merely capped.
-                .fixedSize(horizontal: false, vertical: true)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
-        }
-        .frame(height: bodyHeight)
-        .scrollBounceBehavior(.basedOnSize)
-        .mask(scrollFade)
+    private func measured(_ bar: some View, action: @escaping (CGFloat) -> Void) -> some View {
+        bar.onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: action)
     }
 
-    /// A mask, not the native scroll edge effect: that draws a material where a scroll view meets a
-    /// safe area, and over this panel's own vibrancy it composited to nothing.
+    /// Clears the bar, plus the ramp when there is one, so the first line starts fully opaque and
+    /// only dissolves once it scrolls up into the gradient.
+    private func inset(_ bar: CGFloat) -> CGFloat {
+        bar + (isScrollable ? Theme.Size.quickActionScrollFade : 0)
+    }
+
+    /// A mask, not `scrollEdgeEffectStyle`: that draws a material where a scroll view meets a safe
+    /// area, and over this panel's own vibrancy it composited to nothing.
     @ViewBuilder
     private var scrollFade: some View {
-        if contentHeight > bodyHeight {
+        if isScrollable {
             VStack(spacing: 0) {
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: Theme.Size.quickActionScrollFade)
+                // Fully clear behind each bar, or text bleeds around the title and the buttons.
+                Color.clear.frame(height: headerHeight)
+                ramp(from: .clear, to: .black)
                 Color.black
-                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: Theme.Size.quickActionScrollFade)
+                ramp(from: .black, to: .clear)
+                Color.clear.frame(height: footerHeight)
             }
         } else {
-            // Fading text that already fits would read as a defect.
+            // Dissolving a result that already fits would dim it for nothing.
             Color.black
         }
     }
 
-    private var bodyHeight: CGFloat {
-        min(
-            max(contentHeight, Theme.Size.quickActionPanelMinBody),
-            Theme.Size.quickActionPanelBody)
+    private func ramp(from start: Color, to end: Color) -> some View {
+        LinearGradient(colors: [start, end], startPoint: .top, endPoint: .bottom)
+            .frame(height: Theme.Size.quickActionScrollFade)
     }
+
+    private var isScrollable: Bool { contentHeight > Theme.Size.quickActionPanelBody }
+
+    private var panelHeight: CGFloat {
+        let chrome = headerHeight + footerHeight
+        return min(
+            max(contentHeight + chrome, chrome + Theme.Size.quickActionPanelMinBody),
+            chrome + Theme.Size.quickActionPanelBody)
+    }
+
 
     private var header: some View {
         HStack(spacing: Theme.Spacing.md) {

@@ -106,10 +106,18 @@ height, so `NSHostingView.fittingSize` measures it as nothing and the body colla
 content's ideal height is measured with `fixedSize` + `onGeometryChange`, the way the Support and
 Updates windows size themselves.
 
-Its edges fade through a gradient `mask` the panel owns, applied only while there is something to
-scroll. `scrollEdgeEffectStyle` was tried first and does nothing here, with or without
-`safeAreaBar`: it draws a material where a scroll view meets a safe area, and over this panel's own
-`panelScrim` + `VisualEffectView` that material composites to nothing.
+The scroll view owns the **whole** panel and the bars are overlays on top, so a result dissolves
+beneath them rather than stopping at a line. The mask is clear for each bar's height, ramps over
+`quickActionScrollFade`, and the content is inset by bar + ramp — so the first line starts fully
+opaque and only dissolves once it has scrolled up into the gradient. It is skipped entirely when the
+result already fits, since dimming text that needs no scrolling reads as a defect.
+
+Three things here were settled by rendering them, not by reasoning:
+`scrollEdgeEffectStyle` draws nothing in this panel — it renders a material where a scroll view meets
+a safe area, and over `panelScrim` + `VisualEffectView` that composites to nothing. `safeAreaBar`
+makes it visible but lays its bars *over* the content instead of insetting it, so text runs through
+the buttons and escapes the corner clip. And a ramp starting at the panel edge rather than below the
+bar leaves text about 60% visible behind the title.
 
 `TextDiffEngine` shows what changed when the output is the input, edited. Its LCS matrix is
 quadratic, so past `maxTokens` a side it degrades to whole-text rather than asking for gigabytes.

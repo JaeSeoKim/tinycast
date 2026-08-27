@@ -159,8 +159,9 @@ enum Theme {
         static let quickActionPanel: CGFloat = 520
         /// Matched to the title's cap height; a row-sized glyph beside it reads as an error.
         static let quickActionHeaderIcon: CGFloat = 14
-        /// How far a scrolling result dissolves at each edge, long enough to read as a fade.
-        static let quickActionScrollFade: CGFloat = 28
+        /// The dissolve ramp below each bar's clear zone. Measured: a ramp starting at the panel
+        /// edge instead leaves text ~60% visible behind the title.
+        static let quickActionScrollFade: CGFloat = 40
         /// Past this the result scrolls, so a long summary cannot grow the panel off the screen.
         static let quickActionPanelBody: CGFloat = 320
         /// Keeps a two-word grammar fix from collapsing the panel to a slot.
