@@ -25,9 +25,37 @@ struct QuickActionTests {
         diffsFindWordLevelChanges()
         diffsStayBoundedOnLongText()
         settingsPersistAndRepairTheirRoute()
+        refusalsNameTheirOwnCause()
 
         print("\(passes) passed, \(failures) failed")
         if failures > 0 { exit(1) }
+    }
+
+    /// The regression this pins: every refusal used to read "Select some text first", so a reader
+    /// whose Accessibility grant had gone stale was told to do the one thing they had already done.
+    static func refusalsNameTheirOwnCause() {
+        let failures: [QuickActionFailure] = [
+            .needsAccessibility, .noTarget, .unreadableApp("Chrome"), .noSelection, .tooLong
+        ]
+        let messages = failures.map(\.localizedDescription)
+        expect(
+            Set(messages).count == failures.count,
+            "no two refusals read the same, got \(messages)")
+        for message in messages {
+            expect(!message.isEmpty, "every refusal explains itself")
+        }
+        expect(
+            QuickActionFailure.unreadableApp("Chrome").localizedDescription.contains("Chrome"),
+            "an unreadable app is named, so the reader knows which one to blame")
+        expect(
+            QuickActionFailure.needsAccessibility.localizedDescription.lowercased()
+                .contains("accessibility"),
+            "the permission failure says which permission")
+
+        // Only the permission failure has somewhere to send the reader, so only it earns a dialog.
+        expect(
+            failures.filter(\.opensAccessibilitySettings) == [.needsAccessibility],
+            "only a missing permission opens System Settings")
     }
 
     static func settingsPersistAndRepairTheirRoute() {

@@ -21,7 +21,7 @@ struct QuickActionSettings: Equatable, Sendable {
         previewChoices[action] = previews
     }
 
-    /// Round-trips through `UserDefaults` as a plain dictionary; an unknown key is a removed action.
+    /// Round-trips through `UserDefaults`; an unknown key is an action that no longer exists.
     var storedPreviewChoices: [String: Bool] {
         get { Dictionary(uniqueKeysWithValues: previewChoices.map { ($0.rawValue, $1) }) }
         set {

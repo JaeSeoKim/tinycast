@@ -14,8 +14,10 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
     private var onOutcome: ((Outcome) -> Void)?
     private var onRetranslate: ((Locale.Language) -> Void)?
     private var onDownloaded: (() -> Void)?
-    /// The panel's top-left, held so a reply growing under the reader does not push the title up.
-    private var anchor: NSPoint?
+
+    /// Clear of the pointer, so the panel never opens under the hand that summoned it.
+    private static let cursorOffset: CGFloat = 12
+    private static let screenMargin: CGFloat = 8
 
     var isShowing: Bool { panel?.isVisible ?? false }
 
@@ -32,18 +34,21 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         self.onRetranslate = onRetranslate
         self.onDownloaded = onDownloaded
 
-        let view = QuickActionResultView(
-            state: state,
-            languages: languages,
-            onReplace: { [weak self] in self?.finish(.replace(state.output)) },
-            onCopy: { [weak self] in self?.copyOutput() },
-            onCancel: { [weak self] in self?.finish(.dismissed) },
-            onRetranslate: { [weak self] in self?.onRetranslate?($0) },
-            onDownloaded: { [weak self] in self?.onDownloaded?() })
-        let hosting = NSHostingView(rootView: view)
+        let hosting = NSHostingView(
+            rootView: QuickActionResultView(
+                state: state,
+                languages: languages,
+                onReplace: { [weak self] in self?.finish(.replace(state.output)) },
+                onCopy: { [weak self] in self?.copyOutput() },
+                onCancel: { [weak self] in self?.finish(.dismissed) },
+                onRetranslate: { [weak self] in self?.onRetranslate?($0) },
+                onDownloaded: { [weak self] in self?.onDownloaded?() },
+                onHeight: { [weak self] in self?.resize(toHeight: $0) }))
         // The controller owns the frame; without this the top edge drifts as the reply grows.
         hosting.sizingOptions = []
-        hosting.setFrameSize(hosting.fittingSize)
+        // Its tallest, so the first frame is never short; the view reports the real height at once.
+        hosting.setFrameSize(
+            NSSize(width: Theme.Size.quickActionPanel, height: Theme.Size.quickActionPanelBody))
 
         let panel = QuickActionPanel(content: hosting)
         panel.delegate = self
@@ -56,22 +61,12 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
             }
         }
         self.panel = panel
-        place(panel, size: hosting.fittingSize)
+        placeAtCursor(panel)
         // Non-activating like the palette: key focus without pulling the reader out of their app.
         panel.fadeIn(duration: Theme.Duration.enter) {
             panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
         }
-    }
-
-    /// Re-measures after the content changed. Called by the coordinator as the reply lands, since
-    /// it drives the stream; SwiftUI resizes its own view but never the window around it.
-    func resizeToFit() {
-        guard let panel, let hosting = panel.contentView else { return }
-        let fitted = hosting.fittingSize
-        guard abs(fitted.height - panel.frame.height) > 0.5 else { return }
-        hosting.setFrameSize(fitted)
-        place(panel, size: fitted)
     }
 
     func dismiss() {
@@ -81,7 +76,6 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         onOutcome = nil
         onRetranslate = nil
         onDownloaded = nil
-        anchor = nil
         closing.delegate = nil
         closing.onKey = nil
         closing.fadeOut(duration: Theme.Duration.exit)
@@ -98,23 +92,41 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         callback?(outcome)
     }
 
-    /// Anchored by its top-left: a panel centred on every re-measure would crawl up the screen as
-    /// the reply arrives.
-    private func place(_ panel: NSPanel, size: NSSize) {
-        guard let visible = NSScreen.underCursor?.visibleFrame else { return }
-        let anchor =
-            anchor
-            ?? NSPoint(
-                x: visible.midX - size.width / 2,
-                y: visible.midY + size.height / 2 + visible.height * Self.centerLift)
-        self.anchor = anchor
+    /// Grows from the window's current top-left rather than a remembered one, so a reply arriving
+    /// after the reader dragged the panel cannot snap it back.
+    private func resize(toHeight height: CGFloat) {
+        guard let panel, height > 0, abs(height - panel.frame.height) > 0.5 else { return }
+        let topLeft = NSPoint(x: panel.frame.minX, y: panel.frame.maxY)
+        let width = panel.frame.width
         panel.setFrame(
-            NSRect(x: anchor.x, y: anchor.y - size.height, width: size.width, height: size.height),
+            NSRect(x: topLeft.x, y: topLeft.y - height, width: width, height: height),
             display: true)
+        clampOnScreen(panel)
     }
 
-    /// Optical centering, the same lift a dialog takes.
-    private static let centerLift: CGFloat = 0.08
+    private func placeAtCursor(_ panel: NSPanel) {
+        let mouse = NSEvent.mouseLocation
+        let size = panel.frame.size
+        panel.setFrameOrigin(
+            NSPoint(
+                x: mouse.x + Self.cursorOffset,
+                y: mouse.y - Self.cursorOffset - size.height))
+        clampOnScreen(panel)
+    }
+
+    private func clampOnScreen(_ panel: NSPanel) {
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
+        guard let visible = (screen ?? NSScreen.main)?.visibleFrame else { return }
+        let frame = panel.frame
+        let x = min(
+            max(frame.minX, visible.minX + Self.screenMargin),
+            max(visible.maxX - frame.width - Self.screenMargin, visible.minX + Self.screenMargin))
+        let y = min(
+            max(frame.minY, visible.minY + Self.screenMargin),
+            max(visible.maxY - frame.height - Self.screenMargin, visible.minY + Self.screenMargin))
+        guard x != frame.minX || y != frame.minY else { return }
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+    }
 
     // MARK: - NSWindowDelegate
 

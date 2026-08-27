@@ -1,23 +1,9 @@
 import AppKit
 
-/// One run of a Quick Action: read the selection, transform it, hand back the text. It owns no UI
-/// and no delivery — the coordinator decides whether the result replaces the selection or is shown.
+/// Reads the selection and transforms it. Owns no UI and no delivery: whether the result replaces
+/// the text is the coordinator's call.
 @MainActor
 final class QuickActionRunner {
-    enum Failure: LocalizedError, Equatable {
-        case noTarget
-        case noSelection
-        case tooLong
-
-        var errorDescription: String? {
-            switch self {
-            case .noTarget: return "Select text in another app first."
-            case .noSelection: return "Select some text first."
-            case .tooLong: return "That selection is too long to work on."
-            }
-        }
-    }
-
     /// A selection is read over Accessibility and sent whole, so the ceiling is here rather than at
     /// the provider, where it would come back as an opaque context error.
     static let maxSelectionBytes = 32_768
@@ -25,15 +11,24 @@ final class QuickActionRunner {
     /// Reads what is selected in `targetApp`, refusing anything a transform must not touch.
     /// Tinycast's own windows are excluded: the palette and Settings are not somebody's document.
     static func selection(in targetApp: NSRunningApplication?) throws -> String {
+        // A shortcut press is an explicit gesture, so it may prompt, as snippet expansion does.
+        guard Permissions.ensureAccessibility() else { throw QuickActionFailure.needsAccessibility }
         guard let targetApp,
             targetApp.bundleIdentifier != Bundle.main.bundleIdentifier
-        else { throw Failure.noTarget }
-        guard Permissions.isAccessibilityTrusted(),
-            let text = AccessibilityText.selection(in: targetApp),
-            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        else { throw Failure.noSelection }
-        guard text.utf8.count <= maxSelectionBytes else { throw Failure.tooLong }
-        return text
+        else { throw QuickActionFailure.noTarget }
+
+        switch AccessibilityText.read(in: targetApp) {
+        case .noFocusedElement:
+            throw QuickActionFailure.unreadableApp(targetApp.localizedName ?? "That app")
+        case .empty:
+            throw QuickActionFailure.noSelection
+        case .text(let text):
+            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw QuickActionFailure.noSelection
+            }
+            guard text.utf8.count <= maxSelectionBytes else { throw QuickActionFailure.tooLong }
+            return text
+        }
     }
 
     /// Drains a provider stream into one string. Quick Actions have no transcript to grow, so a

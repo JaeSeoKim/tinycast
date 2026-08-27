@@ -159,6 +159,8 @@ enum Theme {
         static let quickActionPanel: CGFloat = 520
         /// Past this the result scrolls, so a long summary cannot grow the panel off the screen.
         static let quickActionPanelBody: CGFloat = 320
+        /// Keeps a two-word grammar fix from collapsing the panel to a slot.
+        static let quickActionPanelMinBody: CGFloat = 44
         /// Transient volume HUD shown after any volume or mute command.
         static let hudWidth: CGFloat = 200
         static let hudHeight: CGFloat = 100

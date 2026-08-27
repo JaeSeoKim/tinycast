@@ -8,10 +8,20 @@ enum AccessibilityText {
     /// Generous for a responsive app, short enough that a wedged one can't stall the main actor.
     private static let timeout: Float = 1
 
+    /// Why a read came back without text. "Nothing is selected" and "this app tells us nothing" are
+    /// different problems with different fixes, and a caller that collapses them tells the reader to
+    /// select text they have already selected.
+    enum Selection: Equatable {
+        case text(String)
+        case noFocusedElement
+        case empty
+    }
+
     static func focusedElement(in app: NSRunningApplication) -> AXUIElement? {
         let application = AXUIElementCreateApplication(app.processIdentifier)
         // Per element and never inherited, so the focused element needs its own against a hang.
         AXUIElementSetMessagingTimeout(application, timeout)
+        activateManualAccessibility(of: application)
         var focusedValue: CFTypeRef?
         guard
             AXUIElementCopyAttributeValue(
@@ -27,16 +37,32 @@ enum AccessibilityText {
         return element
     }
 
-    static func selection(in app: NSRunningApplication) -> String? {
-        guard let element = focusedElement(in: app) else { return nil }
+    static func read(in app: NSRunningApplication) -> Selection {
+        guard let element = focusedElement(in: app) else { return .noFocusedElement }
         var value: CFTypeRef?
         let status = AXUIElementCopyAttributeValue(
             element,
             kAXSelectedTextAttribute as CFString,
             &value)
-        let text = status == .success ? value as? String : nil
-        if let text, !text.isEmpty { return text }
-        return webSelection(in: element) ?? text
+        if status == .success, let text = value as? String, !text.isEmpty { return .text(text) }
+        guard let web = webSelection(in: element), !web.isEmpty else { return .empty }
+        return .text(web)
+    }
+
+    /// For callers that can act on the text but not on why there is none — a snippet's `{selection}`
+    /// token, and the extension bridge. Not a shim over `read`: it answers a narrower question.
+    static func selection(in app: NSRunningApplication) -> String? {
+        guard case .text(let text) = read(in: app) else { return nil }
+        return text
+    }
+
+    /// Chromium builds its accessibility tree only once something asks for it, so Chrome, Electron
+    /// apps and VS Code answer every attribute with nothing until this is set. Harmless elsewhere:
+    /// an app without the attribute just refuses it. Unmemoised on purpose — a cache would be
+    /// global mutable state for one cheap IPC call on a keystroke, and Chromium ignores a repeat.
+    private static func activateManualAccessibility(of application: AXUIElement) {
+        AXUIElementSetAttributeValue(
+            application, "AXManualAccessibility" as CFString, kCFBooleanTrue)
     }
 
     /// Browsers have no `AXSelectedText`: web selection exists only as an opaque marker range.

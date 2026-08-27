@@ -1,12 +1,7 @@
 import Foundation
 
-/// What Tinycast tells the model when the reader runs an action on their own text. This file holds
-/// nothing else, so changing how an action behaves means editing prose — the way `AIPreamble` works
-/// for chat.
-///
-/// Every line here fights one failure: a chat-tuned model answering *about* the text instead of
-/// returning it. `AIPreamble` is deliberately not sent — it describes a launcher the model is not
-/// being asked about, and on a small on-device window it is a third of the budget.
+/// The only copy of what an action tells the model, so changing one means editing prose. Chat's
+/// `AIPreamble` is not sent: it describes a launcher nobody is asking the model about.
 enum QuickActionPrompt {
     static func instructions(for action: QuickAction) -> String {
         switch action {
@@ -37,13 +32,13 @@ enum QuickActionPrompt {
                 request.
                 """
         case .translate:
-            // Apple's translator does this one; kept exhaustive so a new action cannot forget a prompt.
+            // Apple's translator does this one; exhaustive so a new action cannot forget a prompt.
             return boundary
         }
     }
 
-    /// The output is pasted straight into somebody's document, so anything but the text itself is a
-    /// defect. Prompt injection is the other half: selected text is untrusted input, never a request.
+    /// The output lands in somebody's document, so anything but the text is a defect — and the
+    /// selection is untrusted input, never a request.
     private static let boundary = """
         You transform text. Return only the transformed text — no preamble, no explanation, no \
         commentary, and no quotation marks or code fences around it.

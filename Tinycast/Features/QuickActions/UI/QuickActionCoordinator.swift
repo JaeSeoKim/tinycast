@@ -75,6 +75,9 @@ final class QuickActionCoordinator {
         let selection: String
         do {
             selection = try QuickActionRunner.selection(in: target)
+        } catch let failure as QuickActionFailure {
+            reportRefusal(failure)
+            return
         } catch {
             core.showMessage(error.localizedDescription, tone: .danger)
             return
@@ -95,6 +98,28 @@ final class QuickActionCoordinator {
         panels.dismiss()
     }
 
+    /// A HUD is right for "nothing was selected" — the reader can fix that themselves. A missing
+    /// permission cannot be fixed from a pill that fades, so it gets a dialog with somewhere to go.
+    private func reportRefusal(_ failure: QuickActionFailure) {
+        guard failure.opensAccessibilitySettings else {
+            core.showMessage(failure.localizedDescription, tone: .danger)
+            return
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        Task {
+            guard
+                await core.reportFailure(
+                    title: "Quick Actions can't read your selection",
+                    message:
+                        "Tinycast needs the Accessibility permission to read the text you have "
+                        + "selected and replace it. If Tinycast is already listed, switch it off "
+                        + "and on again — a rebuilt app keeps a stale entry.",
+                    symbol: "wand.and.sparkles", recovery: "Open System Settings")
+            else { return }
+            Permissions.openAccessibilitySettings()
+        }
+    }
+
     private func perform(
         _ action: QuickAction, state: QuickActionPanelState,
         target: NSRunningApplication?, previewing: Bool
@@ -103,18 +128,14 @@ final class QuickActionCoordinator {
             let text = try await produce(action, state: state, previewing: previewing)
             guard !Task.isCancelled else { return }
             state.finish(text)
-            if previewing {
-                panels.resizeToFit()
-            } else {
-                deliver(text, to: target, action: action)
-            }
+            if previewing { return }
+            deliver(text, to: target, action: action)
         } catch is CancellationError {
             return
         } catch let error as TextTranslator.Failure where error.needsDownload {
             // Only SwiftUI's `translationTask` can fetch a pair, so this has to become a panel.
             if !previewing { present(state, target: target) }
             state.requireLanguageDownload()
-            panels.resizeToFit()
         } catch {
             report(error, state: state, previewing: previewing, target: target)
         }
@@ -129,10 +150,9 @@ final class QuickActionCoordinator {
         let provider = try core.quickActionProvider()
         return try await QuickActionRunner.run(
             action, selection: state.original, using: provider,
-            onDelta: { [weak self] delta in
+            onDelta: { delta in
                 guard previewing else { return }
                 state.append(delta)
-                self?.panels.resizeToFit()
             })
     }
 
@@ -153,7 +173,6 @@ final class QuickActionCoordinator {
             return
         }
         state.fail(error.localizedDescription)
-        panels.resizeToFit()
     }
 
     private func present(_ state: QuickActionPanelState, target: NSRunningApplication?) {

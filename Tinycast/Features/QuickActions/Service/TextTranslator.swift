@@ -2,11 +2,8 @@ import Foundation
 import NaturalLanguage
 import Translation
 
-/// Translation goes through Apple's translator rather than the language model: it is free on every
-/// route, it runs on device, and a 3B model is markedly worse at it.
-///
-/// `TranslationError` is annotated macOS 26.4 while the deployment floor is 26.0, so failures are
-/// caught as plain `Error` and reported by what was asked rather than by matching its cases.
+/// Apple's translator rather than the language model: free on every route, on device, and markedly
+/// better. `TranslationError` is macOS 26.4 against a 26.0 floor, so failures are plain `Error`.
 enum TextTranslator {
     enum Failure: LocalizedError, Equatable {
         case undetectableSource
@@ -39,7 +36,7 @@ enum TextTranslator {
         return Locale.Language(identifier: dominant.rawValue)
     }
 
-    /// What the caller can do with this pair right now: translate it, offer the download, or say no.
+    /// What the caller may do with this pair: translate, offer the download, or refuse.
     static func status(from source: Locale.Language, to target: Locale.Language) async
         -> LanguageAvailability.Status
     {

@@ -1,12 +1,17 @@
+import Combine
 import SwiftUI
 
-/// Settings → Quick Actions. A peer of the AI pane rather than a section inside it: the feature has
-/// its own switch, its own route and its own permission, and only borrows the provider layer.
+/// A peer of the AI pane, not a section inside it: Quick Actions has its own switch, route and
+/// permission, and only borrows the provider layer.
 struct QuickActionsSettingsView: View {
     @Environment(AppCore.self) private var core
     @Environment(AppSettings.self) private var appSettings
     @Environment(QuickActionSettingsStore.self) private var store
     @Environment(AISettingsStore.self) private var aiSettings
+
+    /// Polled like the Permissions pane: the grant lands in System Settings, which sends nothing.
+    @State private var isTrusted = Permissions.isAccessibilityTrusted()
+    private let refreshTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Form {
@@ -16,6 +21,19 @@ struct QuickActionsSettingsView: View {
                     Text(
                         "Act on the text you have selected in any app. Nothing is read until you "
                             + "press a shortcut.")
+                }
+                if appSettings.quickActionsEnabled, !isTrusted {
+                    // Every shortcut fails without it; better said here than found one press later.
+                    SettingsRow(
+                        title: "Accessibility permission required",
+                        subtitle: "Tinycast can't read your selection until it is granted."
+                    ) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Theme.Colors.destructive)
+                            .frame(width: Theme.Size.settingsRowIcon)
+                    } trailing: {
+                        Button("Open System Settings") { Permissions.openAccessibilitySettings() }
+                    }
                 }
             } header: {
                 Text("Quick Actions")
@@ -29,6 +47,7 @@ struct QuickActionsSettingsView: View {
             .settingsEnabled(appSettings.quickActionsEnabled)
         }
         .formStyle(.grouped)
+        .onReceive(refreshTimer) { _ in isTrusted = Permissions.isAccessibilityTrusted() }
         .onAppear {
             core.quickActionCoordinator.loadLanguages()
             store.resolveModel(
