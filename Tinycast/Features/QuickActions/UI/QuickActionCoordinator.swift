@@ -1,5 +1,4 @@
 import AppKit
-import FoundationModels
 import Observation
 
 /// The single funnel for every Quick Action, however it was started.
@@ -32,7 +31,7 @@ final class QuickActionCoordinator {
     func applyEnabled() {
         guard !settings.quickActionsEnabled else {
             store.resolveModel(
-                appleIntelligenceAvailable: AppleIntelligenceProvider.status().isAvailable,
+                appleIntelligenceAvailable: core.aiSettings.isAppleIntelligenceAvailable(),
                 fallback: core.aiSettings.defaultModel)
             loadLanguages()
             return
@@ -105,7 +104,7 @@ final class QuickActionCoordinator {
             action: action, original: selection, targetLanguage: targetLanguage)
         let previews = store.settings.previewsResult(action)
         if previews { present(state, target: target) }
-        await perform(action, state: state, target: target, previewing: previews)
+        await perform(state, target: target, previewing: previews)
     }
 
     /// A missing permission cannot be fixed from a pill that fades, so it earns a dialog instead.
@@ -130,15 +129,14 @@ final class QuickActionCoordinator {
     }
 
     private func perform(
-        _ action: QuickAction, state: QuickActionPanelState,
-        target: NSRunningApplication?, previewing: Bool
+        _ state: QuickActionPanelState, target: NSRunningApplication?, previewing: Bool
     ) async {
         do {
-            let text = try await produce(action, state: state, previewing: previewing)
+            let text = try await produce(state, previewing: previewing)
             guard !Task.isCancelled else { return }
             state.finish(text)
             if previewing { return }
-            deliver(text, to: target, action: action)
+            deliver(text, to: target, action: state.action)
         } catch is CancellationError {
             return
         } catch let error as TextTranslator.Failure where error.needsDownload {
@@ -146,19 +144,19 @@ final class QuickActionCoordinator {
             if !previewing { present(state, target: target) }
             state.requireLanguageDownload()
         } catch {
-            report(error, state: state, previewing: previewing, target: target)
+            report(error, state: state, previewing: previewing)
         }
     }
 
     private func produce(
-        _ action: QuickAction, state: QuickActionPanelState, previewing: Bool
+        _ state: QuickActionPanelState, previewing: Bool
     ) async throws -> String {
-        if action.usesTranslationFramework {
+        if state.action.usesTranslationFramework {
             return try await TextTranslator.translate(state.original, to: state.targetLanguage)
         }
         let provider = try core.quickActionProvider()
         return try await QuickActionRunner.run(
-            action, selection: state.original, using: provider,
+            state.action, selection: state.original, using: provider,
             onDelta: { delta in
                 guard previewing else { return }
                 state.append(delta)
@@ -172,10 +170,7 @@ final class QuickActionCoordinator {
     }
 
     /// A failure the reader cannot see is a hotkey that silently did nothing.
-    private func report(
-        _ error: Error, state: QuickActionPanelState, previewing: Bool,
-        target: NSRunningApplication?
-    ) {
+    private func report(_ error: Error, state: QuickActionPanelState, previewing: Bool) {
         guard previewing else {
             core.showMessage(error.localizedDescription, tone: .danger)
             return
@@ -192,17 +187,14 @@ final class QuickActionCoordinator {
                 self?.rerun(state, target: target)
             },
             onDownloaded: { [weak self] in self?.rerun(state, target: target) },
-            onOutcome: { [weak self] outcome in
-                guard let self, case .replace(let text) = outcome else { return }
-                self.deliver(text, to: target, action: state.action)
+            onReplace: { [weak self] text in
+                self?.deliver(text, to: target, action: state.action)
             })
     }
 
     private func rerun(_ state: QuickActionPanelState, target: NSRunningApplication?) {
         state.restart()
-        start { [weak self] in
-            await self?.perform(state.action, state: state, target: target, previewing: true)
-        }
+        start { [weak self] in await self?.perform(state, target: target, previewing: true) }
     }
 
     private var targetLanguage: Locale.Language {
@@ -213,10 +205,11 @@ final class QuickActionCoordinator {
 
     /// Observed, not ignored: it arrives after the pane has painted, and the picker has to notice.
     private(set) var offeredLanguages: [Locale.Language] = []
+    @ObservationIgnored private var languageLoad: Task<Void, Never>?
 
     func loadLanguages() {
-        guard offeredLanguages.isEmpty else { return }
-        Task { [weak self] in
+        guard offeredLanguages.isEmpty, languageLoad == nil else { return }
+        languageLoad = Task { [weak self] in
             let languages = await TextTranslator.supportedLanguages()
             self?.offeredLanguages = languages
         }

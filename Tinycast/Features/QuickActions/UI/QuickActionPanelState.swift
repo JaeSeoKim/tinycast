@@ -19,9 +19,14 @@ final class QuickActionPanelState {
     private(set) var phase: Phase = .running
     var targetLanguage: Locale.Language
 
+    @ObservationIgnored private var cachedDiff: [TextDiffEngine.Chunk]?
+
     var diff: [TextDiffEngine.Chunk] {
         guard action.showsDiff, phase == .finished else { return [] }
-        return TextDiffEngine.diff(original: original, modified: output)
+        if let cachedDiff { return cachedDiff }
+        let chunks = TextDiffEngine.diff(original: original, modified: output)
+        cachedDiff = chunks
+        return chunks
     }
 
     var isRunning: Bool { phase == .running }
@@ -41,6 +46,7 @@ final class QuickActionPanelState {
     func restart() {
         output = ""
         phase = .running
+        cachedDiff = nil
     }
 
     func finish(_ text: String) {

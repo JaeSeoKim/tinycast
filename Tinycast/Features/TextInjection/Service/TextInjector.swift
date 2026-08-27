@@ -147,6 +147,7 @@ final class TextInjector {
 
     /// A `changeCount` that never moves means nothing was selected, not that the old clipboard won.
     func copySelection(from targetApp: NSRunningApplication?) async -> String? {
+        await deliveryQueue.drain()
         guard finishPendingPasteboardOwnership(),
             await activateAndWaitForTarget(targetApp, automaticGeneration: nil),
             deliveryIsAllowed(

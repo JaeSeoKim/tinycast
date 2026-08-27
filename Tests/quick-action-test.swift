@@ -151,12 +151,13 @@ struct QuickActionTests {
         expect(message.contains("Text:"), "the selection is delimited from the instruction")
         expect(message.hasSuffix("teh cat"), "the selection goes last, unaltered")
 
-        let translated = QuickActionPrompt.message(
-            for: .translate, selection: "hello", targetLanguage: "French")
-        expect(translated.contains("French"), "a target language reaches the prompt when given")
+        // Only Summarize asks a question of the text; the rest just hand it over to be transformed.
         expect(
-            !QuickActionPrompt.message(for: .rewrite, selection: "hi").contains("Translate"),
-            "an action with no language never mentions one")
+            QuickActionPrompt.message(for: .summarize, selection: "hi").hasPrefix("Summarize"),
+            "a summary names the task above the text it is given")
+        expect(
+            QuickActionPrompt.message(for: .rewrite, selection: "hi").hasPrefix("Text:"),
+            "an action whose instructions already say what to do adds no second request")
     }
 
     static func previewChoicesRememberOnlyWhatWasChosen() {

@@ -89,8 +89,8 @@ struct QuickActionsSettingsView: View {
                     .foregroundStyle(.secondary)
             } else {
                 Picker(selection: modelBinding) {
-                    ForEach(modelChoices, id: \.selection) { choice in
-                        Text(choice.title).tag(Optional(choice.selection))
+                    ForEach(modelChoices) { choice in
+                        Text(choice.menuTitle).tag(Optional(choice.selection))
                     }
                 } label: {
                     Text("Model")
@@ -159,27 +159,10 @@ struct QuickActionsSettingsView: View {
     }
 
     /// The same routes chat offers, flattened: Quick Actions has no reason to group them.
-    private var modelChoices: [(selection: AIModelSelection, title: String)] {
-        var choices: [(AIModelSelection, String)] = []
-        if aiSettings.isAppleIntelligenceAvailable() {
-            choices.append((.appleIntelligence, AppleIntelligence.title))
-        }
-        for model in core.chatGPTSubscription.models {
-            choices.append(
-                (
-                    .chatGPT(model: model.id, effort: model.resolvedEffort(nil)),
-                    "\(model.name) · ChatGPT"
-                ))
-        }
-        for connection in aiSettings.connections {
-            for model in connection.models {
-                choices.append(
-                    (
-                        .api(connection: connection.id, model: model),
-                        "\(model) · \(connection.title)"
-                    ))
-            }
-        }
-        return choices
+    private var modelChoices: [AIModelOption] {
+        AIModelOption.catalog(
+            appleIntelligence: aiSettings.isAppleIntelligenceAvailable(),
+            chatGPT: core.chatGPTSubscription.models,
+            connections: aiSettings.connections)
     }
 }

@@ -125,12 +125,12 @@ enum Paster {
     }
 
     @MainActor
-    private static func postCommand(key v: CGKeyCode, toPid pid: pid_t?) {
+    private static func postCommand(key: CGKeyCode, toPid pid: pid_t?) {
         guard Permissions.ensureAccessibility() else { return }
         let source = CGEventSource(stateID: .combinedSessionState)
 
-        guard let down = CGEvent(keyboardEventSource: source, virtualKey: v, keyDown: true),
-            let up = CGEvent(keyboardEventSource: source, virtualKey: v, keyDown: false)
+        guard let down = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: true),
+            let up = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: false)
         else { return }
 
         down.flags = .maskCommand

@@ -38,7 +38,6 @@ final class QuickActionRunner {
     /// No transcript to grow, so a caller showing progress reads `onDelta` and the rest just await.
     static func run(
         _ action: QuickAction, selection: String, using provider: any AIProvider,
-        targetLanguage: String? = nil,
         onDelta: @MainActor (String) -> Void = { _ in }
     ) async throws -> String {
         let request = AIRequest(
@@ -46,8 +45,7 @@ final class QuickActionRunner {
             messages: [
                 AIMessage(
                     role: .user,
-                    text: QuickActionPrompt.message(
-                        for: action, selection: selection, targetLanguage: targetLanguage))
+                    text: QuickActionPrompt.message(for: action, selection: selection))
             ],
             maxOutputTokens: maxOutputTokens(for: action, selection: selection))
         var text = ""

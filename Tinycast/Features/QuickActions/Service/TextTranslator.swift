@@ -34,19 +34,11 @@ enum TextTranslator {
         return Locale.Language(identifier: dominant.rawValue)
     }
 
-    static func status(
-        from source: Locale.Language, to target: Locale.Language
-    ) async
-        -> LanguageAvailability.Status
-    {
-        await LanguageAvailability().status(from: source, to: target)
-    }
-
     /// Installed pairs only: fetching one needs SwiftUI's `translationTask`, which the panel owns.
     static func translate(_ text: String, to target: Locale.Language) async throws -> String {
         guard let source = sourceLanguage(of: text) else { throw Failure.undetectableSource }
         guard !source.isEquivalent(to: target) else { return text }
-        switch await status(from: source, to: target) {
+        switch await LanguageAvailability().status(from: source, to: target) {
         case .installed:
             break
         case .supported:

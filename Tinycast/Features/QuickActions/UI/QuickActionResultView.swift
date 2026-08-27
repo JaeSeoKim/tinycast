@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import Translation
 
 struct QuickActionResultView: View {
-    @Bindable var state: QuickActionPanelState
+    let state: QuickActionPanelState
     let languages: [Locale.Language]
     let onReplace: () -> Void
     let onCopy: () -> Void

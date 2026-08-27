@@ -43,7 +43,7 @@ enum TextDiffEngine: Sendable {
     }
 
     /// Words and the runs between them, so a change lands on a boundary rather than mid-letter.
-    static func tokenize(_ string: String) -> [String] {
+    private static func tokenize(_ string: String) -> [String] {
         var tokens: [String] = []
         var current = ""
         var inWord = false

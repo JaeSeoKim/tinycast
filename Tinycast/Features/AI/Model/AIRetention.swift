@@ -18,12 +18,8 @@ enum AIRetention: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var maxAge: TimeInterval {
-        self == .forever ? .greatestFiniteMagnitude : TimeInterval(rawValue) * 86_400
-    }
-
     /// The instant before which a conversation is too old to keep, or `nil` when nothing expires.
     func cutoff(from now: Date) -> Date? {
-        self == .forever ? nil : now.addingTimeInterval(-maxAge)
+        self == .forever ? nil : now.addingTimeInterval(-TimeInterval(rawValue) * 86_400)
     }
 }

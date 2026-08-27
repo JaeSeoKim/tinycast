@@ -46,16 +46,9 @@ enum QuickActionPrompt {
         """
 
     /// Without the `Text:` delimiter a short selection reads as part of the instruction above it.
-    static func message(
-        for action: QuickAction, selection: String, targetLanguage: String? = nil
-    )
-        -> String
-    {
+    static func message(for action: QuickAction, selection: String) -> String {
         var lines = ["Text:", selection]
         if action == .summarize { lines.insert("Summarize the text below.", at: 0) }
-        if let targetLanguage {
-            lines.insert("Translate the text below into \(targetLanguage).", at: 0)
-        }
         return lines.joined(separator: "\n")
     }
 }

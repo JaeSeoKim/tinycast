@@ -4,14 +4,9 @@ import SwiftUI
 /// Owns the result panel: one at a time, and the target app keeps its selection while it is up.
 @MainActor
 final class QuickActionPanelController: NSObject, NSWindowDelegate {
-    enum Outcome: Equatable {
-        case replace(String)
-        case dismissed
-    }
-
     private var panel: QuickActionPanel?
     private var state: QuickActionPanelState?
-    private var onOutcome: ((Outcome) -> Void)?
+    private var onReplace: ((String) -> Void)?
     private var onRetranslate: ((Locale.Language) -> Void)?
     private var onDownloaded: (() -> Void)?
 
@@ -19,18 +14,16 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
     private static let cursorOffset: CGFloat = 12
     private static let screenMargin: CGFloat = 8
 
-    var isShowing: Bool { panel?.isVisible ?? false }
-
     func present(
         _ state: QuickActionPanelState,
         languages: [Locale.Language],
         onRetranslate: @escaping (Locale.Language) -> Void,
         onDownloaded: @escaping () -> Void,
-        onOutcome: @escaping (Outcome) -> Void
+        onReplace: @escaping (String) -> Void
     ) {
         dismiss()
         self.state = state
-        self.onOutcome = onOutcome
+        self.onReplace = onReplace
         self.onRetranslate = onRetranslate
         self.onDownloaded = onDownloaded
 
@@ -38,9 +31,9 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
             rootView: QuickActionResultView(
                 state: state,
                 languages: languages,
-                onReplace: { [weak self] in self?.finish(.replace(state.output)) },
+                onReplace: { [weak self] in self?.replace(state.output) },
                 onCopy: { [weak self] in self?.copyOutput() },
-                onCancel: { [weak self] in self?.finish(.dismissed) },
+                onCancel: { [weak self] in self?.dismiss() },
                 onRetranslate: { [weak self] in self?.onRetranslate?($0) },
                 onDownloaded: { [weak self] in self?.onDownloaded?() },
                 onHeight: { [weak self] in self?.resize(toHeight: $0) }))
@@ -55,9 +48,9 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         panel.onKey = { [weak self] key in
             guard let self, let state = self.state else { return }
             switch key {
-            case .replace: if state.canReplace { self.finish(.replace(state.output)) }
+            case .replace: if state.canReplace { self.replace(state.output) }
             case .copy: if state.canReplace { self.copyOutput() }
-            case .cancel: self.finish(.dismissed)
+            case .cancel: self.dismiss()
             }
         }
         self.panel = panel
@@ -73,7 +66,7 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         guard let closing = panel else { return }
         panel = nil
         state = nil
-        onOutcome = nil
+        onReplace = nil
         onRetranslate = nil
         onDownloaded = nil
         closing.delegate = nil
@@ -86,10 +79,10 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         Paster.copyPlainText(state.output)
     }
 
-    private func finish(_ outcome: Outcome) {
-        let callback = onOutcome
+    private func replace(_ text: String) {
+        let callback = onReplace
         dismiss()
-        callback?(outcome)
+        callback?(text)
     }
 
     /// Grows from the current top-left, so a reply landing after a drag cannot snap the panel back.
@@ -131,6 +124,6 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         guard let panel, notification.object as? NSWindow === panel else { return }
-        finish(.dismissed)
+        dismiss()
     }
 }
