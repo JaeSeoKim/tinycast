@@ -68,6 +68,14 @@ source language, because `TranslationSession(installedSource:target:)` needs a c
 `TranslationError` is annotated `macOS 26.4` while the deployment floor is `26.0`, so failures are
 caught as plain `Error` and reported by what was asked rather than by matching its cases.
 
+**The picker offers Apple's own list, never the reader's preferred languages.** `supportedLanguages`
+is 47 entries on macOS 26 and is the framework's to change; building the menu from
+`Locale.preferredLanguages` instead would put a language the translator cannot reach in front of
+someone, where it could only fail at press time. Notably **Bengali is not among the 47**. The list
+loads asynchronously, so the coordinator holds it as observed state rather than a computed property.
+Names come from `minimalIdentifier` — the maximal form carries the script, and `es` would read
+"Spanish (Latin, Spain)" in a menu that should say "Spanish".
+
 A pair that is supported but not downloaded **opens the panel**, whatever the action's usual result.
 Fetching one needs SwiftUI's `translationTask`, and there is no other API for it — so the download
 has a surface to live on rather than a shortcut that silently does nothing, and text is never

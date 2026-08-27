@@ -70,8 +70,17 @@ enum TextTranslator {
         }
     }
 
+    /// Minimal, not maximal: the maximal form carries the script, so `es` would read
+    /// "Spanish (Latin, Spain)" in a menu where the reader expects "Spanish".
     static func displayName(of language: Locale.Language) -> String {
-        Locale.current.localizedString(forIdentifier: language.maximalIdentifier)
+        Locale.current.localizedString(forIdentifier: language.minimalIdentifier)
             ?? language.minimalIdentifier
+    }
+
+    /// What Apple's translator can actually reach, so the picker cannot offer a language that only
+    /// fails at press time. 47 of them as of macOS 26, and the list is the framework's to change.
+    static func supportedLanguages() async -> [Locale.Language] {
+        await LanguageAvailability().supportedLanguages
+            .sorted { displayName(of: $0) < displayName(of: $1) }
     }
 }

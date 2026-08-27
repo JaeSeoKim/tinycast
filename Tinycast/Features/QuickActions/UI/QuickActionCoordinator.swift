@@ -36,6 +36,7 @@ final class QuickActionCoordinator {
             store.resolveModel(
                 appleIntelligenceAvailable: AppleIntelligenceProvider.status().isAvailable,
                 fallback: core.aiSettings.defaultModel)
+            loadLanguages()
             return
         }
         cancel()
@@ -158,7 +159,7 @@ final class QuickActionCoordinator {
     private func present(_ state: QuickActionPanelState, target: NSRunningApplication?) {
         panels.present(
             state,
-            languages: Self.offeredLanguages,
+            languages: offeredLanguages,
             onRetranslate: { [weak self] language in
                 guard let self else { return }
                 state.targetLanguage = language
@@ -192,13 +193,17 @@ final class QuickActionCoordinator {
         return Locale.Language(identifier: stored)
     }
 
-    /// The panel's switcher. Apple's own list is async and changes with what is installed, so the
-    /// menu offers the reader's preferred languages plus the one they chose in Settings.
-    static var offeredLanguages: [Locale.Language] {
-        var seen = Set<String>()
-        return Locale.preferredLanguages
-            .map { Locale.Language(identifier: $0) }
-            .filter { seen.insert($0.maximalIdentifier).inserted }
+    /// Apple's own list, loaded once. Offering the reader's preferred languages instead would put a
+    /// language the translator cannot reach in the menu, where it would only fail at press time.
+    /// Observed, not ignored: it arrives after the pane has painted, and the picker has to notice.
+    private(set) var offeredLanguages: [Locale.Language] = []
+
+    func loadLanguages() {
+        guard offeredLanguages.isEmpty else { return }
+        Task { [weak self] in
+            let languages = await TextTranslator.supportedLanguages()
+            self?.offeredLanguages = languages
+        }
     }
 }
 

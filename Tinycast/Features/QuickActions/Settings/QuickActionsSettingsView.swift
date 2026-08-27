@@ -30,6 +30,7 @@ struct QuickActionsSettingsView: View {
         }
         .formStyle(.grouped)
         .onAppear {
+            core.quickActionCoordinator.loadLanguages()
             store.resolveModel(
                 appleIntelligenceAvailable: aiSettings.isAppleIntelligenceAvailable(),
                 fallback: aiSettings.defaultModel)
@@ -94,8 +95,8 @@ struct QuickActionsSettingsView: View {
         Section {
             Picker(selection: languageBinding) {
                 Text("Same as this Mac").tag("")
-                ForEach(QuickActionCoordinator.offeredLanguages, id: \.maximalIdentifier) {
-                    Text(TextTranslator.displayName(of: $0)).tag($0.maximalIdentifier)
+                ForEach(core.quickActionCoordinator.offeredLanguages, id: \.minimalIdentifier) {
+                    Text(TextTranslator.displayName(of: $0)).tag($0.minimalIdentifier)
                 }
             } label: {
                 Text("Translate to")
