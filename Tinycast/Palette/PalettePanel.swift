@@ -64,7 +64,9 @@ final class PalettePanel: NSPanel {
         else { return nil }
         let arrow: (key: KeyEquivalent, code: Int)
         // Character chords, not key codes: Dvorak transposes the two.
-        switch event.charactersIgnoringModifiers?.lowercased() {
+        switch ASCIIKeyboardLayout.character(for: Int(event.keyCode))?.lowercased()
+            ?? event.charactersIgnoringModifiers?.lowercased()
+        {
         case "n": arrow = (.downArrow, kVK_DownArrow)
         case "p": arrow = (.upArrow, kVK_UpArrow)
         case "f": arrow = (.rightArrow, kVK_RightArrow)

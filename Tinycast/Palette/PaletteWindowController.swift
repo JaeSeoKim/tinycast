@@ -267,7 +267,9 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
                 return true
             }
             // Character chords, not key codes: Dvorak transposes the two.
-            guard let character = event.charactersIgnoringModifiers?.lowercased() else { return false }
+            guard let character = ASCIIKeyboardLayout.character(for: Int(event.keyCode))?
+                .lowercased() ?? event.charactersIgnoringModifiers?.lowercased()
+            else { return false }
             switch character {
             case ",":
                 self.core.settingsCoordinator.showSettings()

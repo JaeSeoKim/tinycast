@@ -56,6 +56,7 @@ struct DoubleTapDetectorTests {
     static func main() {
         modifierGlyphs()
         commandActions()
+        layoutCharacters()
         hyperChord()
         hyperRetargeting()
         firing()
@@ -83,6 +84,14 @@ struct DoubleTapDetectorTests {
             DoubleTapModifier.allCases.map(\.rawValue)
                 == ["control", "option", "shift", "command"],
             "raw values are the persisted spelling and stay in canonical ⌃⌥⇧⌘ order")
+    }
+
+    static func layoutCharacters() {
+        let character = ASCIIKeyboardLayout.character(for: kVK_ANSI_K)
+        expect(character?.isEmpty == false, "the ASCII-capable layout translates an ANSI letter key")
+        expect(
+            character?.unicodeScalars.allSatisfy(\.isASCII) == true,
+            "the shortcut character stays ASCII while a non-ASCII input source is active")
     }
 
     // MARK: - Built-in command mappings
