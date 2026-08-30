@@ -266,9 +266,10 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
                 self.core.palette.prepare(mode: .launcher)
                 return true
             }
-            // Character chords, not key codes: Dvorak transposes the two.
-            guard let character = ASCIIKeyboardLayout.character(for: Int(event.keyCode))?
-                .lowercased() ?? event.charactersIgnoringModifiers?.lowercased()
+            // Through the ASCII-capable layout: an IME must not move ⌘W off its physical key.
+            guard
+                let character = ASCIIKeyboardLayout.character(for: event)?.lowercased()
+                    ?? event.charactersIgnoringModifiers?.lowercased()
             else { return false }
             switch character {
             case ",":

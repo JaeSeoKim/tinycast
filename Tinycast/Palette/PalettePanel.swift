@@ -63,8 +63,8 @@ final class PalettePanel: NSPanel {
         guard event.modifierFlags.intersection([.command, .option, .control, .shift]) == .control
         else { return nil }
         let arrow: (key: KeyEquivalent, code: Int)
-        // Character chords, not key codes: Dvorak transposes the two.
-        switch ASCIIKeyboardLayout.character(for: Int(event.keyCode))?.lowercased()
+        // Through the ASCII-capable layout: an IME must not move ⌃N off its physical key.
+        switch ASCIIKeyboardLayout.character(for: event)?.lowercased()
             ?? event.charactersIgnoringModifiers?.lowercased()
         {
         case "n": arrow = (.downArrow, kVK_DownArrow)

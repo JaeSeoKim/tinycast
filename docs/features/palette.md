@@ -361,7 +361,9 @@ exactly as the chord natively would. A chord carrying any modifier beyond ⌃ �
 Character shortcut handlers accept every key so SwiftUI still calls them when the active input
 source produces a non-ASCII character. Inside the callback, `ASCIIKeyboardLayout` resolves
 `NSApp.currentEvent.keyCode` through the current ASCII-capable layout before comparing the shortcut.
-Panel-owned chords use the same translation directly. A non-ASCII input source or IME therefore
+Panel-owned chords use the same translation directly. A ⌘ chord translates through the layout's own
+Command table, so "Dvorak – QWERTY ⌘" keeps giving QWERTY positions while Command is held; a ⌃ chord
+translates without it, since only Command is remapped. A non-ASCII input source or IME therefore
 cannot turn ⌘K into a different logical key, while Dvorak and other ASCII layouts keep their own
 letter positions. No replacement event is synthesized, and unmodified typing stays on the active
 input source and follows the normal composition path.

@@ -87,11 +87,19 @@ struct DoubleTapDetectorTests {
     }
 
     static func layoutCharacters() {
-        let character = ASCIIKeyboardLayout.character(for: kVK_ANSI_K)
-        expect(character?.isEmpty == false, "the ASCII-capable layout translates an ANSI letter key")
+        let keyCodes = [kVK_ANSI_K, kVK_ANSI_X, kVK_ANSI_Q, kVK_ANSI_Comma, kVK_ANSI_Period]
+        let characters = keyCodes.compactMap { ASCIIKeyboardLayout.character(for: $0) }
         expect(
-            character?.unicodeScalars.allSatisfy(\.isASCII) == true,
+            characters.count == keyCodes.count,
+            "the ASCII-capable layout translates every ANSI key a palette chord uses")
+        expect(
+            characters.allSatisfy { $0.unicodeScalars.allSatisfy(\.isASCII) },
             "the shortcut character stays ASCII while a non-ASCII input source is active")
+        expect(
+            keyCodes.allSatisfy {
+                ASCIIKeyboardLayout.character(for: $0, modifiers: UInt32(cmdKey >> 8)) != nil
+            },
+            "a layout's Command table resolves the same keys, so ⌘ chords never lose their letter")
     }
 
     // MARK: - Built-in command mappings
