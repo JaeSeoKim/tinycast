@@ -6,6 +6,20 @@ struct ExtensionCommandScreen: PaletteScreen {
     let extensions: ExtensionManager
     let vm: PaletteState
     let openActions: () -> Void
+    let scrollToTop: () -> Void
+    let searchDropdown: ExtensionSearchDropdown?
+
+    init(
+        screen: ExtensionScreen, extensions: ExtensionManager, vm: PaletteState,
+        openActions: @escaping () -> Void, scrollToTop: @escaping () -> Void
+    ) {
+        self.screen = screen
+        self.extensions = extensions
+        self.vm = vm
+        self.openActions = openActions
+        self.scrollToTop = scrollToTop
+        searchDropdown = ExtensionSearchDropdown(screen.searchBarAccessory)
+    }
 
     /// `assets/` of the running extension, so the icons it names resolve.
     var assetsPath: String? {
@@ -63,6 +77,39 @@ struct ExtensionCommandScreen: PaletteScreen {
             activate: { index in
                 guard let handler = actions[index].handler else { return }
                 extensions.dispatch(handler: handler)
+            })
+    }
+
+    func searchDropdownMenuContent(
+        session: ExtensionSearchDropdownSession, onActivate: @escaping (Int) -> Void,
+        onDismiss: @escaping () -> Void
+    ) -> PaletteMenuContent? {
+        guard let dropdown = searchDropdown else { return nil }
+        let assetsPath = assetsPath
+        let extensions = extensions
+        let vm = vm
+        let scrollToTop = scrollToTop
+        return PaletteMenuContent(
+            rowCount: dropdown.items.count,
+            takesFocus: true,
+            view: {
+                AnyView(
+                    ExtensionSearchDropdownPanel(
+                        dropdown: dropdown, assetsPath: assetsPath,
+                        session: session, onActivate: onActivate,
+                        onSearchTextChange: { text in
+                            guard let handler = dropdown.searchHandler else { return }
+                            extensions.dispatch(handler: handler, arguments: [text])
+                        }, onDismiss: onDismiss))
+            },
+            activate: { index in
+                guard let handler = dropdown.handler,
+                    dropdown.items[index].value != dropdown.value
+                else { return }
+                vm.selection = 0
+                scrollToTop()
+                extensions.dispatch(
+                    handler: handler, arguments: [dropdown.items[index].value])
             })
     }
 

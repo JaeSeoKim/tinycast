@@ -59,7 +59,7 @@ final class PalettePanel: NSPanel {
     ]
 
     /// ⌃N/⌃P/⌃F/⌃B respelled as their arrow, so the arrow handlers serve both spellings.
-    private static func emacsArrow(for event: NSEvent) -> NSEvent? {
+    static func emacsArrow(for event: NSEvent) -> NSEvent? {
         guard event.modifierFlags.intersection([.command, .option, .control, .shift]) == .control
         else { return nil }
         let arrow: (key: KeyEquivalent, code: Int)

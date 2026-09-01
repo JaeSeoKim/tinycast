@@ -244,6 +244,7 @@ run slow ext-test          -parse-as-library \
                            $E/Model/ExtensionBootConfig.swift \
                            $E/Model/ExtensionGridLayout.swift \
                            $E/Model/ExtensionManifest.swift \
+                           $E/Model/ExtensionSearchDropdown.swift \
                            $E/Model/RenderNode.swift \
                            $E/Service/ExtensionCatalog.swift \
                            $E/Service/ExtensionFetcher.swift \

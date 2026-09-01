@@ -1,12 +1,14 @@
 import AppKit
 import SwiftUI
 
-/// The ⌘K menu's own window, so glass renders against the desktop and nothing clips it.
+/// A palette menu's own window, so glass renders against the desktop and nothing clips it.
 final class MenuPanel: NSPanel {
     weak var paletteState: PaletteState?
+    var takesFocus = false
+    var onWindowGroupExit: (() -> Void)?
 
-    /// Key stays with the palette: its `onKeyPress` handlers drive this menu's selection.
-    override var canBecomeKey: Bool { false }
+    /// Ordinary menus stay with the palette; a menu containing text input takes key status.
+    override var canBecomeKey: Bool { takesFocus }
 
     init() {
         super.init(
@@ -25,10 +27,34 @@ final class MenuPanel: NSPanel {
     override func sendEvent(_ event: NSEvent) {
         switch event.type {
         case .mouseMoved: paletteState?.notePointerMoved(to: NSEvent.mouseLocation)
-        case .scrollWheel: paletteState?.disarmHoverHighlight(pointerAt: NSEvent.mouseLocation)
+        case .keyDown, .scrollWheel:
+            paletteState?.disarmHoverHighlight(pointerAt: NSEvent.mouseLocation)
+        case .flagsChanged:
+            paletteState?.noteCommandHeld(event.modifierFlags.contains(.command))
         default: break
         }
+        if event.type == .keyDown, let arrow = PalettePanel.emacsArrow(for: event) {
+            sendEvent(arrow)
+            return
+        }
+        if event.type == .keyDown, event.modifierFlags.contains(.command),
+            (parent as? PalettePanel)?.onCommandShortcut?(event) == true
+        {
+            return
+        }
         super.sendEvent(event)
+    }
+
+    override func resignKey() {
+        super.resignKey()
+        paletteState?.noteCommandHeld(false)
+        Task { @MainActor [weak self] in
+            guard let self, isVisible, let parent else { return }
+            guard !parent.isKeyWindow,
+                parent.childWindows?.contains(where: \.isKeyWindow) != true
+            else { return }
+            onWindowGroupExit?()
+        }
     }
 }
 
@@ -51,9 +77,12 @@ final class MenuPanelController {
 
     var isOpen: Bool { panel?.isVisible ?? false }
 
-    func show(_ content: AnyView, corner: Corner, parent: NSWindow, core: AppCore) {
+    func show(
+        _ content: AnyView, corner: Corner, takesFocus: Bool, parent: NSWindow, core: AppCore
+    ) {
         let root = AnyView(content.paletteEnvironment(core))
-        let panel = ensurePanel(state: core.palette)
+        let panel = ensurePanel(core: core)
+        panel.takesFocus = takesFocus
         if let hosting {
             hosting.rootView = root
         } else {
@@ -66,30 +95,43 @@ final class MenuPanelController {
         // Open disarmed: a menu opened by click lands under the pointer, which chose no row of it.
         core.palette.disarmHoverHighlight(pointerAt: NSEvent.mouseLocation)
         layout(corner: corner, parent: parent)
-        guard panel.parent == nil else { return }
-        parent.addChildWindow(panel, ordered: .above)
+        if panel.parent == nil { parent.addChildWindow(panel, ordered: .above) }
+        if takesFocus {
+            panel.makeKey()
+        } else if panel.isKeyWindow {
+            parent.makeKey()
+        }
+        panel.invalidateShadow()
     }
 
     /// Rebuilds the hosted tree in place: the panel keeps its window, so nothing flickers.
-    func update(_ content: AnyView, corner: Corner, core: AppCore) {
+    func update(_ content: AnyView, corner: Corner, takesFocus: Bool, core: AppCore) {
         guard let hosting, let parent else { return }
+        panel?.takesFocus = takesFocus
         hosting.rootView = AnyView(content.paletteEnvironment(core))
         layout(corner: corner, parent: parent)
     }
 
     func hide() {
         guard let panel else { return }
+        let restoreKey = panel.isKeyWindow
         panel.parent?.removeChildWindow(panel)
         panel.orderOut(nil)
+        panel.takesFocus = false
+        if restoreKey { parent?.makeKey() }
     }
 
-    private func ensurePanel(state: PaletteState) -> MenuPanel {
+    private func ensurePanel(core: AppCore) -> MenuPanel {
         if let panel {
-            panel.paletteState = state
+            panel.paletteState = core.palette
             return panel
         }
         let panel = MenuPanel()
-        panel.paletteState = state
+        panel.paletteState = core.palette
+        panel.onWindowGroupExit = { [weak core] in
+            guard let core, !core.isShowingDialog else { return }
+            core.paletteCoordinator.hidePalette(restoreFocus: false)
+        }
         self.panel = panel
         return panel
     }
@@ -115,5 +157,6 @@ final class MenuPanelController {
         // Every arrow key re-pushes the tree, and only the highlight moved.
         guard panel.frame != frame else { return }
         panel.setFrame(frame, display: true)
+        panel.invalidateShadow()
     }
 }

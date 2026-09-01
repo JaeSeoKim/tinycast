@@ -63,7 +63,9 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             panel.orderFrontRegardless()
             // A never-activated login item can drop the first key request, so re-assert.
             DispatchQueue.main.async { [weak panel] in
-                guard let panel, panel.isVisible, !panel.isKeyWindow else { return }
+                guard let panel, panel.isVisible, !panel.isKeyWindow,
+                    panel.childWindows?.contains(where: \.isKeyWindow) != true
+                else { return }
                 panel.makeKeyAndOrderFront(nil)
             }
         }
@@ -139,8 +141,13 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
 
     /// Not for one of our own dialogs: hiding would tear down a command mid-`confirmAlert`.
     func windowDidResignKey(_ notification: Notification) {
-        guard isVisible, !core.isShowingDialog else { return }
-        core.paletteCoordinator.hidePalette(restoreFocus: false)
+        Task { @MainActor [weak self] in
+            guard let self, isVisible, !core.isShowingDialog else { return }
+            guard panel?.isKeyWindow != true,
+                panel?.childWindows?.contains(where: \.isKeyWindow) != true
+            else { return }
+            core.paletteCoordinator.hidePalette(restoreFocus: false)
+        }
     }
 
     /// Re-bump a turn later: on the first show a synchronous bump lands before `onChange`.

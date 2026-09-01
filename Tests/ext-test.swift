@@ -184,6 +184,7 @@ struct ExtensionTests {
     static func runChecks() async {
         manifestChecks()
         renderNodeChecks()
+        dropdownChecks()
         screenChecks()
         actionIconChecks()
         oauthUnitChecks()
@@ -481,6 +482,170 @@ struct ExtensionTests {
         check("out-of-range selection falls back", panels.actionPanel(forItemAt: 99)?.id == 8)
     }
 
+    static func dropdownChecks() {
+        let items = [
+            RenderNode(
+                id: 11, type: "List.Dropdown.Item",
+                props: [
+                    "title": .string("All"), "value": .string("all"),
+                    "icon": .string("bullet-points-16")
+                ]),
+            RenderNode(
+                id: 12, type: "List.Dropdown.Item",
+                props: [
+                    "title": .string("Active"), "value": .string("active"),
+                    "keywords": .array([.string("enabled")])
+                ])
+        ]
+        let section = RenderNode(
+            id: 10, type: "List.Dropdown.Section", props: ["title": .string("States")],
+            children: [items[1]])
+        let dropdown = ExtensionSearchDropdown(
+            RenderNode(
+                id: 9, type: "List.Dropdown",
+                props: [
+                    "tooltip": .string("Filter"), "value": .string("active"),
+                    "placeholder": .string("Search states…"), "isLoading": .bool(true),
+                    "filtering": .bool(true),
+                    "onTinycastChange": .handler("9:onTinycastChange"),
+                    "onTinycastSearchTextChange": .handler("9:onTinycastSearchTextChange")
+                ], children: [items[0], section]))
+        check("search dropdown parses nested items", dropdown?.items.count == 2)
+        check("search dropdown preserves render-node identity", dropdown?.items.map(\.id) == [11, 12])
+        check("search dropdown preserves section boundaries", dropdown?.sections.count == 2)
+        check("search dropdown preserves section titles", dropdown?.sections.last?.title == "States")
+        check(
+            "search dropdown preserves item icons",
+            dropdown?.items.first?.icon == .string("bullet-points-16"))
+        check("search dropdown reads the rendered value", dropdown?.value == "active")
+        check("search dropdown resolves the selected title", dropdown?.title == "Active")
+        check("search dropdown exposes its host handler", dropdown?.handler == "9:onTinycastChange")
+        check(
+            "search dropdown exposes its search contract",
+            dropdown?.placeholder == "Search states…" && dropdown?.isLoading == true
+                && dropdown?.filtersLocally == true
+                && dropdown?.searchHandler == "9:onTinycastSearchTextChange")
+        check(
+            "search dropdown filters titles and keywords locally",
+            dropdown?.sections(matching: "enabled").flatMap(\.items).map(\.value) == ["active"])
+        check(
+            "filtered dropdown items keep their render-node identity",
+            dropdown?.sections(matching: "enabled").flatMap(\.items).first?.id == 12)
+        check(
+            "dropdown selection preserves a surviving render node",
+            dropdown?.selection(matching: "", preserving: 11) == 11)
+        check(
+            "dropdown selection falls back to its rendered value",
+            dropdown?.selection(matching: "enabled", preserving: 11) == 12)
+        let reorderedDropdown = ExtensionSearchDropdown(
+            RenderNode(
+                id: 13, type: "List.Dropdown", props: ["value": .string("active")],
+                children: [items[1], items[0]]))
+        check(
+            "reordered dropdowns preserve item identity",
+            reorderedDropdown?.items.map(\.id) == [12, 11])
+        check(
+            "reordered dropdowns preserve the highlighted item",
+            reorderedDropdown?.selection(matching: "", preserving: 12) == 12)
+        check(
+            "reordered dropdowns resolve activation by stable identity",
+            reorderedDropdown?.activationIndex(for: 12) == 0)
+
+        let missingValue = ExtensionSearchDropdown(
+            RenderNode(
+                id: 20, type: "List.Dropdown",
+                props: ["value": .string("missing")],
+                children: items))
+        check("unknown dropdown values fall back to the first title", missingValue?.title == "All")
+        check(
+            "dropdown selection falls back to the first visible item",
+            missingValue?.selection(matching: "", preserving: 999) == 11)
+        check("dropdowns do not require a host handler", missingValue?.handler == nil)
+        check(
+            "dropdown search defaults are applied",
+            missingValue?.placeholder == "Search…" && missingValue?.filtersLocally == true
+                && missingValue?.isLoading == false)
+        let extensionFiltered = ExtensionSearchDropdown(
+            RenderNode(
+                id: 21, type: "List.Dropdown",
+                props: [
+                    "filtering": .bool(false),
+                    "onTinycastSearchTextChange": .handler("21:onTinycastSearchTextChange")
+                ], children: items))
+        check(
+            "extension-filtered dropdowns keep their rendered items",
+            extensionFiltered?.sections(matching: "missing").flatMap(\.items).count == 2)
+        let explicitKeywords = ExtensionSearchDropdown(
+            RenderNode(
+                id: 23, type: "List.Dropdown", props: [:],
+                children: [
+                    RenderNode(
+                        id: 24, type: "List.Dropdown.Section",
+                        props: ["title": .string("States")],
+                        children: [
+                            RenderNode(
+                                id: 25, type: "List.Dropdown.Item",
+                                props: [
+                                    "title": .string("Other"), "value": .string("other"),
+                                    "keywords": .array([])
+                                ]),
+                            RenderNode(
+                                id: 26, type: "List.Dropdown.Item",
+                                props: ["title": .string("Default"), "value": .string("default")])
+                        ])
+                ]))
+        check(
+            "an omitted keyword list defaults to the section title",
+            explicitKeywords?.sections(matching: "states").flatMap(\.items).map(\.id) == [26])
+        let rankedSections = [
+            RenderNode(
+                id: 31, type: "List.Dropdown.Section", props: ["title": .string("Partial")],
+                children: [
+                    RenderNode(
+                        id: 32, type: "List.Dropdown.Item",
+                        props: ["title": .string("Inactive"), "value": .string("inactive")])
+                ]),
+            RenderNode(
+                id: 33, type: "List.Dropdown.Section", props: ["title": .string("Exact")],
+                children: [
+                    RenderNode(
+                        id: 34, type: "List.Dropdown.Item",
+                        props: ["title": .string("Active"), "value": .string("active")])
+                ])
+        ]
+        func rankedDropdown(keepingSectionOrder: Bool) -> ExtensionSearchDropdown? {
+            ExtensionSearchDropdown(
+                RenderNode(
+                    id: 30, type: "List.Dropdown",
+                    props: [
+                        "filtering": .object([
+                            "keepSectionOrder": .bool(keepingSectionOrder)
+                        ])
+                    ], children: rankedSections))
+        }
+        check(
+            "native dropdown filtering ranks sections by their best item",
+            rankedDropdown(keepingSectionOrder: false)?.sections(matching: "active").first?.title
+                == "Exact")
+        check(
+            "native dropdown filtering can preserve section order",
+            rankedDropdown(keepingSectionOrder: true)?.sections(matching: "active").first?.title
+                == "Partial")
+        let emptyDropdown = ExtensionSearchDropdown(
+            RenderNode(
+                id: 22, type: "Grid.Dropdown",
+                props: ["isLoading": .bool(true)], children: []))
+        check(
+            "loading dropdowns remain available with no rendered items",
+            emptyDropdown?.items.isEmpty == true && emptyDropdown?.isLoading == true)
+        check(
+            "empty dropdowns have no selection",
+            emptyDropdown?.selection(matching: "", preserving: 999) == nil)
+        check(
+            "non-dropdown accessories are ignored",
+            ExtensionSearchDropdown(RenderNode(id: 30, type: "List.Item")) == nil)
+    }
+
     /// An `Action`'s icon is a full `ImageLike`, so the ⌘K panel has to keep its tint.
     @MainActor
     static func actionIconChecks() {
@@ -694,6 +859,44 @@ struct ExtensionTests {
             ExtensionAccessoriesView_labelForTest(screen.items.first?.node.array("accessories").last)
                 == "function,function,function,false,AbortError",
             String(describing: screen.items.first?.node.array("accessories").last))
+
+        let (dropdownRuntime, _, dropdownRecorder) = makeRuntime()
+        try? await dropdownRuntime.boot(
+            config: .current(supportDirectory: FileManager.default.temporaryDirectory))
+        let dropdownCommand = #"""
+            "use strict";
+            const { List } = require("@raycast/api");
+            const React = require("react");
+            const h = React.createElement;
+            module.exports.default = function Command() {
+              const [filter, setFilter] = React.useState(null);
+              const [changes, setChanges] = React.useState(0);
+              return h(List, {
+                searchBarAccessory: h(List.Dropdown, {
+                  tooltip: "Filter", defaultValue: "all",
+                  onChange: (value) => { setFilter(value); setChanges((count) => count + 1); },
+                },
+                  h(List.Dropdown.Item, { title: "All", value: "all" }),
+                  h(List.Dropdown.Item, { title: "Active", value: "active" }))
+              }, filter === "all"
+                ? h(List.Item, { title: "filter=" + filter + " changes=" + changes })
+                : null);
+            };
+            """#
+        await dropdownRuntime.start(
+            session: "dropdown", code: dropdownCommand,
+            file: URL(fileURLWithPath: "/tmp/dropdown.js"), mode: .view,
+            context: launchContext())
+        await settle()
+        let dropdownScreen = dropdownRecorder.trees.last.map {
+            ExtensionScreen(tree: $0, query: "")
+        }
+        check("dropdown initialization has no runtime failures", dropdownRecorder.failures.isEmpty)
+        check(
+            "dropdown initialization reaches the extension callback",
+            dropdownScreen?.items.first?.node.string("title") == "filter=all changes=1",
+            dropdownScreen?.items.first?.node.string("title") ?? "nil")
+        await dropdownRuntime.stop(session: "dropdown")
 
         // Dispatch the row's action and confirm the re-render.
         let actions = ExtensionScreen.actions(in: screen.actionPanel(forItemAt: 0))

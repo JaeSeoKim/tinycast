@@ -1,6 +1,17 @@
 // Assembles the module an extension gets from `require("@raycast/api")`.
 
-import { Action, ActionPanel, Detail, Form, Grid, List, MenuBarExtra, Navigation, setActionEffects, useNavigation } from "./components.js";
+import {
+  Action,
+  ActionPanel,
+  Detail,
+  Form,
+  Grid,
+  List,
+  MenuBarExtra,
+  Navigation,
+  setActionEffects,
+  useNavigation,
+} from "./components.js";
 import * as enums from "./enums.generated.js";
 import * as system from "./system.js";
 import { PKCEClient, TokenSet } from "./oauth.js";

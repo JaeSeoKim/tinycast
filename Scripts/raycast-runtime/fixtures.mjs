@@ -34,8 +34,9 @@ const wait = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function run(name, source, mode, verify, options) {
   console.log(`\n▶ ${name}`);
-  const harness = createHarness(options);
-  harness.boot(bootConfig());
+  const { boot: bootOverrides, ...harnessOptions } = options ?? {};
+  const harness = createHarness(harnessOptions);
+  harness.boot(bootConfig(bootOverrides));
   const code = compile(source);
   harness.start("s1", code, "/fixtures/cmd.js", "/fixtures", mode, {});
   await wait();
@@ -51,17 +52,31 @@ import { useState } from "react";
 
 export default function Command() {
   const [count, setCount] = useState(0);
+  const [filter, setFilter] = useState(null);
   return (
     <List
       searchBarPlaceholder="Search…"
       searchBarAccessory={
-        <List.Dropdown tooltip="Filter" onChange={() => {}}>
-          <List.Dropdown.Item title="All" value="all" />
-          <List.Dropdown.Item title="Active" value="active" />
+        <List.Dropdown
+          tooltip="Filter"
+          placeholder="Search types…"
+          isLoading
+          defaultValue="all"
+          storeValue
+          onChange={(value) => {
+            globalThis.__dropdownChanges = (globalThis.__dropdownChanges || 0) + 1;
+            setFilter(value);
+          }}
+          onSearchTextChange={(value) => { globalThis.__dropdownSearch = value; }}
+        >
+          <List.Dropdown.Item title="All" value="all" icon={Icon.BulletPoints} />
+          <List.Dropdown.Section title="States">
+            <List.Dropdown.Item title="Active" value="active" icon={Icon.CheckCircle} />
+          </List.Dropdown.Section>
         </List.Dropdown>
       }
     >
-      <List.Section title="Main">
+      {filter === "all" && <List.Section title="Main">
         <List.Item
           id="item-1"
           title={"Count is " + count}
@@ -72,8 +87,161 @@ export default function Command() {
             </ActionPanel>
           }
         />
-      </List.Section>
+      </List.Section>}
     </List>
+  );
+}
+`;
+
+const directDropdownSource = `
+import { List } from "@raycast/api";
+import { useState } from "react";
+
+function DropdownSection(props) {
+  return List.Dropdown.Section(props);
+}
+
+function DropdownItem({ label, identifier }) {
+  return List.Dropdown.Item({ title: label, value: identifier });
+}
+
+export default function Command() {
+  const [showActive, setShowActive] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(true);
+  const [activeValue, setActiveValue] = useState("active");
+  globalThis.__removeDirectDropdownItem = () => setShowActive(false);
+  globalThis.__renameDirectDropdownItem = () => setActiveValue("archived");
+  globalThis.__toggleDirectDropdown = () => setShowDropdown((current) => !current);
+  const dropdown = showDropdown ? List.Dropdown({
+    tooltip: "Filter",
+    defaultValue: "all",
+    storeValue: true,
+    onChange: (value) => { globalThis.__directDropdownValue = value; },
+    children: [
+      <DropdownItem label="All" identifier="all" />,
+      <DropdownSection>
+        {showActive && <DropdownItem label="Active" identifier={activeValue} />}
+      </DropdownSection>,
+    ],
+  }) : null;
+  return <List searchBarAccessory={dropdown} />;
+}
+`;
+
+const directlyKeyedDropdownSource = `
+import { List } from "@raycast/api";
+import { useState } from "react";
+
+export default function Command() {
+  const [configuration, setConfiguration] = useState({
+    key: "first",
+    defaultValue: "a",
+    items: ["a", "b"],
+  });
+  globalThis.__reorderDirectlyKeyedItems = () => {
+    setConfiguration((current) => ({ ...current, items: ["b", "a"] }));
+  };
+  globalThis.__replaceDirectlyKeyedDropdown = () => {
+    setConfiguration({ key: "second", defaultValue: "b", items: ["b", "a"] });
+  };
+  return <List searchBarAccessory={List.Dropdown({
+    key: configuration.key,
+    tooltip: "Filter",
+    defaultValue: configuration.defaultValue,
+    children: configuration.items.map((value) => List.Dropdown.Item({
+      key: value,
+      title: value.toUpperCase(),
+      value,
+    })),
+  })} />;
+}
+`;
+
+const reorderedDropdownSource = `
+import { List } from "@raycast/api";
+import { useState } from "react";
+
+export default function Command() {
+  const [items, setItems] = useState(["a", "b", "c"]);
+  globalThis.__reorderDropdownItems = () => setItems(["c", "b"]);
+  return (
+    <List searchBarAccessory={
+      <List.Dropdown
+        tooltip="Filter"
+        defaultValue="a"
+        onChange={(value) => { globalThis.__reorderedDropdownValue = value; }}
+      >
+        {items.map((value) => <List.Dropdown.Item key={value} title={value} value={value} />)}
+      </List.Dropdown>
+    } />
+  );
+}
+`;
+
+const controlledDropdownSource = `
+import { List } from "@raycast/api";
+import { useState } from "react";
+
+export default function Command() {
+  const [items, setItems] = useState(["a", "b"]);
+  const [value, setValue] = useState("a");
+  globalThis.__removeControlledValue = () => setItems(["b"]);
+  globalThis.__controlledDropdownValue = value;
+  globalThis.__controlledDropdownChanges ||= [];
+  return (
+    <List searchBarAccessory={
+      <List.Dropdown value={value} onChange={(nextValue) => {
+        globalThis.__controlledDropdownChanges.push(nextValue);
+        setValue(nextValue);
+      }}>
+        {items.map((item) => <List.Dropdown.Item key={item} title={item} value={item} />)}
+      </List.Dropdown>
+    } />
+  );
+}
+`;
+
+const throttledDropdownSource = `
+import { List } from "@raycast/api";
+
+export default function Command() {
+  globalThis.__throttledDropdownSearches ||= [];
+  return (
+    <List searchBarAccessory={
+      <List.Dropdown
+        tooltip="Filter"
+        throttle
+        onSearchTextChange={(value) => globalThis.__throttledDropdownSearches.push(value)}
+      >
+        <List.Dropdown.Item title="All" value="all" />
+      </List.Dropdown>
+    } />
+  );
+}
+`;
+
+const dynamicDropdownPersistenceSource = `
+import { List } from "@raycast/api";
+import { useState } from "react";
+
+export default function Command() {
+  const [configuration, setConfiguration] = useState({ id: "first", storeValue: false });
+  globalThis.__configureDropdownPersistence = (id, storeValue) => {
+    setConfiguration({ id, storeValue });
+  };
+  return (
+    <List searchBarAccessory={
+      <List.Dropdown
+        id={configuration.id}
+        tooltip="Filter"
+        defaultValue="a"
+        storeValue={configuration.storeValue}
+      >
+        <List.Dropdown.Item title="A" value="a" />
+        <List.Dropdown.Item title="B" value="b" />
+        <List.Dropdown.Item title="C" value="c" />
+      </List.Dropdown>
+    } />
   );
 }
 `;
@@ -420,15 +588,196 @@ export async function runFixtures() {
     check("hoists actions into a prop", dump.includes("actions=<ActionPanel>"));
     check("defaults filtering to true", dump.includes("filtering=true"));
 
+    const dropdown = findNode(tree, "List.Dropdown");
+    check("resolves the dropdown default", dropdown.props.value === "all" && dropdown.props.storeValue === true);
+    check("dropdown search defaults native filtering off", dropdown.props.filtering === false);
+    check("preserves dropdown search presentation", dropdown.props.placeholder === "Search types…" && dropdown.props.isLoading === true);
+    check("exposes a dropdown search handler", !!dropdown.props.onTinycastSearchTextChange?.$fn);
+    harness.dispatch("s1", dropdown.props.onTinycastSearchTextChange.$fn, ["active"]);
+    check("dispatches unthrottled dropdown searches immediately", harness.call("globalThis.__dropdownSearch") === "active");
+    const dropdownSection = findNode(dropdown, "List.Dropdown.Section");
+    const dropdownItem = findNode(dropdown, "List.Dropdown.Item");
+    check("preserves dropdown section titles", dropdownSection.props.title === "States");
+    check("preserves dropdown item icons", typeof dropdownItem.props.icon === "string");
+    check("dispatches the initial dropdown value", harness.call("globalThis.__dropdownChanges") === 1);
+
     // Bump the counter through the action's handler and confirm the re-render.
-    const item = findNode(tree, "List.Item");
+    const item = findNode(harness.state.trees.at(-1), "List.Item");
     const panel = item.props.actions;
     const bump = panel.children.find((child) => child.type === "Action");
     check("action carries a dispatchable handler", !!bump?.props?.onAction?.$fn, JSON.stringify(bump?.props));
     harness.dispatch("s1", bump.props.onAction.$fn);
     await wait();
     check("re-renders after the action", describeTree(harness.state.trees.at(-1)).includes("Count is 1"));
+
+    const updatedDropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+    harness.dispatch("s1", updatedDropdown.props.onTinycastChange.$fn, ["active"]);
+    await wait();
+    check("dispatches native dropdown changes", harness.call("globalThis.__dropdownChanges") === 2);
+    check("serializes the current dropdown value", findNode(harness.state.trees.at(-1), "List.Dropdown").props.value === "active");
+    check("persists stored dropdown changes", harness.state.hostCalls.some((call) => call === "cache.set"));
   });
+
+  await run(
+    "Directly-called dropdown restores its stored value",
+    directDropdownSource,
+    "view",
+    async (harness) => {
+      const dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check("restores a valid stored dropdown value", dropdown.props.value === "active");
+      check("dropdowns without a search handler filter natively", dropdown.props.filtering === true);
+      check("dispatches the restored value on mount", harness.call("globalThis.__directDropdownValue") === "active");
+      harness.call("globalThis.__renameDirectDropdownItem()");
+      await wait();
+      const renamedDropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check("updates a registered dropdown item", renamedDropdown.props.value === "all");
+      harness.dispatch("s1", renamedDropdown.props.onTinycastChange.$fn, ["archived"]);
+      await wait();
+      check("accepts the registered replacement", findNode(harness.state.trees.at(-1), "List.Dropdown").props.value === "archived");
+      harness.call("globalThis.__toggleDirectDropdown()");
+      await wait();
+      harness.call("globalThis.__toggleDirectDropdown()");
+      await wait();
+      check(
+        "restores a value written earlier in the same session",
+        findNode(harness.state.trees.at(-1), "List.Dropdown").props.value === "archived",
+      );
+      harness.call("globalThis.__removeDirectDropdownItem()");
+      await wait();
+      const updatedDropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check("unregisters an unmounted dropdown item", updatedDropdown.props.value === "all");
+      check("dispatches the replacement value", harness.call("globalThis.__directDropdownValue") === "all");
+    },
+    {
+      boot: {
+        caches: { "@raycast/api.searchDropdown": { "fixture:searchBarAccessory": "active" } },
+      },
+    },
+  );
+
+  await run(
+    "Controlled dropdown replaces a removed value",
+    controlledDropdownSource,
+    "view",
+    async (harness) => {
+      harness.call("globalThis.__removeControlledValue()");
+      await wait();
+      const dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check("renders the valid fallback", dropdown.props.value === "b");
+      check("synchronizes the controlled owner", harness.call("globalThis.__controlledDropdownValue") === "b");
+      check(
+        "dispatches the controlled fallback once",
+        harness.call("globalThis.__controlledDropdownChanges.join(',')") === "a,b",
+      );
+    },
+  );
+
+  await run(
+    "Directly-called dropdowns preserve React keys",
+    directlyKeyedDropdownSource,
+    "view",
+    async (harness) => {
+      let dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      const initialIDs = Object.fromEntries(
+        dropdown.children.map((item) => [item.props.value, item.id]),
+      );
+      harness.call("globalThis.__reorderDirectlyKeyedItems()");
+      await wait();
+      dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check(
+        "direct item keys survive reordering",
+        dropdown.children.map((item) => item.id).join(",") ===
+          [initialIDs.b, initialIDs.a].join(","),
+      );
+      harness.call("globalThis.__replaceDirectlyKeyedDropdown()");
+      await wait();
+      dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check("a direct root key starts a new lifecycle", dropdown.props.value === "b");
+    },
+  );
+
+  await run(
+    "Dropdown fallback follows the current render order",
+    reorderedDropdownSource,
+    "view",
+    async (harness) => {
+      harness.call("globalThis.__reorderDropdownItems()");
+      await wait();
+      const dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      check(
+        "keeps the reordered children",
+        dropdown.children.map((item) => item.props.value).join(",") === "c,b",
+      );
+      check("falls back to the first rendered item", dropdown.props.value === "c");
+      check(
+        "dispatches the reordered fallback",
+        harness.call("globalThis.__reorderedDropdownValue") === "c",
+      );
+    },
+  );
+
+  await run("Dropdown search throttling", throttledDropdownSource, "view", async (harness) => {
+    const dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+    check("search handlers disable native filtering by default", dropdown.props.filtering === false);
+    const handler = dropdown.props.onTinycastSearchTextChange.$fn;
+    harness.dispatch("s1", handler, ["a"]);
+    harness.dispatch("s1", handler, ["active"]);
+    await wait(100);
+    check(
+      "holds throttled dropdown searches for the delay",
+      harness.call("globalThis.__throttledDropdownSearches.length") === 0,
+    );
+    await wait(200);
+    check(
+      "dispatches only the latest throttled dropdown search",
+      harness.call("globalThis.__throttledDropdownSearches.join(',')") === "active",
+    );
+  });
+
+  const cacheWrites = [];
+  await run(
+    "Dropdown persistence follows current props",
+    dynamicDropdownPersistenceSource,
+    "view",
+    async (harness) => {
+      let dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      harness.dispatch("s1", dropdown.props.onTinycastChange.$fn, ["b"]);
+      await wait();
+      check("disabled dropdown persistence performs no writes", cacheWrites.length === 0);
+
+      harness.call('globalThis.__configureDropdownPersistence("first", true)');
+      await wait();
+      dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      harness.dispatch("s1", dropdown.props.onTinycastChange.$fn, ["c"]);
+      await wait();
+      check(
+        "enabling dropdown persistence uses the current id",
+        JSON.stringify(cacheWrites.at(-1)) ===
+          JSON.stringify(["@raycast/api.searchDropdown", "fixture:first", "c"]),
+        JSON.stringify(cacheWrites),
+      );
+
+      harness.call('globalThis.__configureDropdownPersistence("second", true)');
+      await wait();
+      dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      harness.dispatch("s1", dropdown.props.onTinycastChange.$fn, ["b"]);
+      await wait();
+      check(
+        "changing a dropdown id changes its persistence key",
+        JSON.stringify(cacheWrites.at(-1)) ===
+          JSON.stringify(["@raycast/api.searchDropdown", "fixture:second", "b"]),
+        JSON.stringify(cacheWrites),
+      );
+
+      harness.call('globalThis.__configureDropdownPersistence("second", false)');
+      await wait();
+      dropdown = findNode(harness.state.trees.at(-1), "List.Dropdown");
+      harness.dispatch("s1", dropdown.props.onTinycastChange.$fn, ["a"]);
+      await wait();
+      check("disabling dropdown persistence stops writes", cacheWrites.length === 2);
+    },
+    { stubs: { "cache.set": (args) => cacheWrites.push(args) } },
+  );
 
   await run("Detail with metadata", detailSource, "view", async (harness) => {
     const dump = describeTree(harness.state.trees.at(-1));

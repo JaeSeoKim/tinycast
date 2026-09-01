@@ -7,13 +7,16 @@ import {
   createElement as h,
   useCallback,
   useContext,
+  useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { SLOT_TYPE } from "../reconciler.js";
 import { Icon, ActionStyle } from "./enums.generated.js";
+import { Cache, environment } from "./system.js";
 
 /// `single: true` marks a slot whose parent expects one node rather than a list.
 function slot(name, element, single = true) {
@@ -163,14 +166,144 @@ function EmptyView(type) {
   };
 }
 
-/// The search-bar dropdown for List and Grid. Deliberately hook-free: Swift owns the selection (it
-/// renders the control), seeded from `defaultValue`, and reports changes through `onChange`. That
-/// also makes it safe to invoke directly rather than through JSX.
+const SearchDropdownContext = createContext(null);
+const searchDropdownRootProps = ["children", "key", "value", "defaultValue", "onChange", "onSearchTextChange"];
+const searchDropdownThrottleMilliseconds = 250;
+
+function useSearchDropdownRegistry(itemType) {
+  const [items] = useState(() => new Map());
+  const [revision, setRevision] = useState(0);
+  const notify = useCallback(() => setRevision((current) => current + 1), []);
+  const registerItem = useCallback((id, value, order) => {
+    if (!items.has(id)) {
+      items.set(id, { value, order });
+      notify();
+    }
+    return () => {
+      if (items.delete(id)) notify();
+    };
+  }, [items, notify]);
+  const updateItem = useCallback((id, value, order) => {
+    const current = items.get(id);
+    if (!current || (Object.is(current.value, value) && current.order === order)) return;
+    items.set(id, { value, order });
+    notify();
+  }, [items, notify]);
+  let nextOrder = 0;
+  const registry = { itemType, registerItem, updateItem, claimOrder: () => nextOrder++ };
+  const values = useMemo(
+    () => [...items.values()]
+      .sort((left, right) => left.order - right.order)
+      .map((item) => item.value)
+      .filter((value) => typeof value === "string"),
+    [items, revision],
+  );
+  return { registry, values };
+}
+
+function SearchDropdownItem({ hostType, itemProps }) {
+  const registry = useContext(SearchDropdownContext);
+  const [id] = useState(() => Symbol());
+  const matchingRegistry = registry?.itemType === hostType ? registry : null;
+  const order = matchingRegistry?.claimOrder();
+  const registerItem = matchingRegistry?.registerItem;
+  const updateItem = matchingRegistry?.updateItem;
+  useLayoutEffect(() => registerItem?.(id, itemProps.value, order), [id, registerItem]);
+  useLayoutEffect(() => {
+    updateItem?.(id, itemProps.value, order);
+  }, [id, itemProps.value, order, updateItem]);
+  return h(hostType, omit(itemProps, ["children", "key"]), itemProps.children);
+}
+
+function searchDropdownFallback(values, availableValues, configuration) {
+  const storedValue = configuration.cache?.get(configuration.storageKey);
+  const candidates = [storedValue, configuration.defaultValue, values[0]];
+  return candidates.find((candidate) => typeof candidate === "string" && availableValues.has(candidate));
+}
+
+function SearchDropdownRoot({ hostType, itemType, dropdownProps }) {
+  const [cache] = useState(() => new Cache({ namespace: "@raycast/api.searchDropdown" }));
+  const [defaultValue] = useState(() => dropdownProps.defaultValue);
+  const storesValue = dropdownProps.storeValue === true;
+  const storageKey = `${environment.commandName ?? ""}:${dropdownProps.id ?? "searchBarAccessory"}`;
+  const configuration = useMemo(
+    () => ({ cache: storesValue ? cache : null, defaultValue, storageKey }),
+    [cache, defaultValue, storageKey, storesValue],
+  );
+  const { registry, values } = useSearchDropdownRegistry(itemType);
+  const availableValues = useMemo(() => new Set(values), [values]);
+  const [localValue, setLocalValue] = useState(undefined);
+  const onChange = useRef(dropdownProps.onChange);
+  onChange.current = dropdownProps.onChange;
+  const onSearchTextChange = useRef(dropdownProps.onSearchTextChange);
+  onSearchTextChange.current = dropdownProps.onSearchTextChange;
+  const searchTimer = useRef(undefined);
+  const controlled = dropdownProps.value !== undefined;
+  const proposedValue = controlled ? dropdownProps.value : localValue;
+  const value = availableValues.has(proposedValue)
+    ? proposedValue
+    : searchDropdownFallback(values, availableValues, configuration);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (value === undefined) return;
+    const isFirstValue = !initialized.current;
+    const replacedMissingValue = proposedValue !== value;
+    initialized.current = true;
+    if (!controlled && replacedMissingValue) setLocalValue(value);
+    if (isFirstValue || replacedMissingValue) onChange.current?.(value);
+  }, [controlled, proposedValue, value]);
+
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
+  const onTinycastChange = useCallback((nextValue) => {
+    if (!availableValues.has(nextValue) || (nextValue === value && proposedValue === value)) return;
+    if (!controlled) setLocalValue(nextValue);
+    configuration.cache?.set(configuration.storageKey, nextValue);
+    onChange.current?.(nextValue);
+  }, [availableValues, configuration, controlled, proposedValue, value]);
+  const throttlesSearch = dropdownProps.throttle === true;
+  const onTinycastSearchTextChange = useCallback((text) => {
+    clearTimeout(searchTimer.current);
+    if (!throttlesSearch) {
+      onSearchTextChange.current?.(text);
+      return;
+    }
+    searchTimer.current = setTimeout(() => {
+      searchTimer.current = undefined;
+      onSearchTextChange.current?.(text);
+    }, searchDropdownThrottleMilliseconds);
+  }, [throttlesSearch]);
+  const rest = omit(dropdownProps, searchDropdownRootProps);
+  if (rest.filtering === undefined) rest.filtering = dropdownProps.onSearchTextChange === undefined;
+  return h(
+    SearchDropdownContext.Provider,
+    { value: registry },
+    h(
+      hostType,
+      {
+        ...rest,
+        value,
+        onTinycastChange,
+        onTinycastSearchTextChange:
+          dropdownProps.onSearchTextChange === undefined ? undefined : onTinycastSearchTextChange,
+      },
+      dropdownProps.children,
+    ),
+  );
+}
+
+/// The exported wrapper stays hook-free because real extensions also invoke it as a plain function.
 function makeSearchDropdown(type) {
+  const itemType = `${type}.Item`;
   function Dropdown(props) {
-    return h(type, omit(props, ["children"]), props.children);
+    const key = Object.getOwnPropertyDescriptor(props ?? {}, "key")?.value;
+    return h(SearchDropdownRoot, { key, hostType: type, itemType, dropdownProps: props });
   }
-  Dropdown.Item = Section(`${type}.Item`);
+  Dropdown.Item = function DropdownItem(props) {
+    const key = Object.getOwnPropertyDescriptor(props ?? {}, "key")?.value;
+    return h(SearchDropdownItem, { key, hostType: itemType, itemProps: props });
+  };
   Dropdown.Section = Section(`${type}.Section`);
   return Dropdown;
 }

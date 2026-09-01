@@ -356,6 +356,16 @@ along with the extension's stored preferences and its chosen icon.
 `ShowInFinder`, `Trash`, `Push`, `SubmitForm`, `PickDate`). Deprecated aliases (`ActionPanel.Item`,
 `Form.DropdownItem`, `CopyToClipboardAction`, …) are present too — shipped bundles still use them.
 
+`List.Dropdown` and `Grid.Dropdown` render in the extension header. Their React components own the
+controlled or local value, deliver the initial selection through `onChange`, and use the existing
+`Cache` path when `storeValue` is set. Swift reads the finished value from the render node, presents the
+extension-owned native menu with its item icons and sections, and dispatches its generic host handler;
+neither `ExtensionManager` nor the reconciler contains dropdown-specific state. The menu owns its search
+field, applies native fuzzy filtering when `filtering` is enabled, shows `isLoading`, and sends
+`onSearchTextChange` through the React component, where `throttle` is applied before the extension runs.
+Each row carries its `RenderNode.id` through highlight and activation, so a filtered or reordered
+render cannot silently retarget it by reusing an old array index.
+
 **APIs** — `Clipboard`, `LocalStorage`, `Cache`, `environment`, `getPreferenceValues`, `showToast`,
 `showHUD`, `confirmAlert`, `closeMainWindow`, `popToRoot`, `clearSearchBar`, `open`, `trash`,
 `showInFinder`, `getApplications`, `getDefaultApplication`, `getFrontmostApplication`,

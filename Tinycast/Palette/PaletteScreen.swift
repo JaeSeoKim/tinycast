@@ -13,11 +13,17 @@ enum PaletteAxis {
     let view: () -> AnyView
     /// Bounds-checked by the caller against `rowCount`, so a row index is always one this menu has.
     let activate: (Int) -> Void
+    /// A menu with text input takes key status and handles its own navigation.
+    let takesFocus: Bool
 
-    init(rowCount: Int, view: @escaping () -> AnyView, activate: @escaping (Int) -> Void) {
+    init(
+        rowCount: Int, takesFocus: Bool = false, view: @escaping () -> AnyView,
+        activate: @escaping (Int) -> Void
+    ) {
         self.rowCount = rowCount
         self.view = view
         self.activate = activate
+        self.takesFocus = takesFocus
     }
 
     init(

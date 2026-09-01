@@ -7,9 +7,18 @@ import { nestedEnums } from "./enums.generated.js";
 const ToastStyle = nestedEnums.Toast.Style;
 
 let boot = { environment: {}, preferences: {}, launchProps: {} };
+let cacheEntries = new Map();
 
 export function configureSystem(info) {
   boot = { ...boot, ...info };
+  if (info.caches !== undefined) {
+    cacheEntries = new Map(
+      Object.entries(info.caches).map(([namespace, entries]) => [
+        namespace,
+        new Map(Object.entries(entries)),
+      ]),
+    );
+  }
 }
 
 export function unsupported(what) {
@@ -59,7 +68,7 @@ export class Cache {
   constructor(options = {}) {
     this.namespace = options.namespace ?? "default";
     this.capacity = options.capacity ?? 10 * 1024 * 1024;
-    this._entries = new Map(Object.entries(cacheSnapshot(this.namespace)));
+    this._entries = entriesForCache(this.namespace);
     this._subscribers = new Set();
     // `useCachedState` hands `cache.subscribe` straight to `useSyncExternalStore`, unbound — so every
     // method has to survive being detached from the instance.
@@ -116,9 +125,10 @@ export class Cache {
   }
 
   _notify(key, data) {
-    for (const subscriber of this._subscribers) {
+    for (const subscription of cacheSubscribers.values()) {
+      if (subscription.namespace !== this.namespace) continue;
       try {
-        subscriber(key, data);
+        subscription.subscriber(key, data);
       } catch {
         // A throwing subscriber must not break the write that triggered it.
       }
@@ -126,10 +136,9 @@ export class Cache {
   }
 }
 
-/// Swift installs the initial contents of every cache namespace at boot; a namespace first touched
-/// later starts empty and fills as the extension writes to it.
-function cacheSnapshot(namespace) {
-  return boot.caches?.[namespace] ?? {};
+function entriesForCache(namespace) {
+  if (!cacheEntries.has(namespace)) cacheEntries.set(namespace, new Map());
+  return cacheEntries.get(namespace);
 }
 
 // ─── Preferences & environment ──────────────────────────────────────

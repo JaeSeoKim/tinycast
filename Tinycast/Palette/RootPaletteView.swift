@@ -32,6 +32,7 @@ struct RootPaletteView: View {
     @State private var selectionIsRunning = false
     /// Highlighted row of whichever menu is open; each open path sets where it starts.
     @State private var menuSelection = 0
+    @State private var extensionDropdownSession = ExtensionSearchDropdownSession()
     @State private var menuPanel = MenuPanelController()
     /// The palette's own window, reported by `WindowReader`; the menu hangs off its frame.
     @State private var hostWindow: NSWindow?
@@ -96,7 +97,8 @@ struct RootPaletteView: View {
                 openActions: openActions)
         case .extensionCommand:
             return ExtensionCommandScreen(
-                screen: extensionScreen, extensions: extensions, vm: vm, openActions: openActions)
+                screen: extensionScreen, extensions: extensions, vm: vm, openActions: openActions,
+                scrollToTop: { scroll = ScrollIntent(kind: .top) })
         }
     }
 
@@ -184,6 +186,11 @@ struct RootPaletteView: View {
             return PaletteMenuContent(
                 popover: aiModelContent, selection: $menuSelection,
                 width: headerMenuWidth, onActivate: activateMenuItem)
+        case .extensionDropdown:
+            guard let screen = screen as? ExtensionCommandScreen else { return nil }
+            return screen.searchDropdownMenuContent(
+                session: extensionDropdownSession,
+                onActivate: activateExtensionDropdownItem, onDismiss: closeMenus)
         case nil: return nil
         }
     }
@@ -205,7 +212,7 @@ struct RootPaletteView: View {
                 screen.body(selection: sel, scroll: scroll)
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) { header }
+        .safeAreaInset(edge: .top, spacing: 0) { header(screen: screen) }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isCollapsed {
                 bottomBar(
@@ -233,7 +240,7 @@ struct RootPaletteView: View {
         // Every show bumps focusToken: refocus search and drop any menu left open.
         .onChange(of: vm.focusToken) {
             searchFocused = true
-            openMenu = nil
+            closeMenus()
         }
         .onChange(of: vm.query) {
             vm.selection = 0
@@ -252,6 +259,7 @@ struct RootPaletteView: View {
         .onChange(of: vm.mode) {
             vm.selection = 0
             vm.clipboardFilter = .all
+            _ = extensionDropdownSession.end()
             openMenu = nil
             scroll = ScrollIntent(kind: .top)
             // Every way out of the Uninstall screen: back chevron, bare backspace, a fresh summon.
@@ -282,6 +290,11 @@ struct RootPaletteView: View {
         }
         // The hosted tree is its own hierarchy, so the highlight has to be pushed into it.
         .onChange(of: menuSelection) { syncMenuPanel(presenting: false) }
+        .modifier(
+            ExtensionSearchDropdownPanel.SyncModifier(
+                dropdown: (screen as? ExtensionCommandScreen)?.searchDropdown,
+                sync: syncOpenExtensionDropdownMenu)
+        )
         .onDisappear { menuPanel.hide() }
         .onAppear { searchFocused = true }
         // Several paths flip `paletteIsCollapsed`, so resize the window to match.
@@ -428,8 +441,15 @@ struct RootPaletteView: View {
             guard press.modifiers.contains(.command),
                 ASCIIKeyboardLayout.matches(press.key, character: "p")
             else { return .ignored }
-            guard !isCollapsed, vm.mode == .clipboard else { return .ignored }
-            toggleClipboardFilter()
+            guard !isCollapsed else { return .ignored }
+            if vm.mode == .clipboard {
+                toggleClipboardFilter()
+                return .handled
+            }
+            guard (screen as? ExtensionCommandScreen)?.searchDropdown != nil else {
+                return .ignored
+            }
+            toggleExtensionDropdown()
             return .handled
         }
         // ⇧⌘F mirrors the Add/Remove Favorites row, closing an open menu the way that row does.
@@ -477,8 +497,10 @@ struct RootPaletteView: View {
     private func beginDrag() { core.paletteCoordinator.beginPaletteDrag() }
     private func endDrag() { core.paletteCoordinator.endPaletteDrag() }
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: 0) {
+    private func header(screen: any PaletteScreen) -> some View {
+        let accessory = headerAccessory(in: screen)
+        let extensionCommand = screen as? ExtensionCommandScreen
+        return HStack(alignment: .center, spacing: 0) {
             // Matches the list rows and section headers' own indent below.
             headerGutter(width: Theme.Spacing.md * 2)
             // Sub-screens of the root search, so their header icon is a back chevron.
@@ -501,12 +523,13 @@ struct RootPaletteView: View {
             }
             headerGutter(width: Theme.Spacing.md)
             // One structural position: a field inside a branch loses first responder when it flips.
-            searchField.frame(width: headerAccessory.map(searchFieldWidth))
-            if let accessory = headerAccessory {
+            searchField(prompt: searchPrompt(screen: screen, accessory: accessory))
+                .frame(width: accessory.map(searchFieldWidth))
+            if let accessory {
                 accessory.view
                 Spacer(minLength: 0)
             }
-            if tabOpensChat {
+            if tabOpensChat(accessory: accessory) {
                 headerGutter(width: Theme.Spacing.md)
                 aiChatTabHint
             }
@@ -524,6 +547,14 @@ struct RootPaletteView: View {
                     icon: core.aiChatCoordinator.selectedModelIcon,
                     isOpen: openMenu == .aiModel,
                     action: toggleAIModel)
+            }
+            if !isCollapsed, let dropdown = extensionCommand?.searchDropdown {
+                headerGutter(width: Theme.Spacing.md)
+                ExtensionSearchDropdownButton(
+                    title: dropdown.title,
+                    isOpen: openMenu == .extensionDropdown,
+                    help: dropdown.tooltip ?? "Filter",
+                    action: toggleExtensionDropdown)
             }
             // Compact pins favorites beside the field; expanded shows them as rows.
             if isCollapsed, settings.showFavoritesInCompactMode,
@@ -549,9 +580,8 @@ struct RootPaletteView: View {
     }
 
     /// Only the expanded launcher offers them: a sub-screen owns its own search bar.
-    private var headerAccessory: PaletteHeaderAccessory? {
+    private func headerAccessory(in screen: any PaletteScreen) -> PaletteHeaderAccessory? {
         guard vm.mode == .launcher || vm.mode == .ai, !isCollapsed else { return nil }
-        let screen = screen
         return screen.headerAccessory(at: selection(in: screen), focus: $argumentFocused)
     }
 
@@ -569,8 +599,8 @@ struct RootPaletteView: View {
     }
 
     /// Resolved through `PaletteTabAction`, so the hint cannot promise the wrong destination.
-    private var tabOpensChat: Bool {
-        guard !isCollapsed, headerAccessory?.fieldNames.isEmpty ?? true else { return false }
+    private func tabOpensChat(accessory: PaletteHeaderAccessory?) -> Bool {
+        guard !isCollapsed, accessory?.fieldNames.isEmpty ?? true else { return false }
         return PaletteTabAction.resolve(mode: vm.mode, aiEnabled: settings.aiEnabled) == .ask
     }
 
@@ -585,22 +615,26 @@ struct RootPaletteView: View {
     }
 
     /// In the argument form the field is that argument's input, so it names the argument.
-    private var searchPrompt: String {
+    private func searchPrompt(
+        screen: any PaletteScreen, accessory: PaletteHeaderAccessory?
+    ) -> String {
         // The field is only wide enough for the caret while argument fields are beside it.
-        if headerAccessory != nil, vm.mode != .ai { return "" }
+        if accessory != nil, vm.mode != .ai { return "" }
         if vm.mode == .quicklinkArguments { return quicklinkArguments.prompt }
         if vm.mode == .customCommandArguments {
             return customCommandArguments.prompt ?? vm.mode.placeholder
         }
         // Inside a running command the search bar belongs to the extension.
-        if vm.mode == .extensionCommand, let placeholder = extensionScreen.searchPlaceholder {
+        if let extensionCommand = screen as? ExtensionCommandScreen,
+            let placeholder = extensionCommand.screen.searchPlaceholder
+        {
             return placeholder
         }
         return vm.mode.placeholder
     }
 
     /// The one search field — past its text it's a drag handle, matching Spotlight.
-    private var searchField: some View {
+    private func searchField(prompt: String) -> some View {
         @Bindable var vm = vm
         return TextField("", text: $vm.query)
             .textFieldStyle(.plain)
@@ -612,7 +646,7 @@ struct RootPaletteView: View {
             .background(alignment: .leading) {
                 // An IME's marked text leaves `query` empty, so the placeholder would overlap it.
                 if vm.query.isEmpty, !vm.isComposing {
-                    Text(searchPrompt)
+                    Text(prompt)
                         .font(Theme.Typography.searchField)
                         .foregroundStyle(Theme.Colors.textTertiary)
                         .lineLimit(1)
@@ -621,7 +655,7 @@ struct RootPaletteView: View {
                 }
             }
             // The prompt used to carry this; without it the field would be unlabelled.
-            .accessibilityLabel(Text(searchPrompt))
+            .accessibilityLabel(Text(prompt))
             // Never branches on query — that tore down the field editor mid-keystroke once.
             .overlay {
                 if settings.paletteDraggable {
@@ -729,6 +763,27 @@ struct RootPaletteView: View {
         open(.aiModel, highlighting: active)
     }
 
+    private func toggleExtensionDropdown() {
+        if openMenu == .extensionDropdown {
+            closeMenus()
+            return
+        }
+        resetExtensionDropdownSearch()
+        guard let dropdown = (screen as? ExtensionCommandScreen)?.searchDropdown else { return }
+        extensionDropdownSession.begin(with: dropdown)
+        open(.extensionDropdown, highlighting: 0)
+    }
+
+    private func syncOpenExtensionDropdownMenu() {
+        guard openMenu == .extensionDropdown else { return }
+        guard let dropdown = (screen as? ExtensionCommandScreen)?.searchDropdown else {
+            closeMenus()
+            return
+        }
+        extensionDropdownSession.normalize(with: dropdown)
+        syncMenuPanel(presenting: false)
+    }
+
     private var headerMenuWidth: CGFloat {
         openMenu == .aiModel ? Theme.Size.menuWidth : Theme.Size.clipboardFilterMenuWidth
     }
@@ -740,7 +795,18 @@ struct RootPaletteView: View {
     }
 
     private func closeMenus() {
+        let restoresSearchFocus = openMenu == .extensionDropdown
+        if restoresSearchFocus { resetExtensionDropdownSearch() }
         openMenu = nil
+        if restoresSearchFocus, argumentFocused == nil { searchFocused = true }
+    }
+
+    private func resetExtensionDropdownSearch() {
+        guard extensionDropdownSession.end() else { return }
+        guard let handler = (screen as? ExtensionCommandScreen)?.searchDropdown?.searchHandler else {
+            return
+        }
+        extensions.dispatch(handler: handler, arguments: [""])
     }
 
     /// Drives the menu's window from the two pieces of state that decide what it shows.
@@ -751,9 +817,12 @@ struct RootPaletteView: View {
         }
         let view = AnyView(content.view())
         if presenting, let hostWindow {
-            menuPanel.show(view, corner: corner, parent: hostWindow, core: core)
+            menuPanel.show(
+                view, corner: corner, takesFocus: content.takesFocus,
+                parent: hostWindow, core: core)
         } else {
-            menuPanel.update(view, corner: corner, core: core)
+            menuPanel.update(
+                view, corner: corner, takesFocus: content.takesFocus, core: core)
         }
     }
 
@@ -761,7 +830,7 @@ struct RootPaletteView: View {
         switch openMenu {
         case .app: .bottomLeading
         case .actions: .bottomTrailing
-        case .clipboardFilter, .aiModel: .belowHeaderTrailing
+        case .clipboardFilter, .aiModel, .extensionDropdown: .belowHeaderTrailing
         case nil: nil
         }
     }
@@ -826,6 +895,16 @@ struct RootPaletteView: View {
         if argumentFocused == nil { searchFocused = true }
     }
 
+    private func activateExtensionDropdownItem(_ itemID: Int) {
+        guard let dropdown = (screen as? ExtensionCommandScreen)?.searchDropdown,
+            let index = dropdown.activationIndex(for: itemID)
+        else {
+            syncOpenExtensionDropdownMenu()
+            return
+        }
+        activateMenuItem(index)
+    }
+
     /// ⌘. — mirrors the Actions row, and works while that menu is open like the rest.
     private func pinSelection() {
         let screen = screen
@@ -860,7 +939,8 @@ struct RootPaletteView: View {
 
     /// Tab walks the inline argument fields first, then rings on when there are none.
     private func advanceTabFocus() {
-        guard let accessory = headerAccessory, !accessory.fieldNames.isEmpty else {
+        let screen = screen
+        guard let accessory = headerAccessory(in: screen), !accessory.fieldNames.isEmpty else {
             return cycleMode()
         }
         argumentFocused = accessory.fieldAfter(argumentFocused)
@@ -888,12 +968,12 @@ struct RootPaletteView: View {
         // Nothing is visibly selected when collapsed, so launch via ⌘1–⌘5 or typing.
         guard !isCollapsed else { return }
         // An unfilled field blocks the launch; focus it instead of acting on a half-typed row.
-        if let incomplete = headerAccessory?.firstIncompleteField {
+        let screen = screen
+        if let incomplete = headerAccessory(in: screen)?.firstIncompleteField {
             argumentFocused = incomplete
             searchFocused = false
             return
         }
-        let screen = screen
         screen.activate(at: selection(in: screen))
     }
 
@@ -905,6 +985,7 @@ private enum OpenMenu {
     case app
     case clipboardFilter
     case aiModel
+    case extensionDropdown
 }
 
 /// The footer's menu circle; hover lives here, so a sweep never re-renders the body.
