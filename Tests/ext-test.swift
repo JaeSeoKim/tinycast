@@ -637,6 +637,7 @@ struct ExtensionTests {
             const React = require("react");
             const path = require("node:path");
             const crypto = require("node:crypto");
+            const { fileURLToPath } = require("node:url");
             const h = React.createElement;
             module.exports.default = function Command() {
               const [count, setCount] = React.useState(0);
@@ -651,12 +652,29 @@ struct ExtensionTests {
                 typeof AbortSignal.timeout, typeof AbortSignal.abort, typeof AbortSignal.any,
                 String(AbortSignal.timeout(5e3).aborted), AbortSignal.abort().reason.name,
               ].join(",");
+              const errorCode = (callback) => {
+                try { callback(); return "none"; } catch (error) { return error.code; }
+              };
+              const filePaths = [
+                fileURLToPath("file:///tmp/a", { windows: false }),
+                fileURLToPath("file:///C:/Program%20Files/Tinycast", { windows: true }),
+                fileURLToPath("file://server/share/Tinycast", { windows: true }),
+                fileURLToPath("file://xn--6qq79v/share", { windows: true }),
+                fileURLToPath("file://%53ERVER/share/Tinycast", { windows: true }),
+                errorCode(() => fileURLToPath("file:///C:/a%5Cb", { windows: true })),
+                errorCode(() => fileURLToPath("file:///tmp/a", { windows: true })),
+                errorCode(() => fileURLToPath("file://xn--/share", { windows: true })),
+                errorCode(() => fileURLToPath("file://a%EF%BC%8Fb/share", { windows: true })),
+                errorCode(() => fileURLToPath("file://你好/share", { windows: true })),
+                errorCode(() => fileURLToPath("file://[::1]/share", { windows: true })),
+                errorCode(() => fileURLToPath("file://server%7F/share", { windows: true })),
+              ].join("\\n");
               return h(List, { navigationTitle: "Synthetic", isLoading: false },
                 h(List.Item, {
                   title: "count=" + count,
                   subtitle: path.join("/a/b", "../c"),
                   icon: Icon.Circle,
-                  accessories: [{ text: digest }, { text: abortable }],
+                  accessories: [{ text: digest }, { text: abortable }, { text: filePaths }],
                   actions: h(ActionPanel, null,
                     h(Action, { title: "Bump", onAction: () => setCount((v) => v + 10) }))
                 }));
@@ -691,8 +709,19 @@ struct ExtensionTests {
         check("toast reached the host", host.toasts == ["hello"], host.toasts.joined(separator: ","))
         check(
             "AbortSignal carries its statics",
-            ExtensionAccessoriesView_labelForTest(screen.items.first?.node.array("accessories").last)
+            ExtensionAccessoriesView_labelForTest(
+                screen.items.first?.node.array("accessories").dropFirst().first)
                 == "function,function,function,false,AbortError",
+            String(describing: screen.items.first?.node.array("accessories").dropFirst().first))
+        check(
+            "fileURLToPath honors its platform override",
+            ExtensionAccessoriesView_labelForTest(screen.items.first?.node.array("accessories").last)
+                == "/tmp/a\nC:\\Program Files\\Tinycast\n\\\\server\\share\\Tinycast\n"
+                    + "\\\\你好\\share\n"
+                    + "\\\\server\\share\\Tinycast\n"
+                    + "ERR_INVALID_FILE_URL_PATH\nERR_INVALID_FILE_URL_PATH\n"
+                    + "ERR_INVALID_URL\nERR_INVALID_URL\nERR_INVALID_URL\nERR_INVALID_URL\n"
+                    + "ERR_INVALID_URL",
             String(describing: screen.items.first?.node.array("accessories").last))
 
         // Dispatch the row's action and confirm the re-render.

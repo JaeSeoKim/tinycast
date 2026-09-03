@@ -405,8 +405,9 @@ pieces, so a progress callback reports how much has been written, never how much
 One shortcut inside `Transform`: it acknowledges a write as soon as `_transform` calls back rather
 than waiting for room on its readable side, so only a transform nobody reads from can grow unbounded.
 
-`url.fileURLToPath` implements Node's macOS path form. Its Windows override is intentionally absent:
-Tinycast never runs an extension on Windows.
+`url.fileURLToPath` follows Node's platform override too: its default and `windows: false` forms
+produce POSIX paths, while `windows: true` produces drive-letter and UNC paths. UNC hosts support
+ASCII and valid RFC 3492 punycode; direct Unicode, IPv6 and full UTS #46 processing are out of scope.
 
 A bundle that ships its own HTTP client rather than calling `fetch` — node-fetch travels inside
 `@raycast/utils`, and axios has a Node adapter — reaches the network through `http.request`, so the

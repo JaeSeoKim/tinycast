@@ -217,6 +217,11 @@ export default function Command() {
     fileURLToPath("file:///a:folder/.."),
     new URL("..", "file:///a:folder/child").href,
     new URL("..", "https://example.com/C:/child").href,
+    fileURLToPath("file:///tmp/a", { windows: false }),
+    fileURLToPath("file:///C:/Program%20Files/Tinycast", { windows: true }),
+    fileURLToPath("file://server/share/Tinycast", { windows: true }),
+    fileURLToPath("file://xn--6qq79v/share", { windows: true }),
+    fileURLToPath("file://%53ERVER/share/Tinycast", { windows: true }),
     errorCode(() => fileURLToPath("file:///tmp/a%2Fb")),
     errorCode(() => fileURLToPath("file://a%2Fb/tmp/a")),
     errorCode(() => fileURLToPath("file://example.com/tmp/a")),
@@ -224,7 +229,13 @@ export default function Command() {
     errorCode(() => fileURLToPath({})),
     errorCode(() => fileURLToPath("file://user@localhost/tmp/a")),
     errorCode(() => fileURLToPath("file://localhost:/tmp/a")),
-    errorCode(() => fileURLToPath("file:///C:/a", { windows: true })),
+    errorCode(() => fileURLToPath("file:///C:/a%5Cb", { windows: true })),
+    errorCode(() => fileURLToPath("file:///tmp/a", { windows: true })),
+    errorCode(() => fileURLToPath("file://xn--/share", { windows: true })),
+    errorCode(() => fileURLToPath("file://a%EF%BC%8Fb/share", { windows: true })),
+    errorCode(() => fileURLToPath("file://你好/share", { windows: true })),
+    errorCode(() => fileURLToPath("file://[::1]/share", { windows: true })),
+    errorCode(() => fileURLToPath("file://server%7F/share", { windows: true })),
   ];
   return <Detail markdown={parts.join("\\n")} />;
 }
@@ -567,6 +578,11 @@ export async function runFixtures() {
       "/a:folder/",
       "file:///a:folder/",
       "https://example.com/",
+      "/tmp/a",
+      "C:\\Program Files\\Tinycast",
+      "\\\\server\\share\\Tinycast",
+      "\\\\你好\\share",
+      "\\\\server\\share\\Tinycast",
       "ERR_INVALID_FILE_URL_PATH",
       "ERR_INVALID_URL",
       "ERR_INVALID_FILE_URL_HOST",
@@ -574,7 +590,13 @@ export async function runFixtures() {
       "ERR_INVALID_ARG_TYPE",
       "ERR_INVALID_URL",
       "ERR_INVALID_URL",
-      "Error",
+      "ERR_INVALID_FILE_URL_PATH",
+      "ERR_INVALID_FILE_URL_PATH",
+      "ERR_INVALID_URL",
+      "ERR_INVALID_URL",
+      "ERR_INVALID_URL",
+      "ERR_INVALID_URL",
+      "ERR_INVALID_URL",
     ];
     expected.forEach((value, index) => check(`shim ${index}: ${value}`, markdown[index] === value, markdown[index]));
   });

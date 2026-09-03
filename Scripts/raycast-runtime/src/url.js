@@ -2,6 +2,8 @@
 // style URLs extensions build and parse; it is not a full WHATWG implementation (no IDNA, no
 // percent-encoding normalization of the host).
 
+import { toASCII, toUnicode } from "./punycode.js";
+
 const SPECIAL_PORTS = { "http:": "80", "https:": "443", "ws:": "80", "wss:": "443", "ftp:": "21" };
 
 export class URLSearchParams {
@@ -240,7 +242,6 @@ export class URL {
   }
 }
 
-// Tinycast runs only on macOS, so Node's Windows path override is deliberately out of scope.
 export function fileURLToPath(input, options = {}) {
   let parsed;
   if (typeof input === "string") {
@@ -264,9 +265,30 @@ export function fileURLToPath(input, options = {}) {
   if (parsed.username || parsed.password || parsed.port) {
     throw nodeTypeError("ERR_INVALID_URL", "Invalid URL");
   }
-  if (options?.windows) {
-    throw new Error("Windows file paths are not supported in Tinycast extensions.");
+  if (options?.windows) return fileURLToWindowsPath(parsed);
+  return fileURLToPosixPath(parsed);
+}
+
+function fileURLToWindowsPath(parsed) {
+  const pathname = String(parsed.pathname);
+  if (/%2f|%5c/i.test(pathname)) {
+    throw nodeTypeError(
+      "ERR_INVALID_FILE_URL_PATH",
+      "File URL path must not include encoded \\ or / characters",
+    );
   }
+  const decoded = decodeFilePath(pathname);
+  const hostname = normalizedWindowsFileHostname(parsed.hostname);
+  if (hostname && hostname.toLowerCase() !== "localhost") {
+    return `\\\\${hostname}${decoded.replace(/\//g, "\\")}`;
+  }
+  if (!/^\/[A-Za-z]:/.test(decoded)) {
+    throw nodeTypeError("ERR_INVALID_FILE_URL_PATH", "File URL path must be absolute");
+  }
+  return decoded.slice(1).replace(/\//g, "\\");
+}
+
+function fileURLToPosixPath(parsed) {
   const hostname = decodedFileHostname(parsed.hostname);
   if (hostname !== "" && hostname.toLowerCase() !== "localhost") {
     throw nodeTypeError(
@@ -281,7 +303,31 @@ export function fileURLToPath(input, options = {}) {
       "File URL path must not include encoded / characters",
     );
   }
+  return decodeFilePath(pathname);
+}
+
+function decodeFilePath(pathname) {
   return pathname.includes("%") ? decodeURIComponent(pathname) : pathname;
+}
+
+function normalizedWindowsFileHostname(value) {
+  const hostname = decodedFileHostname(value).toLowerCase();
+  if (/[^\x00-\x7f]/.test(hostname) || /[\u0000-\u0020#%/:<>?@[\\\]^|\u007f]/.test(hostname)) {
+    throw nodeTypeError("ERR_INVALID_URL", "Invalid URL");
+  }
+  for (const label of hostname.split(".")) {
+    if (!/^xn--/i.test(label)) continue;
+    let decoded;
+    try {
+      decoded = toUnicode(label);
+    } catch {
+      throw nodeTypeError("ERR_INVALID_URL", "Invalid URL");
+    }
+    if (!decoded || /[\u0000-\u009f]/.test(decoded) || toASCII(decoded).toLowerCase() !== label) {
+      throw nodeTypeError("ERR_INVALID_URL", "Invalid URL");
+    }
+  }
+  return toUnicode(hostname);
 }
 
 function decodedFileHostname(value) {
